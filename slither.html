@@ -184,6 +184,8 @@ async function loadDictionary(){
 // === Grid Generation ===
 const N=10;
 const LETTERS='EEEEEEEEEEEETTTTTTTTTAAAAAAAAAOOOOOOOOOIIIIIIIINNNNNNNSSSSSSSRRRRRRHHHHHLLLLLDDDDCCCCUUUUMMMMFFFPPPGGGWWWYYYBBBBVVKKXJQZ';
+// Letters that commonly start English words
+const GOOD_STARTERS='ETAOINSRHLDCUMBFPGWY';
 function generateGrid(dateStr){
   const rng=mulberry32(dateSeed(dateStr));
   const pool=LETTERS.split('');
@@ -191,8 +193,17 @@ function generateGrid(dateStr){
   for(let i=pool.length-1;i>0;i--){const j=Math.floor(rng()*((i+1)|0));[pool[i],pool[j]]=[pool[j],pool[i]];}
   const grid=[];
   for(let r=0;r<N;r++){grid[r]=[];for(let c=0;c<N;c++)grid[r][c]=pool[r*N+c];}
-  // Ensure vowels in every 3x3 region
+  // Ensure left column has good starting letters (vowels + common consonants)
+  // At least 4 vowels, rest are common consonants
   const vowels='AEIOU';
+  const leftVowelCount=4+Math.floor(rng()*2); // 4-5 vowels in left column
+  const leftLetters=[];
+  for(let i=0;i<leftVowelCount;i++)leftLetters.push(vowels[Math.floor(rng()*5)]);
+  while(leftLetters.length<N)leftLetters.push(GOOD_STARTERS[Math.floor(rng()*GOOD_STARTERS.length)]);
+  // Shuffle the left column letters
+  for(let i=leftLetters.length-1;i>0;i--){const j=Math.floor(rng()*((i+1)|0));[leftLetters[i],leftLetters[j]]=[leftLetters[j],leftLetters[i]];}
+  for(let r=0;r<N;r++)grid[r][0]=leftLetters[r];
+  // Ensure vowels in every 3x3 region
   for(let r=0;r<=N-3;r+=2){
     for(let c=0;c<=N-3;c+=2){
       let hasVowel=false;
