@@ -286,6 +286,9 @@ function updateGridDisplay(){
       if(doublePoints&&doublePoints[r][c])el.classList.add('double');
       if(used[r][c])el.classList.add('used');
       if(headCell&&r===headCell[0]&&c===headCell[1]&&tracePath.length===0)el.classList.add('head');
+      // Show adjacent unused cells as start options
+      if(headCell&&!used[r][c]&&tracePath.length===0&&isAdj(r,c,headCell[0],headCell[1]))el.classList.add('start-option');
+      // Left column always a start option
       if(!used[r][c]&&c===0&&tracePath.length===0)el.classList.add('start-option');
     }
   }
@@ -333,6 +336,13 @@ function startTrace(r,c){
   // Allow starting from current head cell (it's used but it's the chain point)
   if(headCell&&r===headCell[0]&&c===headCell[1]){
     tracePath=[[r,c]];
+    isTracing=true;
+    updateGridDisplay();
+    return;
+  }
+  // Allow starting from any unused cell adjacent to head
+  if(headCell&&!used[r][c]&&isAdj(r,c,headCell[0],headCell[1])){
+    tracePath=[[headCell[0],headCell[1]],[r,c]];
     isTracing=true;
     updateGridDisplay();
     return;
