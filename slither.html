@@ -250,7 +250,7 @@ function updateGridDisplay(){
       el.className='gcell';
       if(used[r][c])el.classList.add('used');
       if(headCell&&r===headCell[0]&&c===headCell[1]&&tracePath.length===0)el.classList.add('head');
-      if(pickingStart&&!used[r][c]&&c===0)el.classList.add('start-option');
+      if(!used[r][c]&&c===0&&tracePath.length===0)el.classList.add('start-option');
     }
   }
   for(const[r,c] of tracePath){getEl(r,c).classList.add('tracing');}
@@ -284,22 +284,23 @@ function isAdj(r1,c1,r2,c2){return Math.abs(r1-r2)<=1&&Math.abs(c1-c2)<=1&&!(r1=
 let isTracing=false;
 function startTrace(r,c){
   if(!gameActive||!dictionary||processing)return;
-  if(pickingStart){
-    if(c===0&&!used[r][c]){
-      headCell=[r,c];
-      pickingStart=false;
-      tracePath=[[r,c]];
-      isTracing=true;
-      updateGridDisplay();updateUI();
-      $('word-hint').textContent='';
-    }
+  // Allow starting from any unused left-column cell at any time
+  if(c===0&&!used[r][c]){
+    headCell=[r,c];
+    pickingStart=false;
+    tracePath=[[r,c]];
+    isTracing=true;
+    updateGridDisplay();updateUI();
+    $('word-hint').textContent='';
     return;
   }
-  if(!headCell||used[r][c])return;
-  if(r!==headCell[0]||c!==headCell[1])return;
-  tracePath=[[r,c]];
-  isTracing=true;
-  updateGridDisplay();
+  // Allow starting from current head cell (it's used but it's the chain point)
+  if(headCell&&r===headCell[0]&&c===headCell[1]){
+    tracePath=[[r,c]];
+    isTracing=true;
+    updateGridDisplay();
+    return;
+  }
 }
 function continueTrace(r,c){
   if(!isTracing)return;
@@ -310,7 +311,7 @@ function continueTrace(r,c){
     updateGridDisplay();
     return;
   }
-  if(used[r][c])return;
+  if(used[r][c]&&!(headCell&&r===headCell[0]&&c===headCell[1]))return;
   const[lr,lc]=tracePath[tracePath.length-1];
   if(!isAdj(lr,lc,r,c))return;
   // Check not already in trace
@@ -344,9 +345,10 @@ function acceptWord(word){
   // Animate
   for(const[r,c] of tracePath)getEl(r,c).classList.add('accepted');
 
-  // Mark used
-  for(const[r,c] of tracePath)used[r][c]=true;
-  cellsUsed+=tracePath.length;
+  // Mark used (only count newly consumed cells)
+  let newCells=0;
+  for(const[r,c] of tracePath){if(!used[r][c]){used[r][c]=true;newCells++;}}
+  cellsUsed+=newCells;
   score+=pts;
   wordsFound.push({word,pts,len});
 
@@ -368,26 +370,24 @@ function rejectWord(){
 }
 
 // === Dead End Detection ===
-function hasValidMoves(){
-  if(!headCell||!dictionary)return false;
-  const[hr,hc]=headCell;
-  // Build paths of adjacent unused cells starting from neighbors of head
-  // Each path is an array of {r,c} — the word is formed by head cell letter + path letters
-  const headLetter=grid[hr][hc].toLowerCase();
+function checkMovesFrom(sr,sc,isHead){
+  // Check if words can be formed starting from cell (sr,sc)
+  // isHead=true means cell is used (head), so neighbors must be unused
+  // isHead=false means cell itself is unused (left-column fresh start)
+  const startLetter=grid[sr][sc].toLowerCase();
   let paths=[];
-  // Seed with each unused neighbor of head
   for(let dr=-1;dr<=1;dr++){
     for(let dc=-1;dc<=1;dc++){
       if(dr===0&&dc===0)continue;
-      const nr=hr+dr,nc=hc+dc;
+      const nr=sr+dr,nc=sc+dc;
       if(nr<0||nr>=N||nc<0||nc>=N||used[nr][nc])continue;
-      const w=headLetter+grid[nr][nc].toLowerCase();
+      if(nr===sr&&nc===sc)continue;
+      const w=startLetter+grid[nr][nc].toLowerCase();
       if(!dictionary.isPrefix(w))continue;
       if(dictionary.isWord(w)&&!wordsFound.some(x=>x.word===w))return true;
       paths.push({cells:[{r:nr,c:nc}],word:w});
     }
   }
-  // Extend up to 3 more steps (total word length up to 5)
   for(let depth=0;depth<3;depth++){
     const next=[];
     for(const p of paths){
@@ -397,7 +397,7 @@ function hasValidMoves(){
           if(dr===0&&dc===0)continue;
           const nr=last.r+dr,nc=last.c+dc;
           if(nr<0||nr>=N||nc<0||nc>=N||used[nr][nc])continue;
-          if(nr===hr&&nc===hc)continue;
+          if(nr===sr&&nc===sc)continue;
           if(p.cells.some(c=>c.r===nr&&c.c===nc))continue;
           const w=p.word+grid[nr][nc].toLowerCase();
           if(!dictionary.isPrefix(w))continue;
@@ -408,6 +408,16 @@ function hasValidMoves(){
     }
     paths=next;
     if(paths.length>1500)return true;
+  }
+  return false;
+}
+function hasValidMoves(){
+  if(!dictionary)return false;
+  // Check from current head
+  if(headCell&&checkMovesFrom(headCell[0],headCell[1],true))return true;
+  // Left column cells are always available as fresh starts
+  for(let r=0;r<N;r++){
+    if(!used[r][0]&&checkMovesFrom(r,0,false))return true;
   }
   return false;
 }
