@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>SumPath</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0d0d0d;--cell:#1a1a2e;--cell-hover:#252540;--amber:#f5a623;
+  --amber-glow:rgba(245,166,35,0.35);--red:#e74c3c;--text:#e0e0e0;
+  --text-dim:#666;--glass:rgba(255,255,255,0.04);
+  --font-mono:'IBM Plex Mono',monospace;--font-sans:'DM Sans',sans-serif;
+}
+html,body{width:100%;height:100%;background:var(--bg);color:var(--text);
+  font-family:var(--font-sans);overflow-x:hidden;touch-action:manipulation;
+  -webkit-user-select:none;user-select:none;}
+body{display:flex;flex-direction:column;align-items:center;
+  min-height:100vh;min-height:100dvh;position:relative;}
+body::before{content:'';position:fixed;inset:0;
+  background-image:radial-gradient(rgba(255,255,255,0.03) 1px,transparent 1px);
+  background-size:24px 24px;pointer-events:none;z-index:0;}
+
+/* Screens */
+.screen{display:none;flex-direction:column;align-items:center;
+  width:100%;max-width:480px;padding:20px;position:relative;z-index:1;}
+.screen.active{display:flex;}
+
+/* Title Screen */
+#title-screen{justify-content:center;min-height:100vh;min-height:100dvh;gap:24px;text-align:center;}
+.logo{font-family:var(--font-mono);font-size:42px;font-weight:700;
+  letter-spacing:-2px;color:var(--amber);}
+.tagline{font-size:14px;color:var(--text-dim);font-style:italic;margin-top:-12px;}
+.puzzle-date{font-family:var(--font-mono);font-size:13px;color:var(--text-dim);margin-top:8px;}
+.play-btn{background:var(--amber);color:#0d0d0d;border:none;padding:16px 40px;
+  border-radius:12px;font-family:var(--font-sans);font-size:17px;font-weight:700;
+  cursor:pointer;transition:all 0.2s;box-shadow:0 0 30px var(--amber-glow);margin-top:12px;}
+.play-btn:active{transform:scale(0.96);box-shadow:0 0 15px var(--amber-glow);}
+.streak-badge{font-family:var(--font-mono);font-size:14px;color:var(--amber);}
+
+/* Game Screen */
+#game-screen{padding-top:16px;gap:12px;}
+.game-header{display:flex;justify-content:space-between;align-items:center;width:100%;
+  font-size:12px;color:var(--text-dim);font-family:var(--font-mono);}
+.target-area{text-align:center;width:100%;}
+.target-label{font-family:var(--font-mono);font-size:11px;letter-spacing:3px;
+  color:var(--text-dim);text-transform:uppercase;}
+.target-line{width:80px;height:1px;background:var(--text-dim);margin:4px auto;}
+.target-num{font-family:var(--font-mono);font-size:48px;font-weight:700;color:var(--text);}
+.running-sum{font-family:var(--font-mono);font-size:13px;color:var(--text-dim);
+  min-height:20px;margin-top:4px;transition:color 0.2s;}
+.running-sum.match{color:var(--amber);}
+
+/* Grid */
+.grid{display:grid;gap:6px;margin:8px auto;touch-action:none;}
+.cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;
+  border-radius:10px;background:var(--cell);font-family:var(--font-mono);
+  font-size:22px;font-weight:600;color:var(--text-dim);cursor:pointer;
+  transition:all 0.15s ease;position:relative;
+  box-shadow:inset 0 1px 2px rgba(0,0,0,0.3),inset 0 -1px 1px rgba(255,255,255,0.03);}
+.cell.valid-next{background:var(--cell-hover);color:var(--text);}
+.cell.selected{background:var(--amber);color:#0d0d0d;
+  box-shadow:0 0 20px var(--amber-glow),inset 0 1px 2px rgba(255,255,255,0.2);
+  animation:pulse 2s ease-in-out infinite;}
+.cell.shake{animation:shake 0.35s ease;}
+.cell.wrong{background:var(--red) !important;color:#fff !important;
+  box-shadow:0 0 20px rgba(231,76,60,0.4) !important;}
+.cell.cascade{background:var(--amber);color:#0d0d0d;
+  box-shadow:0 0 30px var(--amber-glow);animation:cascadePop 0.4s ease;}
+.cell.solution-reveal{background:rgba(231,76,60,0.5);color:#fff;
+  box-shadow:0 0 20px rgba(231,76,60,0.3);}
+
+@keyframes pulse{0%,100%{box-shadow:0 0 15px var(--amber-glow)}
+  50%{box-shadow:0 0 25px var(--amber-glow)}}
+@keyframes shake{0%,100%{transform:translateX(0)}
+  20%{transform:translateX(-6px)}40%{transform:translateX(6px)}
+  60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+@keyframes cascadePop{0%{transform:scale(1)}
+  50%{transform:scale(1.12)}100%{transform:scale(1)}}
+
+.game-footer{display:flex;justify-content:space-between;align-items:center;
+  width:100%;margin-top:8px;}
+.attempt-text{font-family:var(--font-mono);font-size:12px;color:var(--text-dim);}
+.footer-btns{display:flex;gap:16px;}
+.subtle-btn{background:none;border:none;color:var(--text-dim);font-family:var(--font-sans);
+  font-size:13px;cursor:pointer;padding:8px 4px;transition:color 0.2s;}
+.subtle-btn:active{color:var(--text);}
+
+/* Win Screen */
+#win-screen{justify-content:center;min-height:100vh;min-height:100dvh;gap:20px;text-align:center;}
+.win-title{font-family:var(--font-mono);font-size:32px;font-weight:700;color:var(--amber);}
+.stats-card{background:var(--glass);border:1px solid rgba(255,255,255,0.06);
+  border-radius:16px;padding:24px;width:100%;display:flex;flex-direction:column;gap:12px;}
+.stat-row{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:14px;}
+.stat-label{color:var(--text-dim);}
+.stat-value{color:var(--text);font-weight:600;}
+.share-btn{background:var(--amber);color:#0d0d0d;border:none;padding:14px 32px;
+  border-radius:10px;font-family:var(--font-sans);font-size:15px;font-weight:700;
+  cursor:pointer;transition:all 0.2s;}
+.share-btn:active{transform:scale(0.96);}
+.copied-msg{font-size:13px;color:var(--amber);min-height:20px;font-family:var(--font-mono);}
+.countdown{font-family:var(--font-mono);font-size:14px;color:var(--text-dim);}
+.countdown-time{font-size:28px;color:var(--text);font-weight:600;}
+.home-link{color:var(--text-dim);font-size:13px;cursor:pointer;
+  background:none;border:none;font-family:var(--font-sans);padding:8px;}
+
+/* Give Up Screen */
+#giveup-screen{justify-content:center;min-height:100vh;min-height:100dvh;gap:20px;text-align:center;}
+.giveup-title{font-family:var(--font-mono);font-size:24px;color:var(--text-dim);}
+.giveup-sub{font-size:14px;color:var(--text-dim);font-style:italic;}
+.streak-msg{font-size:13px;color:var(--red);font-family:var(--font-mono);}
+
+/* Confirm dialog */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);
+  z-index:100;align-items:center;justify-content:center;}
+.overlay.active{display:flex;}
+.dialog{background:#1a1a2e;border:1px solid rgba(255,255,255,0.08);
+  border-radius:16px;padding:28px;text-align:center;max-width:300px;width:90%;}
+.dialog p{margin-bottom:20px;font-size:15px;color:var(--text);}
+.dialog-btns{display:flex;gap:12px;justify-content:center;}
+.dialog-btn{padding:10px 24px;border-radius:8px;border:none;font-family:var(--font-sans);
+  font-size:14px;font-weight:600;cursor:pointer;transition:all 0.15s;}
+.dialog-btn.confirm{background:var(--red);color:#fff;}
+.dialog-btn.cancel{background:var(--glass);color:var(--text);
+  border:1px solid rgba(255,255,255,0.1);}
+</style>
+</head>
+<body>
+
+<!-- Title Screen -->
+<div id="title-screen" class="screen active">
+  <a href="index.html" style="color:var(--text-dim);font-family:var(--font-mono);font-size:13px;text-decoration:none;margin-bottom:8px;">&larr; All Games</a>
+  <div class="streak-badge" id="title-streak"></div>
+  <div class="logo">SumPath</div>
+  <div class="tagline">One path. One sum. One chance a day.</div>
+  <div class="puzzle-date" id="puzzle-date"></div>
+  <button class="play-btn" id="play-btn">Play Today's Puzzle</button>
+  <div id="title-result"></div>
+</div>
+
+<!-- Game Screen -->
+<div id="game-screen" class="screen">
+  <div class="game-header">
+    <span class="game-title">SumPath</span>
+    <span class="streak-badge" id="game-streak"></span>
+  </div>
+  <div class="target-area">
+    <div class="target-label">Target</div>
+    <div class="target-line"></div>
+    <div class="target-num" id="target-num"></div>
+    <div class="running-sum" id="running-sum"></div>
+  </div>
+  <div class="grid" id="grid"></div>
+  <div class="game-footer">
+    <span class="attempt-text" id="attempt-text">Attempt 1</span>
+    <div class="footer-btns">
+      <button class="subtle-btn" id="reset-btn">Reset Path</button>
+      <button class="subtle-btn" id="giveup-btn" style="color:var(--text-dim)">Give Up</button>
+    </div>
+  </div>
+</div>
+
+<!-- Win Screen -->
+<div id="win-screen" class="screen">
+  <div class="win-title">You got it!</div>
+  <div class="stats-card">
+    <div class="stat-row"><span class="stat-label">Solved in</span><span class="stat-value" id="stat-time"></span></div>
+    <div class="stat-row"><span class="stat-label">Attempts</span><span class="stat-value" id="stat-attempts"></span></div>
+    <div class="stat-row"><span class="stat-label">Streak</span><span class="stat-value" id="stat-streak"></span></div>
+    <div class="stat-row"><span class="stat-label">Path length</span><span class="stat-value" id="stat-path"></span></div>
+  </div>
+  <button class="share-btn" id="share-btn">Share Result</button>
+  <div class="copied-msg" id="copied-msg"></div>
+  <div class="countdown">Next puzzle in<br><span class="countdown-time" id="win-countdown"></span></div>
+  <button class="home-link" id="win-home">Back to title</button>
+</div>
+
+<!-- Give Up Screen -->
+<div id="giveup-screen" class="screen">
+  <div class="giveup-title">Here's one solution.</div>
+  <div class="giveup-sub">There may be others.</div>
+  <div class="grid" id="solution-grid"></div>
+  <div class="streak-msg">Streak reset. Try again tomorrow.</div>
+  <div class="countdown">Next puzzle in<br><span class="countdown-time" id="giveup-countdown"></span></div>
+  <button class="home-link" id="giveup-home">Back to title</button>
+</div>
+
+<!-- Give Up Confirm -->
+<div class="overlay" id="confirm-overlay">
+  <div class="dialog">
+    <p>Give up on today's puzzle? Your streak will reset.</p>
+    <div class="dialog-btns">
+      <button class="dialog-btn cancel" id="confirm-cancel">Cancel</button>
+      <button class="dialog-btn confirm" id="confirm-yes">Give Up</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// === Seeded PRNG (mulberry32) ===
+function mulberry32(seed){
+  return function(){
+    seed|=0;seed=seed+0x6D2B79F5|0;
+    let t=Math.imul(seed^seed>>>15,1|seed);
+    t=t+Math.imul(t^t>>>7,61|t)^t;
+    return((t^t>>>14)>>>0)/4294967296;
+  };
+}
+function dateSeed(dateStr){
+  let h=0;
+  for(let i=0;i<dateStr.length;i++){h=Math.imul(31,h)+dateStr.charCodeAt(i)|0;}
+  return h;
+}
+
+// === Date Utilities ===
+function todayUTC(){
+  const d=new Date();
+  return d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0')+'-'+String(d.getUTCDate()).padStart(2,'0');
+}
+function puzzleNumber(){
+  const start=new Date('2026-01-01T00:00:00Z');
+  const now=new Date();
+  return Math.floor((now-start)/(86400000))+1;
+}
+function msUntilMidnightUTC(){
+  const now=new Date();
+  const tom=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()+1));
+  return tom-now;
+}
+function formatCountdown(ms){
+  const s=Math.floor(ms/1000);
+  const h=Math.floor(s/3600);
+  const m=Math.floor((s%3600)/60);
+  const sec=s%60;
+  return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');
+}
+function formatTime(sec){
+  const m=Math.floor(sec/60);
+  const s=sec%60;
+  return m+':'+String(s).padStart(2,'0');
+}
+
+// === Puzzle Generation ===
+const N=5;
+function generatePuzzle(dateStr){
+  const rng=mulberry32(dateSeed(dateStr));
+  // Generate random solution path
+  const path=[];
+  let r=0,c=0;
+  path.push([0,0]);
+  while(r<N-1||c<N-1){
+    if(r===N-1){c++;path.push([r,c]);}
+    else if(c===N-1){r++;path.push([r,c]);}
+    else{
+      if(rng()<0.5){r++;path.push([r,c]);}
+      else{c++;path.push([r,c]);}
+    }
+  }
+  // Fill grid
+  const grid=[];
+  for(let i=0;i<N;i++){grid[i]=[];for(let j=0;j<N;j++)grid[i][j]=Math.floor(rng()*9)+1;}
+  // Overwrite path cells
+  for(const[pr,pc] of path) grid[pr][pc]=Math.floor(rng()*9)+1;
+  // Compute target
+  let target=0;
+  for(const[pr,pc] of path) target+=grid[pr][pc];
+  return{grid,target,solutionPath:path};
+}
+
+// === Persistence ===
+function loadData(){
+  try{return JSON.parse(localStorage.getItem('sumpath'))||{};}catch(e){return{};}
+}
+function saveData(d){localStorage.setItem('sumpath',JSON.stringify(d));}
+function getStreak(){
+  const d=loadData();
+  return d.streak||0;
+}
+function markSolved(attempts,timeSeconds){
+  const d=loadData();
+  const today=todayUTC();
+  const yesterday=new Date(Date.now()-86400000);
+  const yStr=yesterday.getUTCFullYear()+'-'+String(yesterday.getUTCMonth()+1).padStart(2,'0')+'-'+String(yesterday.getUTCDate()).padStart(2,'0');
+  if(!d.history)d.history={};
+  const wasYesterday=d.history[yStr]&&d.history[yStr].solved;
+  if(wasYesterday||!d.streak)d.streak=(d.streak||0)+1;
+  else d.streak=1;
+  d.lastPlayedDate=today;
+  d.solvedToday=true;
+  d.history[today]={solved:true,attempts,timeSeconds};
+  saveData(d);
+  return d.streak;
+}
+function markGaveUp(){
+  const d=loadData();
+  const today=todayUTC();
+  if(!d.history)d.history={};
+  d.lastPlayedDate=today;
+  d.solvedToday=false;
+  d.gaveUpToday=true;
+  d.streak=0;
+  d.history[today]={solved:false,gaveUp:true};
+  saveData(d);
+}
+function alreadyPlayed(){
+  const d=loadData();
+  return d.lastPlayedDate===todayUTC();
+}
+function todayResult(){
+  const d=loadData();
+  if(d.lastPlayedDate!==todayUTC())return null;
+  return d.history?d.history[todayUTC()]:null;
+}
+
+// === Game State ===
+let puzzle,selectedPath=[],attempts=1,startTime=0,timerInterval=null,gameActive=false;
+
+// === DOM Refs ===
+const $=id=>document.getElementById(id);
+const screens={title:$('title-screen'),game:$('game-screen'),win:$('win-screen'),giveup:$('giveup-screen')};
+
+function showScreen(name){
+  Object.values(screens).forEach(s=>s.classList.remove('active'));
+  screens[name].classList.add('active');
+}
+
+// === Countdown Timers ===
+let countdownInterval=null;
+function startCountdown(){
+  if(countdownInterval)clearInterval(countdownInterval);
+  function tick(){
+    const ms=msUntilMidnightUTC();
+    const str=formatCountdown(ms);
+    const wc=$('win-countdown');
+    const gc=$('giveup-countdown');
+    if(wc)wc.textContent=str;
+    if(gc)gc.textContent=str;
+  }
+  tick();
+  countdownInterval=setInterval(tick,1000);
+}
+
+// === Render Title ===
+function renderTitle(){
+  const pNum=puzzleNumber();
+  const today=todayUTC();
+  const parts=today.split('-');
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const dateDisplay=months[parseInt(parts[1])-1]+' '+parseInt(parts[2])+', '+parts[0];
+  $('puzzle-date').textContent='Puzzle #'+pNum+' — '+dateDisplay;
+
+  const streak=getStreak();
+  $('title-streak').textContent=streak>0?'\uD83D\uDD25 '+streak+' day streak':'';
+
+  const result=todayResult();
+  const titleResult=$('title-result');
+  const playBtn=$('play-btn');
+  if(result&&result.solved){
+    playBtn.textContent='View Result';
+    titleResult.innerHTML='<div style="color:var(--amber);font-family:var(--font-mono);font-size:13px;margin-top:4px;">Solved today in '+formatTime(result.timeSeconds)+' — '+result.attempts+' attempt'+(result.attempts!==1?'s':'')+'</div>';
+  }else if(result&&result.gaveUp){
+    playBtn.textContent='View Solution';
+    titleResult.innerHTML='<div style="color:var(--text-dim);font-family:var(--font-mono);font-size:13px;margin-top:4px;">You gave up today. Come back tomorrow!</div>';
+  }else{
+    playBtn.textContent="Play Today's Puzzle";
+    titleResult.innerHTML='';
+  }
+}
+
+// === Build Grid ===
+function buildGrid(container,grid,cellSize){
+  container.innerHTML='';
+  container.style.gridTemplateColumns='repeat('+N+','+cellSize+'px)';
+  container.style.gridTemplateRows='repeat('+N+','+cellSize+'px)';
+  for(let r=0;r<N;r++){
+    for(let c=0;c<N;c++){
+      const cell=document.createElement('div');
+      cell.className='cell';
+      cell.dataset.r=r;
+      cell.dataset.c=c;
+      cell.textContent=grid[r][c];
+      cell.style.fontSize=Math.max(18,cellSize*0.4)+'px';
+      container.appendChild(cell);
+    }
+  }
+}
+function getCellEl(container,r,c){
+  return container.children[r*N+c];
+}
+
+// === Compute cell size ===
+function cellSize(){
+  const maxW=Math.min(window.innerWidth-40,440);
+  return Math.max(52,Math.floor((maxW-(N-1)*6)/N));
+}
+
+// === Update Grid Display ===
+function updateGrid(){
+  const container=$('grid');
+  const pathSet=new Set(selectedPath.map(([r,c])=>r+','+c));
+  const last=selectedPath.length>0?selectedPath[selectedPath.length-1]:null;
+  for(let r=0;r<N;r++){
+    for(let c=0;c<N;c++){
+      const el=getCellEl(container,r,c);
+      el.className='cell';
+      if(pathSet.has(r+','+c)){
+        el.classList.add('selected');
+      }else if(last){
+        const[lr,lc]=last;
+        if((r===lr+1&&c===lc)||(r===lr&&c===lc+1)){
+          el.classList.add('valid-next');
+        }
+      }else if(r===0&&c===0){
+        el.classList.add('valid-next');
+      }
+    }
+  }
+  // Running sum
+  const rs=$('running-sum');
+  if(selectedPath.length===0){
+    rs.textContent='Tap the top-left cell to start';
+    rs.classList.remove('match');
+  }else{
+    let sum=0;
+    const parts=[];
+    for(const[r,c] of selectedPath){
+      const v=puzzle.grid[r][c];
+      sum+=v;
+      parts.push(v);
+    }
+    rs.textContent=parts.join(' + ')+' = '+sum;
+    rs.classList.toggle('match',sum===puzzle.target);
+  }
+}
+
+// === Handle Cell Click ===
+function onCellClick(r,c){
+  if(!gameActive)return;
+  const idx=selectedPath.findIndex(([pr,pc])=>pr===r&&pc===c);
+  // Backtrack
+  if(idx>=0){
+    selectedPath=selectedPath.slice(0,idx);
+    updateGrid();
+    return;
+  }
+  // Must be valid next
+  if(selectedPath.length===0){
+    if(r!==0||c!==0)return;
+    selectedPath.push([0,0]);
+    updateGrid();
+    return;
+  }
+  const[lr,lc]=selectedPath[selectedPath.length-1];
+  if(!((r===lr+1&&c===lc)||(r===lr&&c===lc+1)))return;
+  selectedPath.push([r,c]);
+  updateGrid();
+  // Check if reached end
+  if(r===N-1&&c===N-1){
+    let sum=0;
+    for(const[pr,pc] of selectedPath)sum+=puzzle.grid[pr][pc];
+    if(sum===puzzle.target){
+      handleWin();
+    }else{
+      handleWrong();
+    }
+  }
+}
+
+// === Wrong Answer ===
+function handleWrong(){
+  gameActive=false;
+  const container=$('grid');
+  for(const[r,c] of selectedPath){
+    const el=getCellEl(container,r,c);
+    el.classList.add('wrong','shake');
+  }
+  setTimeout(()=>{
+    attempts++;
+    $('attempt-text').textContent='Attempt '+attempts;
+    selectedPath=[];
+    updateGrid();
+    gameActive=true;
+  },600);
+}
+
+// === Win ===
+function handleWin(){
+  gameActive=false;
+  if(timerInterval)clearInterval(timerInterval);
+  const elapsed=Math.floor((Date.now()-startTime)/1000);
+  const container=$('grid');
+
+  // Cascade animation
+  const reversed=[...selectedPath].reverse();
+  reversed.forEach(([r,c],i)=>{
+    setTimeout(()=>{
+      const el=getCellEl(container,r,c);
+      el.className='cell cascade';
+    },i*80);
+  });
+
+  setTimeout(()=>{
+    const streak=markSolved(attempts,elapsed);
+    $('stat-time').textContent=formatTime(elapsed);
+    $('stat-attempts').textContent=attempts;
+    $('stat-streak').textContent=streak+' day'+(streak!==1?'s':'');
+    $('stat-path').textContent=selectedPath.length+' cells';
+    $('copied-msg').textContent='';
+    showScreen('win');
+    startCountdown();
+  },reversed.length*80+400);
+}
+
+// === Give Up ===
+function handleGiveUp(){
+  gameActive=false;
+  if(timerInterval)clearInterval(timerInterval);
+  markGaveUp();
+  const cs=cellSize();
+  buildGrid($('solution-grid'),puzzle.grid,cs);
+  // Animate solution
+  puzzle.solutionPath.forEach(([r,c],i)=>{
+    setTimeout(()=>{
+      getCellEl($('solution-grid'),r,c).classList.add('solution-reveal');
+    },i*100);
+  });
+  showScreen('giveup');
+  startCountdown();
+}
+
+// === Share ===
+function shareResult(){
+  const d=loadData();
+  const result=d.history&&d.history[todayUTC()];
+  if(!result)return;
+  const pNum=puzzleNumber();
+  const text='SumPath #'+pNum+' \u2705\n\u23F1 '+formatTime(result.timeSeconds)+' | \uD83C\uDFAF '+result.attempts+' attempt'+(result.attempts!==1?'s':'')+' | \uD83D\uDD25 '+(d.streak||0)+' days';
+  if(navigator.share){
+    navigator.share({text}).catch(()=>{});
+  }else if(navigator.clipboard){
+    navigator.clipboard.writeText(text).then(()=>{
+      $('copied-msg').textContent='Copied to clipboard!';
+    });
+  }
+}
+
+// === Start Game ===
+function startGame(){
+  const today=todayUTC();
+  const result=todayResult();
+  if(result&&result.solved){
+    // Show win screen with stored data
+    const d=loadData();
+    $('stat-time').textContent=formatTime(result.timeSeconds);
+    $('stat-attempts').textContent=result.attempts;
+    $('stat-streak').textContent=(d.streak||0)+' day'+((d.streak||0)!==1?'s':'');
+    $('stat-path').textContent=(N-1+N-1+1)+' cells';
+    $('copied-msg').textContent='';
+    showScreen('win');
+    startCountdown();
+    return;
+  }
+  if(result&&result.gaveUp){
+    const cs=cellSize();
+    puzzle=generatePuzzle(today);
+    buildGrid($('solution-grid'),puzzle.grid,cs);
+    puzzle.solutionPath.forEach(([r,c])=>{
+      getCellEl($('solution-grid'),r,c).classList.add('solution-reveal');
+    });
+    showScreen('giveup');
+    startCountdown();
+    return;
+  }
+
+  puzzle=generatePuzzle(today);
+  selectedPath=[];
+  attempts=1;
+  gameActive=true;
+  startTime=Date.now();
+
+  $('target-num').textContent=puzzle.target;
+  $('attempt-text').textContent='Attempt 1';
+
+  const streak=getStreak();
+  $('game-streak').textContent=streak>0?'\uD83D\uDD25 '+streak:'';
+
+  const cs=cellSize();
+  buildGrid($('grid'),puzzle.grid,cs);
+  updateGrid();
+  showScreen('game');
+
+  // Timer (unused visually but tracked)
+  if(timerInterval)clearInterval(timerInterval);
+}
+
+// === Event Listeners ===
+$('play-btn').addEventListener('click',startGame);
+$('reset-btn').addEventListener('click',()=>{
+  if(!gameActive)return;
+  selectedPath=[];
+  updateGrid();
+});
+$('giveup-btn').addEventListener('click',()=>{
+  $('confirm-overlay').classList.add('active');
+});
+$('confirm-cancel').addEventListener('click',()=>{
+  $('confirm-overlay').classList.remove('active');
+});
+$('confirm-yes').addEventListener('click',()=>{
+  $('confirm-overlay').classList.remove('active');
+  handleGiveUp();
+});
+$('share-btn').addEventListener('click',shareResult);
+$('win-home').addEventListener('click',()=>{renderTitle();showScreen('title');});
+$('giveup-home').addEventListener('click',()=>{renderTitle();showScreen('title');});
+
+// Grid click handler (delegated)
+$('grid').addEventListener('pointerdown',e=>{
+  const cell=e.target.closest('.cell');
+  if(!cell)return;
+  e.preventDefault();
+  onCellClick(parseInt(cell.dataset.r),parseInt(cell.dataset.c));
+});
+
+// Handle window resize
+window.addEventListener('resize',()=>{
+  if(screens.game.classList.contains('active')&&puzzle){
+    const cs=cellSize();
+    buildGrid($('grid'),puzzle.grid,cs);
+    updateGrid();
+  }
+});
+
+// === Init ===
+renderTitle();
+</script>
+</body>
+</html>
