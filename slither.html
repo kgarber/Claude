@@ -305,7 +305,7 @@ function wordScore(len){
 // === Game State ===
 let grid,used,doublePoints,headCell=null,tracePath=[],score=0,wordsFound=[],cellsUsed=0;
 let comboCount=0,comboActive=false,gameActive=false,pickingStart=true,processing=false;
-let undoStack=[],refreshCount=0;
+let undoStack=[],refreshCount=0,lastStepDir=null;
 const $=id=>document.getElementById(id);
 const screens={title:$('title-screen'),game:$('game-screen'),end:$('end-screen')};
 function showScreen(n){Object.values(screens).forEach(s=>s.classList.remove('active'));screens[n].classList.add('active');}
@@ -396,6 +396,8 @@ function startTrace(r,c){
       if(nr>=0&&nr<N&&nc>=0&&nc<N&&!used[nr][nc])hasUnusedNeighbor=true;
     }
     if(!hasUnusedNeighbor)return;
+    // If starting from a non-head used cell, clear direction restriction
+    if(!headCell||r!==headCell[0]||c!==headCell[1])lastStepDir=null;
     headCell=[r,c];
     pickingStart=false;
     tracePath=[[r,c]];
@@ -406,6 +408,7 @@ function startTrace(r,c){
   }
   // Start from any unused edge cell
   if(isEdge(r,c)&&!used[r][c]){
+    lastStepDir=null;
     headCell=[r,c];
     pickingStart=false;
     tracePath=[[r,c]];
@@ -427,6 +430,10 @@ function continueTrace(r,c){
   if(used[r][c])return;
   const[lr,lc]=tracePath[tracePath.length-1];
   if(!isAdj(lr,lc,r,c))return;
+  // If this is the second cell of a trace started from the head, block straight-ahead direction
+  if(tracePath.length===1&&headCell&&lr===headCell[0]&&lc===headCell[1]&&lastStepDir){
+    if(r-lr===lastStepDir[0]&&c-lc===lastStepDir[1])return;
+  }
   // Check not already in trace
   if(tracePath.some(([pr,pc])=>pr===r&&pc===c))return;
   tracePath.push([r,c]);
@@ -454,7 +461,8 @@ function acceptWord(word){
     used:used.map(row=>[...row]),
     headCell:headCell?[...headCell]:null,
     score,cellsUsed,comboCount,comboActive,
-    wordsFound:[...wordsFound]
+    wordsFound:[...wordsFound],
+    lastStepDir:lastStepDir?[...lastStepDir]:null
   });
   $('undo-btn').disabled=false;
 
@@ -479,8 +487,14 @@ function acceptWord(word){
   score+=pts;
   wordsFound.push({word,pts,len});
 
-  // New head = last cell of trace
-  headCell=[tracePath[tracePath.length-1][0],tracePath[tracePath.length-1][1]];
+  // New head = last cell of trace; remember direction of final step
+  const lastIdx=tracePath.length-1;
+  if(lastIdx>=1){
+    lastStepDir=[tracePath[lastIdx][0]-tracePath[lastIdx-1][0],tracePath[lastIdx][1]-tracePath[lastIdx-1][1]];
+  }else{
+    lastStepDir=null;
+  }
+  headCell=[tracePath[lastIdx][0],tracePath[lastIdx][1]];
   tracePath=[];
 
   setTimeout(()=>{
@@ -505,6 +519,7 @@ function undoLastWord(){
   comboCount=state.comboCount;
   comboActive=state.comboActive;
   wordsFound=state.wordsFound;
+  lastStepDir=state.lastStepDir;
   tracePath=[];
   if(!headCell)pickingStart=true;
   $('undo-btn').disabled=undoStack.length===0;
@@ -642,7 +657,7 @@ function startGame(){
   used=Array.from({length:N},()=>Array(N).fill(false));
   headCell=null;tracePath=[];score=0;wordsFound=[];cellsUsed=0;
   comboCount=0;comboActive=false;gameActive=true;pickingStart=true;processing=false;
-  undoStack=[];
+  undoStack=[];lastStepDir=null;
   $('undo-btn').disabled=true;
   buildGrid();
   updateGridDisplay();
