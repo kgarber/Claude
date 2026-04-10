@@ -453,14 +453,6 @@ function acceptWord(word){
   for(const[r,c] of tracePath){if(doublePoints&&doublePoints[r][c]&&!used[r][c])doubleCount++;}
   pts+=pts*doubleCount; // each double cell doubles the word score additively
 
-  // Cross-board bonus: snake spans left-to-right or top-to-bottom
-  const cols=new Set(tracePath.map(([r,c])=>c));
-  const rows=new Set(tracePath.map(([r,c])=>r));
-  let crossBonus=0;
-  if(cols.has(0)&&cols.has(N-1)){crossBonus+=tracePath.length;}
-  if(rows.has(0)&&rows.has(N-1)){crossBonus+=tracePath.length;}
-  pts+=crossBonus;
-
   // Combo
   if(len>=5){comboCount++;if(comboCount>=3)comboActive=true;}else{comboCount=0;comboActive=false;}
   if(comboActive&&comboCount>3)pts=Math.round(pts*1.5);
@@ -583,9 +575,22 @@ function endGame(manual){
   // Coverage bonus
   const coverageBonus=Math.floor(cellsUsed/5);
   score+=coverageBonus;
+  // Cross-board bonus: check if used cells span left-to-right or top-to-bottom
+  const usedCols=new Set(),usedRows=new Set();
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){if(used[r][c]){usedCols.add(c);usedRows.add(r);}}
+  let crossBonus=0;
+  const crossLR=usedCols.has(0)&&usedCols.has(N-1);
+  const crossTB=usedRows.has(0)&&usedRows.has(N-1);
+  if(crossLR)crossBonus+=cellsUsed;
+  if(crossTB)crossBonus+=cellsUsed;
+  score+=crossBonus;
   const best=wordsFound.reduce((b,w)=>w.len>b.len?w:b,{word:'-',len:0});
   $('end-title').textContent=manual?'Game Over':'No more moves!';
-  $('end-score').textContent=score+(coverageBonus>0?' (incl +'+coverageBonus+' coverage)':'');
+  let bonusText='';
+  if(coverageBonus>0)bonusText+=' +'+coverageBonus+' coverage';
+  if(crossLR)bonusText+=' +'+cellsUsed+' L\u2192R';
+  if(crossTB)bonusText+=' +'+cellsUsed+' T\u2192B';
+  $('end-score').textContent=score+(bonusText?' (incl'+bonusText+')':'');
   $('end-words-count').textContent=wordsFound.length;
   $('end-cells').textContent=cellsUsed+'/100';
   $('end-best').textContent=best.word.toUpperCase()+' ('+best.len+' letters)';
