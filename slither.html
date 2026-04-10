@@ -216,7 +216,7 @@ function wordScore(len){
 
 // === Game State ===
 let grid,used,headCell=null,tracePath=[],score=0,wordsFound=[],cellsUsed=0;
-let comboCount=0,comboActive=false,gameActive=false,pickingStart=true;
+let comboCount=0,comboActive=false,gameActive=false,pickingStart=true,processing=false;
 const $=id=>document.getElementById(id);
 const screens={title:$('title-screen'),game:$('game-screen'),end:$('end-screen')};
 function showScreen(n){Object.values(screens).forEach(s=>s.classList.remove('active'));screens[n].classList.add('active');}
@@ -250,7 +250,7 @@ function updateGridDisplay(){
       el.className='gcell';
       if(used[r][c])el.classList.add('used');
       if(headCell&&r===headCell[0]&&c===headCell[1]&&tracePath.length===0)el.classList.add('head');
-      if(pickingStart&&!used[r][c]&&r<2&&c<2)el.classList.add('start-option');
+      if(pickingStart&&!used[r][c]&&c===0)el.classList.add('start-option');
     }
   }
   for(const[r,c] of tracePath){getEl(r,c).classList.add('tracing');}
@@ -283,9 +283,9 @@ function isAdj(r1,c1,r2,c2){return Math.abs(r1-r2)<=1&&Math.abs(c1-c2)<=1&&!(r1=
 // === Tracing Logic ===
 let isTracing=false;
 function startTrace(r,c){
-  if(!gameActive||!dictionary)return;
+  if(!gameActive||!dictionary||processing)return;
   if(pickingStart){
-    if(r<2&&c<2&&!used[r][c]){
+    if(c===0&&!used[r][c]){
       headCell=[r,c];
       pickingStart=false;
       tracePath=[[r,c]];
@@ -334,6 +334,7 @@ function endTrace(){
   }
 }
 function acceptWord(word){
+  processing=true;
   const len=word.length;
   let pts=wordScore(len);
   // Combo
@@ -356,6 +357,7 @@ function acceptWord(word){
   setTimeout(()=>{
     updateGridDisplay();
     updateUI();
+    processing=false;
     // Check for dead end
     if(!hasValidMoves()){endGame(false);}
   },300);
@@ -369,30 +371,43 @@ function rejectWord(){
 function hasValidMoves(){
   if(!headCell||!dictionary)return false;
   const[hr,hc]=headCell;
-  // BFS up to depth 4 from head
-  const paths=[[{r:hr,c:hc}]];
-  for(let depth=0;depth<4;depth++){
+  // Build paths of adjacent unused cells starting from neighbors of head
+  // Each path is an array of {r,c} — the word is formed by head cell letter + path letters
+  const headLetter=grid[hr][hc].toLowerCase();
+  let paths=[];
+  // Seed with each unused neighbor of head
+  for(let dr=-1;dr<=1;dr++){
+    for(let dc=-1;dc<=1;dc++){
+      if(dr===0&&dc===0)continue;
+      const nr=hr+dr,nc=hc+dc;
+      if(nr<0||nr>=N||nc<0||nc>=N||used[nr][nc])continue;
+      const w=headLetter+grid[nr][nc].toLowerCase();
+      if(!dictionary.isPrefix(w))continue;
+      if(dictionary.isWord(w)&&!wordsFound.some(x=>x.word===w))return true;
+      paths.push({cells:[{r:nr,c:nc}],word:w});
+    }
+  }
+  // Extend up to 3 more steps (total word length up to 5)
+  for(let depth=0;depth<3;depth++){
     const next=[];
-    for(const path of paths){
-      const last=path[path.length-1];
+    for(const p of paths){
+      const last=p.cells[p.cells.length-1];
       for(let dr=-1;dr<=1;dr++){
         for(let dc=-1;dc<=1;dc++){
           if(dr===0&&dc===0)continue;
           const nr=last.r+dr,nc=last.c+dc;
-          if(nr<0||nr>=N||nc<0||nc>=N)continue;
-          if(used[nr][nc])continue;
-          if(path.some(p=>p.r===nr&&p.c===nc))continue;
-          const np=[...path,{r:nr,c:nc}];
-          const w=np.map(p=>grid[p.r][p.c]).join('').toLowerCase();
+          if(nr<0||nr>=N||nc<0||nc>=N||used[nr][nc])continue;
+          if(nr===hr&&nc===hc)continue;
+          if(p.cells.some(c=>c.r===nr&&c.c===nc))continue;
+          const w=p.word+grid[nr][nc].toLowerCase();
           if(!dictionary.isPrefix(w))continue;
-          if(np.length>=2&&dictionary.isWord(w)&&!wordsFound.some(x=>x.word===w))return true;
-          next.push(np);
+          if(dictionary.isWord(w)&&!wordsFound.some(x=>x.word===w))return true;
+          next.push({cells:[...p.cells,{r:nr,c:nc}],word:w});
         }
       }
     }
-    paths.length=0;
-    paths.push(...next);
-    if(paths.length>2000)return true; // Too many to check = likely has moves
+    paths=next;
+    if(paths.length>1500)return true;
   }
   return false;
 }
@@ -442,11 +457,11 @@ function startGame(){
   grid=generateGrid(today);
   used=Array.from({length:N},()=>Array(N).fill(false));
   headCell=null;tracePath=[];score=0;wordsFound=[];cellsUsed=0;
-  comboCount=0;comboActive=false;gameActive=true;pickingStart=true;
+  comboCount=0;comboActive=false;gameActive=true;pickingStart=true;processing=false;
   buildGrid();
   updateGridDisplay();
   updateUI();
-  $('word-hint').textContent='Tap a starting cell (top-left corner)';
+  $('word-hint').textContent='Tap a starting cell (left column)';
   showScreen('game');
 }
 
