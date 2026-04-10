@@ -126,6 +126,7 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
     </div>
     <div class="combo-badge" id="combo-badge"></div>
     <div style="display:flex;gap:8px;">
+      <button class="undo-btn" id="refresh-btn">New Grid</button>
       <button class="undo-btn" id="undo-btn" disabled>Undo</button>
       <button class="end-btn" id="end-btn">End Game</button>
     </div>
@@ -195,25 +196,27 @@ async function loadDictionary(){
 // === Grid Generation ===
 const N=10;
 const LETTERS='EEEEEEEEEEEETTTTTTTTTAAAAAAAAAOOOOOOOOOIIIIIIIINNNNNNNSSSSSSSRRRRRRHHHHHLLLLLDDDDCCCCUUUUMMMMFFFPPPGGGWWWYYYBBBBVVKKXJQZ';
-// Letters that commonly start English words
 const GOOD_STARTERS='ETAOINSRHLDCUMBFPGWY';
-function generateGrid(dateStr){
-  const rng=mulberry32(dateSeed(dateStr));
+const GOOD_SECONDS='ETAOINSRHLDCUMAEIOU';
+function generateGridRaw(rng){
   const pool=LETTERS.split('');
-  // Fisher-Yates shuffle
   for(let i=pool.length-1;i>0;i--){const j=Math.floor(rng()*((i+1)|0));[pool[i],pool[j]]=[pool[j],pool[i]];}
   const grid=[];
   for(let r=0;r<N;r++){grid[r]=[];for(let c=0;c<N;c++)grid[r][c]=pool[r*N+c];}
-  // Ensure left column has good starting letters (vowels + common consonants)
-  // At least 4 vowels, rest are common consonants
+  // Left column: 4-5 vowels + common consonants
   const vowels='AEIOU';
-  const leftVowelCount=4+Math.floor(rng()*2); // 4-5 vowels in left column
+  const leftVowelCount=4+Math.floor(rng()*2);
   const leftLetters=[];
   for(let i=0;i<leftVowelCount;i++)leftLetters.push(vowels[Math.floor(rng()*5)]);
   while(leftLetters.length<N)leftLetters.push(GOOD_STARTERS[Math.floor(rng()*GOOD_STARTERS.length)]);
-  // Shuffle the left column letters
   for(let i=leftLetters.length-1;i>0;i--){const j=Math.floor(rng()*((i+1)|0));[leftLetters[i],leftLetters[j]]=[leftLetters[j],leftLetters[i]];}
   for(let r=0;r<N;r++)grid[r][0]=leftLetters[r];
+  // Column 1: also good letters to pair with left column starters
+  for(let r=0;r<N;r++){
+    if(!'AEIOUETAOINSRHLDCUMBFPGWY'.includes(grid[r][1])){
+      grid[r][1]=GOOD_SECONDS[Math.floor(rng()*GOOD_SECONDS.length)];
+    }
+  }
   // Ensure vowels in every 3x3 region
   for(let r=0;r<=N-3;r+=2){
     for(let c=0;c<=N-3;c+=2){
@@ -228,6 +231,50 @@ function generateGrid(dateStr){
     }
   }
   return grid;
+}
+function countLeftStarts(grid){
+  // Count how many left-column cells can form at least one 2-letter word with neighbors
+  if(!dictionary)return 10; // assume fine if dict not loaded
+  let count=0;
+  for(let r=0;r<N;r++){
+    const ch=grid[r][0].toLowerCase();
+    let canWord=false;
+    for(let dr=-1;dr<=1&&!canWord;dr++){
+      for(let dc=0;dc<=1&&!canWord;dc++){
+        if(dr===0&&dc===0)continue;
+        const nr=r+dr,nc=dc;
+        if(nr<0||nr>=N||nc>=N)continue;
+        const pair=ch+grid[nr][nc].toLowerCase();
+        if(dictionary.isWord(pair))canWord=true;
+        // Also check 3-letter combos from this start
+        if(!canWord&&dictionary.isPrefix(pair)){
+          for(let dr2=-1;dr2<=1&&!canWord;dr2++){
+            for(let dc2=-1;dc2<=1&&!canWord;dc2++){
+              if(dr2===0&&dc2===0)continue;
+              const nr2=nr+dr2,nc2=nc+dc2;
+              if(nr2<0||nr2>=N||nc2<0||nc2>=N)continue;
+              if(nr2===r&&nc2===0)continue;
+              const tri=pair+grid[nr2][nc2].toLowerCase();
+              if(dictionary.isWord(tri))canWord=true;
+            }
+          }
+        }
+      }
+    }
+    if(canWord)count++;
+  }
+  return count;
+}
+function generateGrid(dateStr){
+  // Try with base seed, then variations until at least 4 left-column starts work
+  for(let attempt=0;attempt<20;attempt++){
+    const seed=dateSeed(dateStr)+(attempt*7919);
+    const rng=mulberry32(seed);
+    const grid=generateGridRaw(rng);
+    if(countLeftStarts(grid)>=4)return grid;
+  }
+  // Fallback: return last attempt
+  return generateGridRaw(mulberry32(dateSeed(dateStr)));
 }
 function generateDoublePoints(dateStr){
   const rng=mulberry32(dateSeed(dateStr+'dbl'));
@@ -251,7 +298,7 @@ function wordScore(len){
 // === Game State ===
 let grid,used,doublePoints,headCell=null,tracePath=[],score=0,wordsFound=[],cellsUsed=0;
 let comboCount=0,comboActive=false,gameActive=false,pickingStart=true,processing=false;
-let undoStack=[];
+let undoStack=[],refreshCount=0;
 const $=id=>document.getElementById(id);
 const screens={title:$('title-screen'),game:$('game-screen'),end:$('end-screen')};
 function showScreen(n){Object.values(screens).forEach(s=>s.classList.remove('active'));screens[n].classList.add('active');}
@@ -541,8 +588,9 @@ function shareResult(){
 function startGame(){
   if(!dictLoaded)return;
   const today=todayUTC();
-  grid=generateGrid(today);
-  doublePoints=generateDoublePoints(today);
+  const seed=today+(refreshCount>0?'-r'+refreshCount:'');
+  grid=generateGrid(seed);
+  doublePoints=generateDoublePoints(seed);
   used=Array.from({length:N},()=>Array(N).fill(false));
   headCell=null;tracePath=[];score=0;wordsFound=[];cellsUsed=0;
   comboCount=0;comboActive=false;gameActive=true;pickingStart=true;processing=false;
@@ -551,8 +599,13 @@ function startGame(){
   buildGrid();
   updateGridDisplay();
   updateUI();
-  $('word-hint').textContent='Tap a starting cell (left column)';
+  $('word-hint').textContent='Tap a starting cell (left column or highlighted)';
   showScreen('game');
+}
+function refreshGrid(){
+  if(!gameActive)return;
+  refreshCount++;
+  startGame();
 }
 
 // === Events ===
@@ -583,6 +636,7 @@ gw.addEventListener('touchend',e=>{e.preventDefault();endTrace();},{passive:fals
 $('play-btn').addEventListener('click',startGame);
 $('end-btn').addEventListener('click',()=>endGame(true));
 $('undo-btn').addEventListener('click',undoLastWord);
+$('refresh-btn').addEventListener('click',refreshGrid);
 $('share-btn').addEventListener('click',shareResult);
 $('home-btn').addEventListener('click',()=>location.href='index.html');
 
