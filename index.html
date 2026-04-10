@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Particle Playground</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: #0a0a1a;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  #ui {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 12px;
+    z-index: 10;
+  }
+  .btn {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.3);
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(8px);
+    color: #fff;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.15s, background 0.15s;
+  }
+  .btn:active {
+    transform: scale(0.9);
+    background: rgba(255,255,255,0.25);
+  }
+  .btn.active {
+    border-color: rgba(255,255,255,0.8);
+    background: rgba(255,255,255,0.2);
+  }
+  #hint {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: rgba(255,255,255,0.4);
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 18px;
+    text-align: center;
+    pointer-events: none;
+    transition: opacity 0.8s;
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hint">Tap and drag anywhere<br>to create particles</div>
+<div id="ui">
+  <button class="btn" id="btnMode" title="Switch mode">&#10047;</button>
+  <button class="btn" id="btnGravity" title="Toggle gravity">&#8595;</button>
+  <button class="btn" id="btnClear" title="Clear">&#10005;</button>
+</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const hint = document.getElementById('hint');
+
+let W, H, dpr;
+function resize() {
+  dpr = window.devicePixelRatio || 1;
+  W = window.innerWidth;
+  H = window.innerHeight;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+resize();
+window.addEventListener('resize', resize);
+
+// Particle system
+const particles = [];
+const MAX_PARTICLES = 600;
+
+const PALETTES = [
+  ['#ff6b6b','#feca57','#ff9ff3','#54a0ff','#5f27cd','#01a3a4'],
+  ['#00f5d4','#00bbf9','#fee440','#f15bb5','#9b5de5','#fb5607'],
+  ['#ffbe0b','#fb5607','#ff006e','#8338ec','#3a86ff','#06d6a0'],
+];
+let paletteIdx = 0;
+let palette = PALETTES[0];
+let gravityOn = false;
+let hintVisible = true;
+
+class Particle {
+  constructor(x, y, vx, vy) {
+    this.x = x;
+    this.y = y;
+    this.vx = vx;
+    this.vy = vy;
+    this.r = Math.random() * 4 + 2;
+    this.life = 1;
+    this.decay = Math.random() * 0.004 + 0.002;
+    this.color = palette[Math.floor(Math.random() * palette.length)];
+    this.trail = [];
+  }
+
+  update() {
+    if (gravityOn) this.vy += 0.15;
+    this.vx *= 0.995;
+    this.vy *= 0.995;
+    this.x += this.vx;
+    this.y += this.vy;
+    this.life -= this.decay;
+
+    // Bounce off walls
+    if (this.x < 0) { this.x = 0; this.vx *= -0.7; }
+    if (this.x > W) { this.x = W; this.vx *= -0.7; }
+    if (this.y < 0) { this.y = 0; this.vy *= -0.7; }
+    if (this.y > H) { this.y = H; this.vy *= -0.7; }
+
+    this.trail.push({ x: this.x, y: this.y });
+    if (this.trail.length > 8) this.trail.shift();
+  }
+
+  draw() {
+    const alpha = Math.max(0, this.life);
+
+    // Draw trail
+    if (this.trail.length > 1) {
+      ctx.beginPath();
+      ctx.moveTo(this.trail[0].x, this.trail[0].y);
+      for (let i = 1; i < this.trail.length; i++) {
+        ctx.lineTo(this.trail[i].x, this.trail[i].y);
+      }
+      ctx.strokeStyle = this.color + hex(alpha * 0.3);
+      ctx.lineWidth = this.r * alpha;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+    }
+
+    // Draw particle
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.r * alpha, 0, Math.PI * 2);
+    ctx.fillStyle = this.color + hex(alpha);
+    ctx.fill();
+
+    // Glow
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.r * alpha * 3, 0, Math.PI * 2);
+    ctx.fillStyle = this.color + hex(alpha * 0.1);
+    ctx.fill();
+  }
+}
+
+function hex(a) {
+  const h = Math.round(Math.max(0, Math.min(1, a)) * 255).toString(16);
+  return h.length === 1 ? '0' + h : h;
+}
+
+function emit(x, y, vx, vy, count) {
+  for (let i = 0; i < count; i++) {
+    if (particles.length >= MAX_PARTICLES) particles.shift();
+    const angle = Math.random() * Math.PI * 2;
+    const speed = Math.random() * 3 + 1;
+    particles.push(new Particle(
+      x,
+      y,
+      vx * 0.3 + Math.cos(angle) * speed,
+      vy * 0.3 + Math.sin(angle) * speed
+    ));
+  }
+}
+
+// Input handling
+let lastX = 0, lastY = 0;
+
+function handleStart(x, y) {
+  if (hintVisible) {
+    hint.style.opacity = '0';
+    hintVisible = false;
+  }
+  lastX = x;
+  lastY = y;
+  emit(x, y, 0, 0, 12);
+}
+
+function handleMove(x, y) {
+  const vx = x - lastX;
+  const vy = y - lastY;
+  emit(x, y, vx, vy, 4);
+  lastX = x;
+  lastY = y;
+}
+
+canvas.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  canvas.setPointerCapture(e.pointerId);
+  handleStart(e.clientX, e.clientY);
+});
+
+canvas.addEventListener('pointermove', e => {
+  if (e.pressure > 0) {
+    e.preventDefault();
+    handleMove(e.clientX, e.clientY);
+  }
+});
+
+// Buttons
+document.getElementById('btnMode').addEventListener('click', e => {
+  e.stopPropagation();
+  paletteIdx = (paletteIdx + 1) % PALETTES.length;
+  palette = PALETTES[paletteIdx];
+});
+
+const btnGravity = document.getElementById('btnGravity');
+btnGravity.addEventListener('click', e => {
+  e.stopPropagation();
+  gravityOn = !gravityOn;
+  btnGravity.classList.toggle('active', gravityOn);
+});
+
+document.getElementById('btnClear').addEventListener('click', e => {
+  e.stopPropagation();
+  particles.length = 0;
+});
+
+// Animation loop
+function animate() {
+  ctx.fillStyle = 'rgba(10, 10, 26, 0.15)';
+  ctx.fillRect(0, 0, W, H);
+
+  for (let i = particles.length - 1; i >= 0; i--) {
+    particles[i].update();
+    particles[i].draw();
+    if (particles[i].life <= 0) particles.splice(i, 1);
+  }
+
+  requestAnimationFrame(animate);
+}
+animate();
+
+// Prevent pull-to-refresh and bounce
+document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+</script>
+</body>
+</html>
