@@ -232,36 +232,42 @@ function generateGridRaw(rng){
   }
   return grid;
 }
-function countLeftStarts(grid){
-  // Count how many left-column cells can form at least one 2-letter word with neighbors
-  if(!dictionary)return 10; // assume fine if dict not loaded
+function countEdgeStarts(grid){
+  // Count how many edge cells can form at least one 2-3 letter word with neighbors
+  if(!dictionary)return 40; // assume fine if dict not loaded
   let count=0;
+  const checked=new Set();
   for(let r=0;r<N;r++){
-    const ch=grid[r][0].toLowerCase();
-    let canWord=false;
-    for(let dr=-1;dr<=1&&!canWord;dr++){
-      for(let dc=0;dc<=1&&!canWord;dc++){
-        if(dr===0&&dc===0)continue;
-        const nr=r+dr,nc=dc;
-        if(nr<0||nr>=N||nc>=N)continue;
-        const pair=ch+grid[nr][nc].toLowerCase();
-        if(dictionary.isWord(pair))canWord=true;
-        // Also check 3-letter combos from this start
-        if(!canWord&&dictionary.isPrefix(pair)){
-          for(let dr2=-1;dr2<=1&&!canWord;dr2++){
-            for(let dc2=-1;dc2<=1&&!canWord;dc2++){
-              if(dr2===0&&dc2===0)continue;
-              const nr2=nr+dr2,nc2=nc+dc2;
-              if(nr2<0||nr2>=N||nc2<0||nc2>=N)continue;
-              if(nr2===r&&nc2===0)continue;
-              const tri=pair+grid[nr2][nc2].toLowerCase();
-              if(dictionary.isWord(tri))canWord=true;
+    for(let c=0;c<N;c++){
+      if(!(r===0||r===N-1||c===0||c===N-1))continue;
+      const key=r+','+c;
+      if(checked.has(key))continue;
+      checked.add(key);
+      const ch=grid[r][c].toLowerCase();
+      let canWord=false;
+      for(let dr=-1;dr<=1&&!canWord;dr++){
+        for(let dc=-1;dc<=1&&!canWord;dc++){
+          if(dr===0&&dc===0)continue;
+          const nr=r+dr,nc=c+dc;
+          if(nr<0||nr>=N||nc<0||nc>=N)continue;
+          const pair=ch+grid[nr][nc].toLowerCase();
+          if(dictionary.isWord(pair)){canWord=true;break;}
+          if(dictionary.isPrefix(pair)){
+            for(let dr2=-1;dr2<=1&&!canWord;dr2++){
+              for(let dc2=-1;dc2<=1&&!canWord;dc2++){
+                if(dr2===0&&dc2===0)continue;
+                const nr2=nr+dr2,nc2=nc+dc2;
+                if(nr2<0||nr2>=N||nc2<0||nc2>=N)continue;
+                if(nr2===r&&nc2===c)continue;
+                const tri=pair+grid[nr2][nc2].toLowerCase();
+                if(dictionary.isWord(tri))canWord=true;
+              }
             }
           }
         }
       }
+      if(canWord)count++;
     }
-    if(canWord)count++;
   }
   return count;
 }
@@ -271,7 +277,7 @@ function generateGrid(dateStr){
     const seed=dateSeed(dateStr)+(attempt*7919);
     const rng=mulberry32(seed);
     const grid=generateGridRaw(rng);
-    if(countLeftStarts(grid)>=4)return grid;
+    if(countEdgeStarts(grid)>=8)return grid;
   }
   // Fallback: return last attempt
   return generateGridRaw(mulberry32(dateSeed(dateStr)));
@@ -335,8 +341,8 @@ function updateGridDisplay(){
       if(headCell&&r===headCell[0]&&c===headCell[1]&&tracePath.length===0)el.classList.add('head');
       // Show adjacent unused cells as start options
       if(headCell&&!used[r][c]&&tracePath.length===0&&isAdj(r,c,headCell[0],headCell[1]))el.classList.add('start-option');
-      // Left column always a start option
-      if(!used[r][c]&&c===0&&tracePath.length===0)el.classList.add('start-option');
+      // Edge cells always a start option
+      if(!used[r][c]&&isEdge(r,c)&&tracePath.length===0)el.classList.add('start-option');
     }
   }
   for(const[r,c] of tracePath){getEl(r,c).classList.add('tracing');}
@@ -365,13 +371,14 @@ function updateUI(){
 
 // === Adjacency ===
 function isAdj(r1,c1,r2,c2){return Math.abs(r1-r2)<=1&&Math.abs(c1-c2)<=1&&!(r1===r2&&c1===c2);}
+function isEdge(r,c){return r===0||r===N-1||c===0||c===N-1;}
 
 // === Tracing Logic ===
 let isTracing=false;
 function startTrace(r,c){
   if(!gameActive||!dictionary||processing)return;
-  // Allow starting from any unused left-column cell at any time
-  if(c===0&&!used[r][c]){
+  // Allow starting from any unused edge cell at any time
+  if(isEdge(r,c)&&!used[r][c]){
     headCell=[r,c];
     pickingStart=false;
     tracePath=[[r,c]];
@@ -445,6 +452,14 @@ function acceptWord(word){
   let doubleCount=0;
   for(const[r,c] of tracePath){if(doublePoints&&doublePoints[r][c]&&!used[r][c])doubleCount++;}
   pts+=pts*doubleCount; // each double cell doubles the word score additively
+
+  // Cross-board bonus: snake spans left-to-right or top-to-bottom
+  const cols=new Set(tracePath.map(([r,c])=>c));
+  const rows=new Set(tracePath.map(([r,c])=>r));
+  let crossBonus=0;
+  if(cols.has(0)&&cols.has(N-1)){crossBonus+=tracePath.length;}
+  if(rows.has(0)&&rows.has(N-1)){crossBonus+=tracePath.length;}
+  pts+=crossBonus;
 
   // Combo
   if(len>=5){comboCount++;if(comboCount>=3)comboActive=true;}else{comboCount=0;comboActive=false;}
@@ -537,11 +552,27 @@ function checkMovesFrom(sr,sc,isHead){
 }
 function hasValidMoves(){
   if(!dictionary)return false;
-  // Check from current head
-  if(headCell&&checkMovesFrom(headCell[0],headCell[1],true))return true;
-  // Left column cells are always available as fresh starts
+  // Check from current head + adjacent unused
+  if(headCell){
+    if(checkMovesFrom(headCell[0],headCell[1],true))return true;
+    // Also check neighbors of head
+    const[hr,hc]=headCell;
+    for(let dr=-1;dr<=1;dr++){
+      for(let dc=-1;dc<=1;dc++){
+        if(dr===0&&dc===0)continue;
+        const nr=hr+dr,nc=hc+dc;
+        if(nr>=0&&nr<N&&nc>=0&&nc<N&&!used[nr][nc]){
+          if(checkMovesFrom(nr,nc,false))return true;
+        }
+      }
+    }
+  }
+  // Edge cells are always available as fresh starts
   for(let r=0;r<N;r++){
-    if(!used[r][0]&&checkMovesFrom(r,0,false))return true;
+    for(let c=0;c<N;c++){
+      if(!(r===0||r===N-1||c===0||c===N-1))continue;
+      if(!used[r][c]&&checkMovesFrom(r,c,false))return true;
+    }
   }
   return false;
 }
@@ -599,7 +630,7 @@ function startGame(){
   buildGrid();
   updateGridDisplay();
   updateUI();
-  $('word-hint').textContent='Tap a starting cell (left column or highlighted)';
+  $('word-hint').textContent='Tap any edge cell to start';
   showScreen('game');
 }
 function refreshGrid(){
