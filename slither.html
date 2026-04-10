@@ -340,9 +340,10 @@ function startTrace(r,c){
     updateGridDisplay();
     return;
   }
-  // Allow starting from any unused cell adjacent to head
+  // Allow starting from any unused cell adjacent to head (new chain, head letter NOT included)
   if(headCell&&!used[r][c]&&isAdj(r,c,headCell[0],headCell[1])){
-    tracePath=[[headCell[0],headCell[1]],[r,c]];
+    headCell=[r,c];
+    tracePath=[[r,c]];
     isTracing=true;
     updateGridDisplay();
     return;
