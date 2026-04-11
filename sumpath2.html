@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>SumPath 2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0d0d0d;--cell:#1a1a2e;--cell-hover:#252540;--cyan:#00e5ff;
+  --cyan-glow:rgba(0,229,255,0.4);--red:#e74c3c;--text:#e0e0e0;
+  --text-dim:#666;--glass:rgba(255,255,255,0.04);
+  --font-mono:'IBM Plex Mono',monospace;--font-sans:'DM Sans',sans-serif;
+}
+html,body{width:100%;height:100%;background:var(--bg);color:var(--text);
+  font-family:var(--font-sans);overflow-x:hidden;touch-action:manipulation;
+  -webkit-user-select:none;user-select:none;}
+body{display:flex;flex-direction:column;align-items:center;min-height:100vh;min-height:100dvh;position:relative;}
+body::before{content:'';position:fixed;inset:0;
+  background-image:radial-gradient(rgba(0,229,255,0.03) 1px,transparent 1px);
+  background-size:24px 24px;pointer-events:none;z-index:0;}
+
+.screen{display:none;flex-direction:column;align-items:center;
+  width:100%;max-width:480px;padding:20px;position:relative;z-index:1;}
+.screen.active{display:flex;}
+
+/* Title */
+#title-screen{justify-content:center;min-height:100vh;min-height:100dvh;gap:20px;text-align:center;}
+.back-link{color:var(--text-dim);font-family:var(--font-mono);font-size:13px;
+  text-decoration:none;margin-bottom:8px;}
+.logo{font-family:var(--font-mono);font-size:42px;font-weight:700;
+  letter-spacing:-2px;color:var(--cyan);}
+.tagline{font-size:14px;color:var(--text-dim);font-style:italic;margin-top:-12px;}
+.play-btn{background:var(--cyan);color:#0d0d0d;border:none;padding:16px 40px;
+  border-radius:12px;font-family:var(--font-sans);font-size:17px;font-weight:700;
+  cursor:pointer;transition:all 0.2s;box-shadow:0 0 30px var(--cyan-glow);margin-top:12px;}
+.play-btn:active{transform:scale(0.96);}
+.help-btn{background:none;border:1px solid rgba(0,229,255,0.3);color:var(--cyan);
+  padding:12px 32px;border-radius:10px;font-family:var(--font-sans);font-size:14px;
+  font-weight:600;cursor:pointer;margin-top:4px;}
+.help-btn:active{background:rgba(0,229,255,0.1);}
+.best-score{font-family:var(--font-mono);font-size:13px;color:var(--text-dim);margin-top:8px;}
+
+/* Game */
+#game-screen{padding-top:16px;gap:10px;}
+.game-header{display:flex;justify-content:space-between;align-items:center;width:100%;}
+.game-title{font-family:var(--font-mono);font-size:12px;color:var(--text-dim);}
+.combo-display{font-family:var(--font-mono);font-size:14px;color:var(--cyan);font-weight:700;}
+.timer-area{display:flex;flex-direction:column;align-items:center;gap:2px;width:100%;margin-bottom:4px;}
+.timer-label{font-family:var(--font-mono);font-size:10px;color:var(--text-dim);
+  letter-spacing:3px;text-transform:uppercase;}
+.timer-display{font-family:var(--font-mono);font-size:42px;font-weight:700;
+  color:var(--cyan);letter-spacing:2px;line-height:1;text-shadow:0 0 15px var(--cyan-glow);
+  transition:color 0.2s;}
+.timer-display.warning{color:#ffc107;text-shadow:0 0 15px rgba(255,193,7,0.4);}
+.timer-display.critical{color:var(--red);text-shadow:0 0 15px rgba(231,76,60,0.5);animation:pulse 0.5s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.7}}
+.timer-bar{width:100%;height:4px;background:rgba(255,255,255,0.05);
+  border-radius:2px;overflow:hidden;}
+.timer-fill{height:100%;background:var(--cyan);transition:width 0.1s linear;}
+.timer-fill.warning{background:#ffc107;}
+.timer-fill.critical{background:var(--red);}
+
+.target-area{text-align:center;width:100%;}
+.target-label{font-family:var(--font-mono);font-size:11px;letter-spacing:3px;
+  color:var(--text-dim);text-transform:uppercase;}
+.target-num{font-family:var(--font-mono);font-size:48px;font-weight:700;color:var(--text);
+  transition:color 0.2s;}
+.target-num.match{color:var(--cyan);text-shadow:0 0 20px var(--cyan-glow);}
+.running-sum{font-family:var(--font-mono);font-size:14px;color:var(--text-dim);
+  min-height:22px;transition:color 0.2s;}
+.running-sum.match{color:var(--cyan);font-weight:700;}
+
+.grid{display:grid;gap:6px;margin:6px auto;touch-action:none;}
+.cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;
+  border-radius:10px;background:var(--cell);font-family:var(--font-mono);
+  font-size:22px;font-weight:600;color:var(--text);cursor:pointer;
+  transition:all 0.15s ease;
+  box-shadow:inset 0 1px 2px rgba(0,0,0,0.3);}
+.cell.selected{background:var(--cyan);color:#0d0d0d;
+  box-shadow:0 0 20px var(--cyan-glow);animation:cellPop 0.2s ease;}
+.cell.flash{animation:flash 0.5s ease;}
+@keyframes cellPop{0%{transform:scale(1)}50%{transform:scale(1.08)}100%{transform:scale(1)}}
+@keyframes flash{0%{background:var(--cyan);box-shadow:0 0 25px var(--cyan-glow);}
+  100%{background:var(--cell);box-shadow:inset 0 1px 2px rgba(0,0,0,0.3);}}
+
+.hint{font-size:12px;color:var(--text-dim);text-align:center;min-height:18px;}
+
+/* End Screen */
+#end-screen{justify-content:center;min-height:100vh;min-height:100dvh;gap:20px;text-align:center;}
+.end-title{font-family:var(--font-mono);font-size:28px;font-weight:700;color:var(--cyan);}
+.end-combos{font-family:var(--font-mono);font-size:80px;font-weight:700;color:var(--cyan);
+  text-shadow:0 0 30px var(--cyan-glow);line-height:1;}
+.end-combos-label{font-family:var(--font-mono);font-size:11px;letter-spacing:3px;
+  color:var(--text-dim);text-transform:uppercase;margin-top:-8px;}
+.new-best{font-size:13px;color:#ffc107;font-weight:700;margin-top:-8px;}
+.share-btn{background:var(--cyan);color:#0d0d0d;border:none;padding:14px 32px;
+  border-radius:10px;font-family:var(--font-sans);font-size:15px;font-weight:700;
+  cursor:pointer;}
+.share-btn:active{transform:scale(0.96);}
+.copied-msg{font-size:13px;color:var(--cyan);min-height:20px;font-family:var(--font-mono);}
+.play-again-btn{background:none;border:1px solid rgba(0,229,255,0.3);color:var(--cyan);
+  padding:12px 28px;border-radius:10px;font-family:var(--font-sans);font-size:14px;
+  font-weight:600;cursor:pointer;}
+.home-link{color:var(--text-dim);font-size:13px;cursor:pointer;background:none;border:none;
+  font-family:var(--font-sans);padding:8px;}
+
+/* Help modal */
+.help-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);
+  z-index:200;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;}
+.help-overlay.active{display:flex;}
+.help-content{background:#0d0d1a;border:1px solid rgba(0,229,255,0.2);
+  border-radius:14px;padding:24px;max-width:480px;width:100%;color:var(--text);
+  font-family:var(--font-sans);font-size:14px;line-height:1.6;}
+.help-content h2{font-family:var(--font-mono);color:var(--cyan);font-size:24px;margin-bottom:8px;}
+.help-content h3{color:var(--cyan);font-size:13px;margin-top:16px;margin-bottom:6px;
+  text-transform:uppercase;letter-spacing:1px;}
+.help-content p{margin-bottom:8px;color:#c0c0c0;}
+.help-content ul{list-style:none;padding-left:0;margin-bottom:8px;}
+.help-content li{padding-left:14px;position:relative;margin-bottom:4px;color:#c0c0c0;}
+.help-content li::before{content:'\2022';position:absolute;left:0;color:var(--cyan);}
+.help-content .close-help{margin-top:20px;background:var(--cyan);color:#0d0d0d;
+  border:none;padding:12px 28px;border-radius:10px;font-family:var(--font-sans);
+  font-size:14px;font-weight:700;cursor:pointer;width:100%;}
+
+/* Score popup */
+.popup{position:absolute;pointer-events:none;z-index:50;
+  font-family:var(--font-mono);font-size:24px;font-weight:700;
+  color:var(--cyan);text-shadow:0 0 12px var(--cyan-glow);
+  animation:popupFloat 1s ease-out forwards;}
+@keyframes popupFloat{
+  0%{opacity:0;transform:translate(-50%,0) scale(0.8);}
+  20%{opacity:1;transform:translate(-50%,-8px) scale(1.15);}
+  100%{opacity:0;transform:translate(-50%,-40px) scale(1);}
+}
+.grid-wrap{position:relative;}
+</style>
+</head>
+<body>
+
+<!-- Title Screen -->
+<div id="title-screen" class="screen active">
+  <a href="index.html" class="back-link">&larr; All Games</a>
+  <div class="logo">SumPath 2</div>
+  <div class="tagline">Speed mode. 30 seconds. Infinite paths.</div>
+  <button class="play-btn" id="play-btn">Start Game</button>
+  <button class="help-btn" id="help-btn">How to Play</button>
+  <div class="best-score" id="best-score"></div>
+</div>
+
+<!-- Help modal -->
+<div class="help-overlay" id="help-overlay">
+  <div class="help-content">
+    <h2>How to Play SumPath 2</h2>
+    <p>Score as many paths as you can in 30 seconds. Each completed path gives you a new target to chase.</p>
+
+    <h3>Movement</h3>
+    <ul>
+      <li>Tap any cell to start a new path &mdash; start from anywhere</li>
+      <li>Move in any of 4 directions: up, down, left, or right</li>
+      <li>Each new cell must be adjacent to the last one</li>
+      <li>Tap a cell already in your path to backtrack to that point</li>
+      <li>Tap a non-adjacent cell to reset and start a fresh path</li>
+    </ul>
+
+    <h3>Scoring</h3>
+    <ul>
+      <li>When your path sum exactly matches the target, it auto-accepts</li>
+      <li>Each accepted path = +1 combo</li>
+      <li>A new random target appears and the grid refreshes</li>
+      <li>Keep going until the timer hits zero</li>
+    </ul>
+
+    <h3>Tips</h3>
+    <ul>
+      <li>Move fast &mdash; the timer never stops</li>
+      <li>If you overshoot, backtrack instead of starting over</li>
+      <li>Small targets are quicker; big targets need longer paths</li>
+      <li>Your best score is saved locally</li>
+    </ul>
+
+    <button class="close-help" id="close-help">Got it</button>
+  </div>
+</div>
+
+<!-- Game Screen -->
+<div id="game-screen" class="screen">
+  <div class="game-header">
+    <span class="game-title">SumPath 2</span>
+    <span class="combo-display" id="combo-display">0 combos</span>
+  </div>
+  <div class="timer-area">
+    <div class="timer-label">Time</div>
+    <div class="timer-display" id="timer-display">30.0</div>
+    <div class="timer-bar"><div class="timer-fill" id="timer-fill" style="width:100%"></div></div>
+  </div>
+  <div class="target-area">
+    <div class="target-label">Target</div>
+    <div class="target-num" id="target-num">0</div>
+    <div class="running-sum" id="running-sum">Tap to start</div>
+  </div>
+  <div class="grid-wrap">
+    <div class="grid" id="grid"></div>
+  </div>
+  <div class="hint" id="hint"></div>
+</div>
+
+<!-- End Screen -->
+<div id="end-screen" class="screen">
+  <div class="end-title">Time's up!</div>
+  <div class="end-combos-label">Combos</div>
+  <div class="end-combos" id="end-combos">0</div>
+  <div class="new-best" id="new-best"></div>
+  <button class="share-btn" id="share-btn">Share Result</button>
+  <div class="copied-msg" id="copied-msg"></div>
+  <button class="play-again-btn" id="play-again-btn">Play Again</button>
+  <button class="home-link" id="home-btn">Back to games</button>
+</div>
+
+<script>
+const N=5;
+const GAME_DURATION=30; // seconds
+
+// === PRNG & Grid ===
+function randInt(max){return Math.floor(Math.random()*max);}
+function genGrid(){
+  const grid=[];
+  for(let r=0;r<N;r++){
+    grid[r]=[];
+    for(let c=0;c<N;c++)grid[r][c]=randInt(9)+1;
+  }
+  return grid;
+}
+
+// Generate a target achievable from a random contiguous path in the grid
+function genTarget(grid){
+  // Pick a random start, walk 3-6 cells, sum them
+  const len=3+randInt(4);
+  const visited=new Set();
+  let r=randInt(N),c=randInt(N);
+  let sum=grid[r][c];
+  visited.add(r+','+c);
+  for(let i=1;i<len;i++){
+    const dirs=[[-1,0],[1,0],[0,-1],[0,1]];
+    const valid=[];
+    for(const[dr,dc] of dirs){
+      const nr=r+dr,nc=c+dc;
+      if(nr<0||nr>=N||nc<0||nc>=N)continue;
+      if(visited.has(nr+','+nc))continue;
+      valid.push([nr,nc]);
+    }
+    if(valid.length===0)break;
+    const[nr,nc]=valid[randInt(valid.length)];
+    r=nr;c=nc;
+    sum+=grid[r][c];
+    visited.add(r+','+c);
+  }
+  return sum;
+}
+
+// === Game State ===
+let grid,target,path=[],combos=0,gameActive=false,startMs=0;
+let timerInterval=null,frameReq=null;
+const $=id=>document.getElementById(id);
+const screens={title:$('title-screen'),game:$('game-screen'),end:$('end-screen')};
+function showScreen(n){Object.values(screens).forEach(s=>s.classList.remove('active'));screens[n].classList.add('active');}
+
+// === Rendering ===
+function cellSize(){
+  const maxW=Math.min(window.innerWidth-40,420);
+  return Math.max(50,Math.floor((maxW-(N-1)*6)/N));
+}
+function buildGrid(){
+  const g=$('grid');g.innerHTML='';
+  const cs=cellSize();
+  g.style.gridTemplateColumns='repeat('+N+','+cs+'px)';
+  g.style.gridTemplateRows='repeat('+N+','+cs+'px)';
+  for(let r=0;r<N;r++){
+    for(let c=0;c<N;c++){
+      const el=document.createElement('div');
+      el.className='cell';
+      el.dataset.r=r;el.dataset.c=c;
+      el.textContent=grid[r][c];
+      el.style.fontSize=Math.max(18,cs*0.42)+'px';
+      g.appendChild(el);
+    }
+  }
+}
+function getEl(r,c){return $('grid').children[r*N+c];}
+function updateDisplay(){
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+    const el=getEl(r,c);
+    el.className='cell';
+    el.textContent=grid[r][c];
+  }
+  for(const[r,c] of path)getEl(r,c).classList.add('selected');
+  const sum=path.reduce((s,[r,c])=>s+grid[r][c],0);
+  const rs=$('running-sum');
+  if(path.length===0){rs.textContent='Tap any cell to start';rs.classList.remove('match');}
+  else{rs.textContent=path.map(([r,c])=>grid[r][c]).join(' + ')+' = '+sum;
+    rs.classList.toggle('match',sum===target);}
+}
+function isAdj(r1,c1,r2,c2){return(Math.abs(r1-r2)===1&&c1===c2)||(Math.abs(c1-c2)===1&&r1===r2);}
+
+// === Input ===
+function onCellTap(r,c){
+  if(!gameActive)return;
+  // Backtrack if in path
+  const idx=path.findIndex(([pr,pc])=>pr===r&&pc===c);
+  if(idx>=0){
+    path=path.slice(0,idx+1);
+    updateDisplay();
+    return;
+  }
+  // New path or extend
+  if(path.length===0){
+    path=[[r,c]];
+  }else{
+    const[lr,lc]=path[path.length-1];
+    if(isAdj(lr,lc,r,c)){
+      // Check if adding would exceed target
+      const newSum=path.reduce((s,[pr,pc])=>s+grid[pr][pc],0)+grid[r][c];
+      if(newSum>target){
+        // Shake cell briefly, don't add
+        const el=getEl(r,c);
+        el.classList.add('flash');
+        setTimeout(()=>el.classList.remove('flash'),300);
+        return;
+      }
+      path.push([r,c]);
+    }else{
+      // Non-adjacent: start fresh path from this cell
+      path=[[r,c]];
+    }
+  }
+  updateDisplay();
+  // Check for match
+  const sum=path.reduce((s,[pr,pc])=>s+grid[pr][pc],0);
+  if(sum===target)acceptPath();
+}
+
+function acceptPath(){
+  combos++;
+  $('combo-display').textContent=combos+' combo'+(combos!==1?'s':'');
+  // Score popup at last cell
+  const last=path[path.length-1];
+  const popup=document.createElement('div');
+  popup.className='popup';
+  popup.textContent='+1';
+  const cellEl=getEl(last[0],last[1]);
+  const wrapRect=$('grid').parentElement.getBoundingClientRect();
+  const cellRect=cellEl.getBoundingClientRect();
+  popup.style.left=(cellRect.left-wrapRect.left+cellRect.width/2)+'px';
+  popup.style.top=(cellRect.top-wrapRect.top)+'px';
+  document.querySelector('.grid-wrap').appendChild(popup);
+  setTimeout(()=>popup.remove(),1000);
+  // Flash all cells in path
+  for(const[r,c] of path)getEl(r,c).classList.add('flash');
+  // New grid + target
+  path=[];
+  grid=genGrid();
+  target=genTarget(grid);
+  $('target-num').textContent=target;
+  setTimeout(()=>{buildGrid();updateDisplay();},100);
+}
+
+// === Timer ===
+function updateTimer(){
+  if(!gameActive)return;
+  const elapsed=(Date.now()-startMs)/1000;
+  const remaining=Math.max(0,GAME_DURATION-elapsed);
+  $('timer-display').textContent=remaining.toFixed(1);
+  $('timer-fill').style.width=(remaining/GAME_DURATION*100)+'%';
+  const td=$('timer-display'),tf=$('timer-fill');
+  td.classList.remove('warning','critical');
+  tf.classList.remove('warning','critical');
+  if(remaining<=5){td.classList.add('critical');tf.classList.add('critical');}
+  else if(remaining<=10){td.classList.add('warning');tf.classList.add('warning');}
+  if(remaining<=0){endGame();return;}
+  frameReq=requestAnimationFrame(updateTimer);
+}
+
+// === Start / End ===
+function startGame(){
+  grid=genGrid();
+  target=genTarget(grid);
+  path=[];
+  combos=0;
+  gameActive=true;
+  startMs=Date.now();
+  $('target-num').textContent=target;
+  $('combo-display').textContent='0 combos';
+  $('timer-display').textContent=GAME_DURATION.toFixed(1);
+  $('timer-fill').style.width='100%';
+  buildGrid();
+  updateDisplay();
+  showScreen('game');
+  updateTimer();
+}
+
+function endGame(){
+  gameActive=false;
+  if(frameReq)cancelAnimationFrame(frameReq);
+  $('end-combos').textContent=combos;
+  // Check/update best
+  const best=parseInt(localStorage.getItem('sumpath2_best')||'0');
+  if(combos>best){
+    localStorage.setItem('sumpath2_best',String(combos));
+    $('new-best').textContent='NEW BEST!';
+  }else{
+    $('new-best').textContent='';
+  }
+  $('copied-msg').textContent='';
+  showScreen('end');
+  renderBest();
+}
+
+function renderBest(){
+  const best=parseInt(localStorage.getItem('sumpath2_best')||'0');
+  $('best-score').textContent=best>0?'Personal best: '+best+' combo'+(best!==1?'s':''):'';
+}
+
+// === Share ===
+function shareResult(){
+  const text='SumPath 2: '+combos+' combo'+(combos!==1?'s':'')+' in 30 seconds';
+  if(navigator.share)navigator.share({text}).catch(()=>{});
+  else if(navigator.clipboard)navigator.clipboard.writeText(text).then(()=>{$('copied-msg').textContent='Copied!';});
+}
+
+// === Events ===
+$('play-btn').addEventListener('click',startGame);
+$('play-again-btn').addEventListener('click',startGame);
+$('share-btn').addEventListener('click',shareResult);
+$('home-btn').addEventListener('click',()=>location.href='index.html');
+$('help-btn').addEventListener('click',()=>$('help-overlay').classList.add('active'));
+$('close-help').addEventListener('click',()=>$('help-overlay').classList.remove('active'));
+$('help-overlay').addEventListener('click',e=>{if(e.target.id==='help-overlay')$('help-overlay').classList.remove('active');});
+
+$('grid').addEventListener('pointerdown',e=>{
+  const cell=e.target.closest('.cell');
+  if(!cell)return;
+  e.preventDefault();
+  onCellTap(parseInt(cell.dataset.r),parseInt(cell.dataset.c));
+});
+
+window.addEventListener('resize',()=>{
+  if(screens.game.classList.contains('active')&&grid){buildGrid();updateDisplay();}
+});
+
+renderBest();
+</script>
+</body>
+</html>
