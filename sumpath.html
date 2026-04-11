@@ -84,6 +84,31 @@ body::before{content:'';position:fixed;inset:0;
 .game-footer{display:flex;justify-content:space-between;align-items:center;
   width:100%;margin-top:8px;}
 .attempt-text{font-family:var(--font-mono);font-size:12px;color:var(--text-dim);}
+.timer-display{font-family:var(--font-mono);font-size:36px;font-weight:700;color:var(--amber);
+  letter-spacing:2px;text-align:center;line-height:1;}
+.timer-label{font-family:var(--font-mono);font-size:10px;color:var(--text-dim);
+  text-align:center;letter-spacing:2px;margin-bottom:2px;text-transform:uppercase;}
+.help-btn{background:none;border:1px solid rgba(245,166,35,0.3);color:var(--amber);
+  padding:12px 32px;border-radius:10px;font-family:var(--font-sans);font-size:14px;
+  font-weight:600;cursor:pointer;margin-top:8px;}
+.help-btn:active{background:rgba(245,166,35,0.1);}
+.help-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);
+  z-index:200;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;}
+.help-overlay.active{display:flex;}
+.help-content{background:#0d0d1a;border:1px solid rgba(245,166,35,0.2);
+  border-radius:14px;padding:24px;max-width:480px;width:100%;color:var(--text);
+  font-family:var(--font-sans);font-size:14px;line-height:1.6;}
+.help-content h2{font-family:var(--font-mono);color:var(--amber);font-size:24px;
+  margin-bottom:8px;}
+.help-content h3{color:var(--amber);font-size:13px;margin-top:16px;margin-bottom:6px;
+  text-transform:uppercase;letter-spacing:1px;}
+.help-content p{margin-bottom:8px;color:#c0c0c0;}
+.help-content ul{list-style:none;padding-left:0;margin-bottom:8px;}
+.help-content li{padding-left:14px;position:relative;margin-bottom:4px;color:#c0c0c0;}
+.help-content li::before{content:'\2022';position:absolute;left:0;color:var(--amber);}
+.help-content .close-help{margin-top:20px;background:var(--amber);color:#0d0d0d;
+  border:none;padding:12px 28px;border-radius:10px;font-family:var(--font-sans);
+  font-size:14px;font-weight:700;cursor:pointer;width:100%;}
 .footer-btns{display:flex;gap:16px;}
 .subtle-btn{background:none;border:none;color:var(--text-dim);font-family:var(--font-sans);
   font-size:13px;cursor:pointer;padding:8px 4px;transition:color 0.2s;}
@@ -138,7 +163,49 @@ body::before{content:'';position:fixed;inset:0;
   <div class="tagline">One path. One sum. One chance a day.</div>
   <div class="puzzle-date" id="puzzle-date"></div>
   <button class="play-btn" id="play-btn">Play Today's Puzzle</button>
+  <button class="help-btn" id="help-btn">How to Play</button>
   <div id="title-result"></div>
+</div>
+
+<div class="help-overlay" id="help-overlay">
+  <div class="help-content">
+    <h2>How to Play SumPath</h2>
+    <p>Find a path through a 5&times;5 grid of numbers from the top-left corner to the bottom-right corner so the path's total equals the target sum.</p>
+
+    <h3>Movement</h3>
+    <ul>
+      <li>Tap cells to build your path one at a time</li>
+      <li>You can only move <b>right</b> or <b>down</b> &mdash; no diagonals, no left, no up</li>
+      <li>Start at the top-left cell, end at the bottom-right cell</li>
+      <li>Tap any cell already in your path to backtrack to that point</li>
+    </ul>
+
+    <h3>Goal</h3>
+    <ul>
+      <li>The sum of all numbers on your path must exactly equal the target shown above the grid</li>
+      <li>The running total updates as you go &mdash; it turns gold when it matches</li>
+      <li>When you reach the bottom-right cell, the game checks automatically</li>
+      <li>Wrong total? The path shakes and resets, and your attempt counter ticks up</li>
+    </ul>
+
+    <h3>Scoring</h3>
+    <ul>
+      <li><b>Time</b> is the primary measure &mdash; faster is better</li>
+      <li><b>Attempts</b> are secondary &mdash; fewer is better</li>
+      <li>Your daily streak grows when you solve each day's puzzle</li>
+      <li>The streak resets if you give up or skip a day</li>
+    </ul>
+
+    <h3>Tips</h3>
+    <ul>
+      <li>Think before you tap &mdash; the timer is always running</li>
+      <li>There's always at least one valid path; sometimes more than one</li>
+      <li>"Reset Path" clears your path without counting an attempt</li>
+      <li>"Give Up" reveals a solution but breaks your streak</li>
+    </ul>
+
+    <button class="close-help" id="close-help">Got it</button>
+  </div>
 </div>
 
 <!-- Game Screen -->
@@ -147,6 +214,8 @@ body::before{content:'';position:fixed;inset:0;
     <span class="game-title">SumPath</span>
     <span class="streak-badge" id="game-streak"></span>
   </div>
+  <div class="timer-label">Time</div>
+  <div class="timer-display" id="timer-display">0:00</div>
   <div class="target-area">
     <div class="target-label">Target</div>
     <div class="target-line"></div>
@@ -166,8 +235,9 @@ body::before{content:'';position:fixed;inset:0;
 <!-- Win Screen -->
 <div id="win-screen" class="screen">
   <div class="win-title">You got it!</div>
+  <div class="timer-label">Time</div>
+  <div class="timer-display" id="stat-time" style="font-size:56px;color:var(--amber);"></div>
   <div class="stats-card">
-    <div class="stat-row"><span class="stat-label">Solved in</span><span class="stat-value" id="stat-time"></span></div>
     <div class="stat-row"><span class="stat-label">Attempts</span><span class="stat-value" id="stat-attempts"></span></div>
     <div class="stat-row"><span class="stat-label">Streak</span><span class="stat-value" id="stat-streak"></span></div>
     <div class="stat-row"><span class="stat-label">Path length</span><span class="stat-value" id="stat-path"></span></div>
@@ -583,6 +653,7 @@ function startGame(){
 
   $('target-num').textContent=puzzle.target;
   $('attempt-text').textContent='Attempt 1';
+  $('timer-display').textContent='0:00';
 
   const streak=getStreak();
   $('game-streak').textContent=streak>0?'\uD83D\uDD25 '+streak:'';
@@ -592,8 +663,13 @@ function startGame(){
   updateGrid();
   showScreen('game');
 
-  // Timer (unused visually but tracked)
+  // Live timer
   if(timerInterval)clearInterval(timerInterval);
+  timerInterval=setInterval(()=>{
+    if(!gameActive)return;
+    const elapsed=Math.floor((Date.now()-startTime)/1000);
+    $('timer-display').textContent=formatTime(elapsed);
+  },1000);
 }
 
 // === Event Listeners ===
@@ -616,6 +692,9 @@ $('confirm-yes').addEventListener('click',()=>{
 $('share-btn').addEventListener('click',shareResult);
 $('win-home').addEventListener('click',()=>{renderTitle();showScreen('title');});
 $('giveup-home').addEventListener('click',()=>{renderTitle();showScreen('title');});
+$('help-btn').addEventListener('click',()=>$('help-overlay').classList.add('active'));
+$('close-help').addEventListener('click',()=>$('help-overlay').classList.remove('active'));
+$('help-overlay').addEventListener('click',e=>{if(e.target.id==='help-overlay')$('help-overlay').classList.remove('active');});
 
 // Grid click handler (delegated)
 $('grid').addEventListener('pointerdown',e=>{
