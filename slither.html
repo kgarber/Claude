@@ -38,6 +38,12 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
 .back-link{color:var(--text-dim);font-size:13px;text-decoration:none;
   font-family:var(--font-sans);}
 .loading-msg{font-size:13px;color:var(--text-dim);min-height:20px;}
+.par-line{font-family:var(--font-sans);font-size:12px;color:var(--text-dim);
+  display:flex;gap:14px;justify-content:center;}
+.par-line span{font-family:'IBM Plex Mono',monospace;}
+.par-line .tier-par{color:#888;}
+.par-line .tier-great{color:#a8c8a8;}
+.par-line .tier-genius{color:var(--lime);}
 
 /* Game */
 #game-screen{gap:8px;padding-top:12px;}
@@ -46,10 +52,38 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
 .score-display{font-family:var(--font-display);font-size:22px;color:var(--lime);font-weight:700;}
 .words-count{font-size:11px;color:var(--text-dim);}
 .combo-badge{font-size:11px;color:var(--lime);font-weight:700;min-height:16px;}
+.par-indicator{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text-dim);
+  text-align:right;min-height:14px;}
+.par-indicator.hit{color:var(--lime);}
+
+/* Cross-board progress bars */
+.cross-bars{display:flex;gap:12px;width:100%;font-size:10px;
+  font-family:'IBM Plex Mono',monospace;color:var(--text-dim);}
+.cross-bar{flex:1;display:flex;align-items:center;gap:6px;}
+.cross-bar-label{white-space:nowrap;}
+.cross-bar-track{flex:1;height:4px;background:rgba(255,255,255,0.05);
+  border-radius:2px;overflow:hidden;}
+.cross-bar-fill{height:100%;background:var(--text-dim);
+  transition:width 0.3s,background 0.3s;border-radius:2px;}
+.cross-bar.complete .cross-bar-fill{background:var(--lime);box-shadow:0 0 8px var(--lime-glow);}
+.cross-bar.complete .cross-bar-label{color:var(--lime);}
+
+/* Score popup */
+.score-popup{position:absolute;pointer-events:none;z-index:50;
+  font-family:var(--font-display);font-size:22px;font-weight:700;
+  color:var(--lime);text-shadow:0 0 12px var(--lime-glow);
+  animation:popupFloat 1.2s ease-out forwards;}
+.score-popup .bonus{font-size:13px;color:#ffe066;display:block;margin-top:-4px;}
+@keyframes popupFloat{
+  0%{opacity:0;transform:translate(-50%,0) scale(0.8);}
+  15%{opacity:1;transform:translate(-50%,-8px) scale(1.1);}
+  100%{opacity:0;transform:translate(-50%,-40px) scale(1);}
+}
 .current-word{font-family:var(--font-display);font-size:28px;font-weight:700;
   min-height:40px;color:var(--lime);text-align:center;letter-spacing:2px;
   transition:color 0.15s;}
 .current-word.invalid{color:var(--red);}
+.current-word.valid-word{color:#7dff3e;text-shadow:0 0 10px rgba(125,255,62,0.4);}
 .word-hint{font-size:11px;color:var(--text-dim);min-height:16px;text-align:center;}
 
 /* Grid */
@@ -115,6 +149,11 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
   <div class="logo">Slither</div>
   <div class="tagline">Trace words. Chain them. Cover the board.</div>
   <div class="puzzle-date" id="puzzle-date"></div>
+  <div class="par-line">
+    <span class="tier-par">Par <span id="title-par">80</span></span>
+    <span class="tier-great">Great <span id="title-great">150</span></span>
+    <span class="tier-genius">Genius <span id="title-genius">250</span></span>
+  </div>
   <button class="play-btn" id="play-btn">Play Today's Puzzle</button>
   <div class="loading-msg" id="loading-msg"></div>
 </div>
@@ -124,12 +163,23 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
     <div class="left">
       <div class="score-display" id="score-display">0</div>
       <div class="words-count" id="words-count">0 words &middot; 0 cells</div>
+      <div class="par-indicator" id="par-indicator">Par 80</div>
     </div>
     <div class="combo-badge" id="combo-badge"></div>
     <div style="display:flex;gap:8px;">
       <button class="undo-btn" id="refresh-btn">New Grid</button>
       <button class="undo-btn" id="undo-btn" disabled>Undo</button>
       <button class="end-btn" id="end-btn">End Game</button>
+    </div>
+  </div>
+  <div class="cross-bars">
+    <div class="cross-bar" id="cross-lr">
+      <span class="cross-bar-label">L&rarr;R</span>
+      <div class="cross-bar-track"><div class="cross-bar-fill" id="cross-lr-fill"></div></div>
+    </div>
+    <div class="cross-bar" id="cross-tb">
+      <span class="cross-bar-label">T&rarr;B</span>
+      <div class="cross-bar-track"><div class="cross-bar-fill" id="cross-tb-fill"></div></div>
     </div>
   </div>
   <div class="current-word" id="current-word">&nbsp;</div>
@@ -301,6 +351,7 @@ function wordScore(len){
   if(len<=1)return 0;if(len===2)return 1;if(len===3)return 2;if(len===4)return 4;
   if(len===5)return 7;if(len===6)return 11;if(len===7)return 16;return 16+(len-7)*6;
 }
+const PAR_SCORE=80,GREAT_SCORE=150,GENIUS_SCORE=250;
 
 // === Game State ===
 let grid,used,doublePoints,headCell=null,tracePath=[],score=0,wordsFound=[],cellsUsed=0;
@@ -357,20 +408,42 @@ function updateGridDisplay(){
   for(const[r,c] of tracePath){getEl(r,c).classList.add('tracing');}
   // Current word display
   const letters=tracePath.map(([r,c])=>grid[r][c]).join('');
-  $('current-word').textContent=letters||'\u00a0';
+  const cw=$('current-word');
+  cw.textContent=letters||'\u00a0';
+  cw.classList.remove('invalid','valid-word');
   if(letters.length>=2&&dictionary){
     const lc=letters.toLowerCase();
-    const valid=dictionary.isWord(lc);
+    const valid=dictionary.isWord(lc)&&!wordsFound.some(w=>w.word===lc);
     const prefix=dictionary.isPrefix(lc);
-    $('current-word').classList.toggle('invalid',!valid&&!prefix);
-  }else{
-    $('current-word').classList.remove('invalid');
+    if(valid)cw.classList.add('valid-word');
+    else if(!prefix)cw.classList.add('invalid');
   }
 }
 function updateUI(){
   $('score-display').textContent=score;
   $('words-count').textContent=wordsFound.length+' word'+(wordsFound.length!==1?'s':'')+' \u00b7 '+cellsUsed+'/100 cells';
   $('combo-badge').textContent=comboActive?'CHAIN x1.5':'';
+  // Par indicator — show next tier to beat
+  const parEl=$('par-indicator');
+  if(score>=GENIUS_SCORE){parEl.textContent='GENIUS!';parEl.className='par-indicator hit';}
+  else if(score>=GREAT_SCORE){parEl.textContent='Great! Aim '+GENIUS_SCORE;parEl.className='par-indicator hit';}
+  else if(score>=PAR_SCORE){parEl.textContent='Par! Aim '+GREAT_SCORE;parEl.className='par-indicator hit';}
+  else{parEl.textContent='Par '+PAR_SCORE;parEl.className='par-indicator';}
+  // Cross-board progress bars
+  const cols=new Set(),rows=new Set();
+  if(used){
+    for(let r=0;r<N;r++)for(let c=0;c<N;c++){if(used[r][c]){cols.add(c);rows.add(r);}}
+  }
+  // Count contiguous span (min col to max col, min row to max row)
+  let lrSpan=0,tbSpan=0;
+  if(cols.size>0){lrSpan=Math.max(...cols)-Math.min(...cols)+1;}
+  if(rows.size>0){tbSpan=Math.max(...rows)-Math.min(...rows)+1;}
+  $('cross-lr-fill').style.width=(lrSpan/N*100)+'%';
+  $('cross-tb-fill').style.width=(tbSpan/N*100)+'%';
+  $('cross-lr').classList.toggle('complete',cols.has(0)&&cols.has(N-1));
+  $('cross-tb').classList.toggle('complete',rows.has(0)&&rows.has(N-1));
+  $('cross-lr').querySelector('.cross-bar-label').textContent='L\u2192R '+lrSpan+'/'+N;
+  $('cross-tb').querySelector('.cross-bar-label').textContent='T\u2192B '+tbSpan+'/'+N;
   if(!pickingStart&&tracePath.length===0){
     $('word-hint').textContent='Drag from the glowing cell to trace a word';
   }
@@ -467,7 +540,8 @@ function acceptWord(word){
   $('undo-btn').disabled=false;
 
   const len=word.length;
-  let pts=wordScore(len);
+  const basePts=wordScore(len);
+  let pts=basePts;
   // Double-point bonus: count double cells in trace, add bonus
   let doubleCount=0;
   for(const[r,c] of tracePath){if(doublePoints&&doublePoints[r][c]&&!used[r][c])doubleCount++;}
@@ -475,10 +549,27 @@ function acceptWord(word){
 
   // Combo
   if(len>=5){comboCount++;if(comboCount>=3)comboActive=true;}else{comboCount=0;comboActive=false;}
-  if(comboActive&&comboCount>3)pts=Math.round(pts*1.5);
+  const comboApplied=comboActive&&comboCount>3;
+  if(comboApplied)pts=Math.round(pts*1.5);
 
   // Animate
   for(const[r,c] of tracePath)getEl(r,c).classList.add('accepted');
+
+  // Floating score popup at last cell
+  const lastC=tracePath[tracePath.length-1];
+  const popup=document.createElement('div');
+  popup.className='score-popup';
+  let bonusLabel='';
+  if(doubleCount>0)bonusLabel+=(doubleCount+1)+'x';
+  if(comboApplied)bonusLabel+=(bonusLabel?' +':'')+'CHAIN';
+  popup.innerHTML='+'+pts+(bonusLabel?'<span class="bonus">'+bonusLabel+'</span>':'');
+  const cellEl=getEl(lastC[0],lastC[1]);
+  const gridRect=$('grid').getBoundingClientRect();
+  const cellRect=cellEl.getBoundingClientRect();
+  popup.style.left=(cellRect.left-gridRect.left+cellRect.width/2)+'px';
+  popup.style.top=(cellRect.top-gridRect.top)+'px';
+  $('grid-wrap').appendChild(popup);
+  setTimeout(()=>popup.remove(),1250);
 
   // Mark used (only count newly consumed cells)
   let newCells=0;
@@ -612,7 +703,12 @@ function endGame(manual){
   if(crossTB)crossBonus+=cellsUsed;
   score+=crossBonus;
   const best=wordsFound.reduce((b,w)=>w.len>b.len?w:b,{word:'-',len:0});
-  $('end-title').textContent=manual?'Game Over':'No more moves!';
+  // Tier title
+  let tier='';
+  if(score>=GENIUS_SCORE)tier='GENIUS';
+  else if(score>=GREAT_SCORE)tier='GREAT';
+  else if(score>=PAR_SCORE)tier='PAR';
+  $('end-title').textContent=tier||(manual?'Game Over':'No more moves!');
   let bonusText='';
   if(coverageBonus>0)bonusText+=' +'+coverageBonus+' coverage';
   if(crossLR)bonusText+=' +'+cellsUsed+' L\u2192R';
