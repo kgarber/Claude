@@ -429,21 +429,14 @@ function updateUI(){
   else if(score>=GREAT_SCORE){parEl.textContent='Great! Aim '+GENIUS_SCORE;parEl.className='par-indicator hit';}
   else if(score>=PAR_SCORE){parEl.textContent='Par! Aim '+GREAT_SCORE;parEl.className='par-indicator hit';}
   else{parEl.textContent='Par '+PAR_SCORE;parEl.className='par-indicator';}
-  // Cross-board progress bars
-  const cols=new Set(),rows=new Set();
-  if(used){
-    for(let r=0;r<N;r++)for(let c=0;c<N;c++){if(used[r][c]){cols.add(c);rows.add(r);}}
-  }
-  // Count contiguous span (min col to max col, min row to max row)
-  let lrSpan=0,tbSpan=0;
-  if(cols.size>0){lrSpan=Math.max(...cols)-Math.min(...cols)+1;}
-  if(rows.size>0){tbSpan=Math.max(...rows)-Math.min(...rows)+1;}
-  $('cross-lr-fill').style.width=(lrSpan/N*100)+'%';
-  $('cross-tb-fill').style.width=(tbSpan/N*100)+'%';
-  $('cross-lr').classList.toggle('complete',cols.has(0)&&cols.has(N-1));
-  $('cross-tb').classList.toggle('complete',rows.has(0)&&rows.has(N-1));
-  $('cross-lr').querySelector('.cross-bar-label').textContent='L\u2192R '+lrSpan+'/'+N;
-  $('cross-tb').querySelector('.cross-bar-label').textContent='T\u2192B '+tbSpan+'/'+N;
+  // Cross-board progress bars (based on connected components)
+  const conn=analyzeConnectivity();
+  $('cross-lr-fill').style.width=(conn.lrSpan/N*100)+'%';
+  $('cross-tb-fill').style.width=(conn.tbSpan/N*100)+'%';
+  $('cross-lr').classList.toggle('complete',conn.lrComplete);
+  $('cross-tb').classList.toggle('complete',conn.tbComplete);
+  $('cross-lr').querySelector('.cross-bar-label').textContent='L\u2192R '+conn.lrSpan+'/'+N;
+  $('cross-tb').querySelector('.cross-bar-label').textContent='T\u2192B '+conn.tbSpan+'/'+N;
   if(!pickingStart&&tracePath.length===0){
     $('word-hint').textContent='Drag from the glowing cell to trace a word';
   }
@@ -454,6 +447,43 @@ function updateUI(){
 // === Adjacency ===
 function isAdj(r1,c1,r2,c2){return Math.abs(r1-r2)<=1&&Math.abs(c1-c2)<=1&&!(r1===r2&&c1===c2);}
 function isEdge(r,c){return r===0||r===N-1||c===0||c===N-1;}
+
+// === Connected Component Analysis ===
+// Returns {lrSpan,tbSpan,lrComplete,tbComplete,bestLRSize,bestTBSize}
+// where lrComplete means a single connected component touches both col 0 and col N-1
+function analyzeConnectivity(){
+  if(!used)return{lrSpan:0,tbSpan:0,lrComplete:false,tbComplete:false,bestLRSize:0,bestTBSize:0};
+  const visited=Array.from({length:N},()=>Array(N).fill(false));
+  let bestLRSpan=0,bestTBSpan=0,lrComplete=false,tbComplete=false,bestLRSize=0,bestTBSize=0;
+  for(let r=0;r<N;r++){
+    for(let c=0;c<N;c++){
+      if(!used[r][c]||visited[r][c])continue;
+      // Flood fill (8-directional)
+      const stack=[[r,c]];
+      let minC=N,maxC=-1,minR=N,maxR=-1,size=0;
+      while(stack.length>0){
+        const[cr,cc]=stack.pop();
+        if(visited[cr][cc])continue;
+        visited[cr][cc]=true;
+        size++;
+        if(cc<minC)minC=cc;if(cc>maxC)maxC=cc;
+        if(cr<minR)minR=cr;if(cr>maxR)maxR=cr;
+        for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){
+          if(dr===0&&dc===0)continue;
+          const nr=cr+dr,nc=cc+dc;
+          if(nr<0||nr>=N||nc<0||nc>=N)continue;
+          if(used[nr][nc]&&!visited[nr][nc])stack.push([nr,nc]);
+        }
+      }
+      const lrSpan=maxC-minC+1,tbSpan=maxR-minR+1;
+      if(lrSpan>bestLRSpan){bestLRSpan=lrSpan;bestLRSize=size;}
+      if(tbSpan>bestTBSpan){bestTBSpan=tbSpan;bestTBSize=size;}
+      if(minC===0&&maxC===N-1){lrComplete=true;bestLRSize=size;}
+      if(minR===0&&maxR===N-1){tbComplete=true;bestTBSize=size;}
+    }
+  }
+  return{lrSpan:bestLRSpan,tbSpan:bestTBSpan,lrComplete,tbComplete,bestLRSize,bestTBSize};
+}
 
 // === Tracing Logic ===
 let isTracing=false;
@@ -693,14 +723,11 @@ function endGame(manual){
   // Coverage bonus
   const coverageBonus=Math.floor(cellsUsed/5);
   score+=coverageBonus;
-  // Cross-board bonus: check if used cells span left-to-right or top-to-bottom
-  const usedCols=new Set(),usedRows=new Set();
-  for(let r=0;r<N;r++)for(let c=0;c<N;c++){if(used[r][c]){usedCols.add(c);usedRows.add(r);}}
+  // Cross-board bonus: requires a connected chain from edge to edge
+  const conn=analyzeConnectivity();
   let crossBonus=0;
-  const crossLR=usedCols.has(0)&&usedCols.has(N-1);
-  const crossTB=usedRows.has(0)&&usedRows.has(N-1);
-  if(crossLR)crossBonus+=cellsUsed;
-  if(crossTB)crossBonus+=cellsUsed;
+  if(conn.lrComplete)crossBonus+=conn.bestLRSize;
+  if(conn.tbComplete)crossBonus+=conn.bestTBSize;
   score+=crossBonus;
   const best=wordsFound.reduce((b,w)=>w.len>b.len?w:b,{word:'-',len:0});
   // Tier title
@@ -711,8 +738,8 @@ function endGame(manual){
   $('end-title').textContent=tier||(manual?'Game Over':'No more moves!');
   let bonusText='';
   if(coverageBonus>0)bonusText+=' +'+coverageBonus+' coverage';
-  if(crossLR)bonusText+=' +'+cellsUsed+' L\u2192R';
-  if(crossTB)bonusText+=' +'+cellsUsed+' T\u2192B';
+  if(conn.lrComplete)bonusText+=' +'+conn.bestLRSize+' L\u2192R';
+  if(conn.tbComplete)bonusText+=' +'+conn.bestTBSize+' T\u2192B';
   $('end-score').textContent=score+(bonusText?' (incl'+bonusText+')':'');
   $('end-words-count').textContent=wordsFound.length;
   $('end-cells').textContent=cellsUsed+'/100';
