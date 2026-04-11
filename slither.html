@@ -140,6 +140,29 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
 .countdown-time{font-size:24px;color:var(--text);font-weight:600;}
 .home-link{color:var(--text-dim);font-size:13px;cursor:pointer;background:none;border:none;
   font-family:var(--font-sans);padding:8px;}
+
+/* Help button + modal */
+.help-btn{background:none;border:1px solid rgba(168,255,62,0.3);color:var(--lime);
+  padding:8px 16px;border-radius:8px;font-family:var(--font-sans);font-size:13px;
+  font-weight:600;cursor:pointer;}
+.help-btn:active{background:rgba(168,255,62,0.1);}
+.help-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);
+  z-index:200;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;}
+.help-overlay.active{display:flex;}
+.help-content{background:#0e1a13;border:1px solid rgba(168,255,62,0.2);
+  border-radius:14px;padding:24px;max-width:480px;width:100%;color:var(--text);
+  font-family:var(--font-sans);font-size:14px;line-height:1.6;}
+.help-content h2{font-family:var(--font-display);color:var(--lime);font-size:24px;
+  margin-bottom:8px;}
+.help-content h3{color:var(--lime);font-size:14px;margin-top:16px;margin-bottom:6px;
+  text-transform:uppercase;letter-spacing:1px;font-family:var(--font-sans);}
+.help-content p{margin-bottom:8px;color:#c0c8c0;}
+.help-content ul{list-style:none;padding-left:0;margin-bottom:8px;}
+.help-content li{padding-left:14px;position:relative;margin-bottom:4px;color:#c0c8c0;}
+.help-content li::before{content:'\2022';position:absolute;left:0;color:var(--lime);}
+.help-content .close-help{margin-top:20px;background:var(--lime);color:#0e1a13;
+  border:none;padding:12px 28px;border-radius:10px;font-family:var(--font-sans);
+  font-size:14px;font-weight:700;cursor:pointer;width:100%;}
 </style>
 </head>
 <body>
@@ -155,7 +178,59 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
     <span class="tier-genius">Genius <span id="title-genius">250</span></span>
   </div>
   <button class="play-btn" id="play-btn">Play Today's Puzzle</button>
+  <button class="help-btn" id="help-btn">How to Play</button>
   <div class="loading-msg" id="loading-msg"></div>
+</div>
+
+<div class="help-overlay" id="help-overlay">
+  <div class="help-content">
+    <h2>How to Play Slither</h2>
+    <p>Build a snake of words on a 10&times;10 letter grid. Trace as many words as you can and try to span the board edge to edge for big bonus points.</p>
+
+    <h3>Tracing Words</h3>
+    <ul>
+      <li>Press and drag your finger across adjacent letters to spell a word</li>
+      <li>Move in any of 8 directions (up, down, left, right, diagonals)</li>
+      <li>Release to submit the word; valid words are accepted</li>
+      <li>Words must be at least 2 letters long</li>
+      <li>The current word turns green when it's a valid, unused word</li>
+    </ul>
+
+    <h3>Starting a Word</h3>
+    <ul>
+      <li>Tap any unused edge cell to start a new word from there</li>
+      <li>Tap any used cell (faded) that has unused neighbors to start a new word from that letter</li>
+      <li>The "head" cell (the last letter of your previous word) glows brightest</li>
+    </ul>
+
+    <h3>Scoring</h3>
+    <ul>
+      <li>2 letters = 1 pt &middot; 3 letters = 2 pts &middot; 4 letters = 4 pts</li>
+      <li>5 letters = 7 pts &middot; 6 letters = 11 pts &middot; 7 letters = 16 pts</li>
+      <li>8+ letters = 16 + 6 per extra letter</li>
+      <li><b>Gold cells (2x):</b> each gold cell in a word doubles that word's score</li>
+      <li><b>Chain bonus:</b> 3 words of 5+ letters in a row gives x1.5 on the next word</li>
+      <li><b>Coverage bonus:</b> +1 point per 5 cells used at game end</li>
+      <li><b>Cross-board bonus:</b> if your connected snake reaches both opposite edges (left&rarr;right or top&rarr;bottom), you get bonus points equal to the snake's size</li>
+    </ul>
+
+    <h3>Goals</h3>
+    <ul>
+      <li><b>Par 80:</b> a solid game</li>
+      <li><b>Great 150:</b> excellent play</li>
+      <li><b>Genius 250:</b> mastery</li>
+    </ul>
+
+    <h3>Tips</h3>
+    <ul>
+      <li>Use the L&rarr;R and T&rarr;B bars to track edge-to-edge progress</li>
+      <li>Tap "Undo" to reverse your last word if you released early</li>
+      <li>"New Grid" gives a fresh letter layout if you're stuck</li>
+      <li>The game ends automatically if no valid moves remain</li>
+    </ul>
+
+    <button class="close-help" id="close-help">Got it</button>
+  </div>
 </div>
 
 <div id="game-screen" class="screen">
@@ -533,10 +608,6 @@ function continueTrace(r,c){
   if(used[r][c])return;
   const[lr,lc]=tracePath[tracePath.length-1];
   if(!isAdj(lr,lc,r,c))return;
-  // If this is the second cell of a trace started from the head, block straight-ahead direction
-  if(tracePath.length===1&&headCell&&lr===headCell[0]&&lc===headCell[1]&&lastStepDir){
-    if(r-lr===lastStepDir[0]&&c-lc===lastStepDir[1])return;
-  }
   // Check not already in trace
   if(tracePath.some(([pr,pc])=>pr===r&&pc===c))return;
   tracePath.push([r,c]);
@@ -825,6 +896,9 @@ $('undo-btn').addEventListener('click',undoLastWord);
 $('refresh-btn').addEventListener('click',refreshGrid);
 $('share-btn').addEventListener('click',shareResult);
 $('home-btn').addEventListener('click',()=>location.href='index.html');
+$('help-btn').addEventListener('click',()=>$('help-overlay').classList.add('active'));
+$('close-help').addEventListener('click',()=>$('help-overlay').classList.remove('active'));
+$('help-overlay').addEventListener('click',e=>{if(e.target.id==='help-overlay')$('help-overlay').classList.remove('active');});
 
 window.addEventListener('resize',()=>{
   if(screens.game.classList.contains('active')&&grid){buildGrid();updateGridDisplay();}
