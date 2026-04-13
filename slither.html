@@ -630,6 +630,16 @@ function analyzeConnectivity(){
 let isTracing=false;
 function startTrace(r,c){
   if(!gameActive||!dictionary||processing)return;
+  // Tap-to-extend: if not tracing and there's a head, tapping an adjacent unused cell extends
+  if(!isTracing&&headCell&&!used[r][c]&&isAdj(r,c,headCell[0],headCell[1])){
+    // Start a mini trace from head + this cell
+    tracePath=[[headCell[0],headCell[1]],[r,c]];
+    isTracing=true;
+    pickingStart=false;
+    updateGridDisplay();
+    $('word-hint').textContent='';
+    return;
+  }
   // Start from any used cell — word begins with that letter
   if(used[r][c]){
     // Must have at least one unused neighbor to trace into
@@ -954,22 +964,104 @@ function cellFromEvent(e){
   if(!el||!el.classList.contains('gcell'))return null;
   return[parseInt(el.dataset.r),parseInt(el.dataset.c)];
 }
+// Snap-to-nearest: find the closest valid adjacent unused cell to the finger
+function snapToNearest(touchX,touchY){
+  if(tracePath.length===0)return null;
+  const[lr,lc]=tracePath[tracePath.length-1];
+  let best=null,bestDist=Infinity;
+  for(let dr=-1;dr<=1;dr++){
+    for(let dc=-1;dc<=1;dc++){
+      if(dr===0&&dc===0)continue;
+      const nr=lr+dr,nc=lc+dc;
+      if(nr<0||nr>=N||nc<0||nc>=N)continue;
+      if(used[nr][nc])continue;
+      if(tracePath.some(([pr,pc])=>pr===nr&&pc===nc))continue;
+      const el=getEl(nr,nc);
+      if(!el)continue;
+      const rect=el.getBoundingClientRect();
+      const cx=rect.left+rect.width/2,cy=rect.top+rect.height/2;
+      const dist=Math.hypot(touchX-cx,touchY-cy);
+      if(dist<bestDist){bestDist=dist;best=[nr,nc];}
+    }
+  }
+  // Only snap if finger is within reasonable range (2x cell size)
+  const cs=cellSize();
+  if(best&&bestDist<cs*2)return best;
+  return null;
+}
+let lastPointerPos={x:0,y:0},pointerMoved=false;
 const gw=$('grid');
 gw.addEventListener('pointerdown',e=>{
   e.preventDefault();
+  lastPointerPos={x:e.clientX,y:e.clientY};
+  pointerMoved=false;
   const pos=cellFromEvent(e);
   if(pos)startTrace(pos[0],pos[1]);
 });
 gw.addEventListener('pointermove',e=>{
   e.preventDefault();
+  pointerMoved=true;
+  if(!isTracing)return;
   const pos=cellFromEvent(e);
-  if(pos)continueTrace(pos[0],pos[1]);
+  if(pos){
+    // If cell is adjacent, use it directly
+    if(tracePath.length>0){
+      const[lr,lc]=tracePath[tracePath.length-1];
+      if(isAdj(lr,lc,pos[0],pos[1])||tracePath.some(([pr,pc])=>pr===pos[0]&&pc===pos[1])){
+        continueTrace(pos[0],pos[1]);
+        return;
+      }
+    }
+    // Otherwise try snapping to nearest valid
+    const touch=e.touches?e.touches[0]:e;
+    const snapped=snapToNearest(touch.clientX,touch.clientY);
+    if(snapped)continueTrace(snapped[0],snapped[1]);
+  }else{
+    // Finger between cells — snap to nearest valid neighbor
+    const touch=e.touches?e.touches[0]:e;
+    const snapped=snapToNearest(touch.clientX,touch.clientY);
+    if(snapped)continueTrace(snapped[0],snapped[1]);
+  }
 });
-gw.addEventListener('pointerup',e=>{e.preventDefault();endTrace();});
+gw.addEventListener('pointerup',e=>{
+  e.preventDefault();
+  // If barely moved, treat as tap-to-extend
+  if(!pointerMoved&&isTracing&&tracePath.length>=1){
+    // Already handled by pointerdown's startTrace
+  }
+  endTrace();
+});
 gw.addEventListener('pointercancel',e=>{e.preventDefault();endTrace();});
-// Touch fallbacks
-gw.addEventListener('touchstart',e=>{e.preventDefault();const pos=cellFromEvent(e);if(pos)startTrace(pos[0],pos[1]);},{passive:false});
-gw.addEventListener('touchmove',e=>{e.preventDefault();const pos=cellFromEvent(e);if(pos)continueTrace(pos[0],pos[1]);},{passive:false});
+// Touch fallbacks with snap support
+gw.addEventListener('touchstart',e=>{
+  e.preventDefault();
+  const touch=e.touches[0];
+  lastPointerPos={x:touch.clientX,y:touch.clientY};
+  pointerMoved=false;
+  const pos=cellFromEvent(e);
+  if(pos)startTrace(pos[0],pos[1]);
+},{passive:false});
+gw.addEventListener('touchmove',e=>{
+  e.preventDefault();
+  pointerMoved=true;
+  if(!isTracing)return;
+  const touch=e.touches[0];
+  const pos=cellFromEvent(e);
+  if(pos){
+    if(tracePath.length>0){
+      const[lr,lc]=tracePath[tracePath.length-1];
+      if(isAdj(lr,lc,pos[0],pos[1])||tracePath.some(([pr,pc])=>pr===pos[0]&&pc===pos[1])){
+        continueTrace(pos[0],pos[1]);
+        return;
+      }
+    }
+    const snapped=snapToNearest(touch.clientX,touch.clientY);
+    if(snapped)continueTrace(snapped[0],snapped[1]);
+  }else{
+    const snapped=snapToNearest(touch.clientX,touch.clientY);
+    if(snapped)continueTrace(snapped[0],snapped[1]);
+  }
+},{passive:false});
 gw.addEventListener('touchend',e=>{e.preventDefault();endTrace();},{passive:false});
 
 $('play-btn').addEventListener('click',startGame);
