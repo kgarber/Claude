@@ -117,10 +117,8 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
 .undo-btn{border-color:rgba(168,255,62,0.3);color:var(--lime);}
 .undo-btn:disabled{opacity:0.3;pointer-events:none;}
 .rotate-btn{border-color:rgba(168,255,62,0.3);color:var(--lime);font-size:14px;padding:8px 12px;}
-.grid.rotating{transition:transform 0.5s cubic-bezier(0.4,0,0.2,1),opacity 0.25s;
-  transform:rotate(90deg) scale(0.92);opacity:0.3;}
-.grid.rotating-in{transition:transform 0.4s cubic-bezier(0.4,0,0.2,1),opacity 0.3s;
-  transform:rotate(0deg) scale(1);opacity:1;}
+.grid.rotating{transition:transform 0.4s cubic-bezier(0.4,0,0.2,1),opacity 0.2s;
+  transform:rotate(90deg) scale(0.92);opacity:0;}
 .gcell.double{background:linear-gradient(135deg,#f5eedc 60%,#ffe066 100%);
   box-shadow:0 1px 3px rgba(0,0,0,0.3),inset 0 0 0 1.5px rgba(245,166,35,0.5);}
 .gcell.double::after{content:'2x';position:absolute;top:1px;right:3px;
@@ -899,10 +897,13 @@ function rotateGrid(){
     rotationCount=(rotationCount+1)%4;
     buildGrid();
     updateGridDisplay();
+    // Remove rotating class with no transition so it snaps to 0 instantly
+    g.style.transition='none';
     g.classList.remove('rotating');
-    g.classList.add('rotating-in');
-    setTimeout(()=>g.classList.remove('rotating-in'),400);
-  },500);
+    // Force reflow then restore transition
+    void g.offsetHeight;
+    g.style.transition='';
+  },400);
 }
 
 // === Events ===
