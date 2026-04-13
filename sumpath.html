@@ -173,11 +173,29 @@ body::before{content:'';position:fixed;inset:0;
     <p>Find a path through a 5&times;5 grid of numbers from the top-left corner to the bottom-right corner so the path's total equals the target sum.</p>
 
     <h3>Movement</h3>
+    <div style="display:flex;gap:16px;align-items:flex-start;margin:12px 0;">
+      <div style="display:grid;grid-template-columns:repeat(4,32px);gap:3px;flex-shrink:0;">
+        <div style="width:32px;height:32px;border-radius:6px;background:var(--amber);color:#0d0d0d;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;">3</div>
+        <div style="width:32px;height:32px;border-radius:6px;background:var(--amber);color:#0d0d0d;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;">7</div>
+        <div style="width:32px;height:32px;border-radius:6px;background:#1a1a2e;color:#666;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;">2</div>
+        <div style="width:32px;height:32px;border-radius:6px;background:#1a1a2e;color:#666;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;">5</div>
+        <div style="width:32px;height:32px;border-radius:6px;background:#1a1a2e;color:#666;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;">4</div>
+        <div style="width:32px;height:32px;border-radius:6px;background:var(--amber);color:#0d0d0d;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;">1</div>
+        <div style="width:32px;height:32px;border-radius:6px;background:var(--amber);color:#0d0d0d;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;">9</div>
+        <div style="width:32px;height:32px;border-radius:6px;background:#1a1a2e;color:#666;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;">6</div>
+        <div style="width:32px;height:32px;border-radius:6px;background:#1a1a2e;color:#666;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;">8</div>
+        <div style="width:32px;height:32px;border-radius:6px;background:#1a1a2e;color:#666;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;">2</div>
+        <div style="width:32px;height:32px;border-radius:6px;background:#1a1a2e;color:#666;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;">5</div>
+        <div style="width:32px;height:32px;border-radius:6px;background:var(--amber);color:#0d0d0d;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;">4</div>
+      </div>
+      <div style="font-size:13px;color:#c0c0c0;line-height:1.5;">
+        <div style="margin-bottom:6px;"><b style="color:var(--amber);">3 + 7 + 1 + 9 + 4 = 24</b></div>
+        Move only <b>right</b> or <b>down</b>. Start top-left, end bottom-right. The gold path shows one valid route.
+      </div>
+    </div>
     <ul>
       <li>Tap cells to build your path one at a time</li>
-      <li>You can only move <b>right</b> or <b>down</b> &mdash; no diagonals, no left, no up</li>
-      <li>Start at the top-left cell, end at the bottom-right cell</li>
-      <li>Tap any cell already in your path to backtrack to that point</li>
+      <li>Tap any cell already in your path to backtrack</li>
     </ul>
 
     <h3>Goal</h3>
@@ -711,6 +729,9 @@ window.addEventListener('resize',()=>{
     buildGrid($('grid'),puzzle.grid,cs);
     updateGrid();
   }
+});
+window.addEventListener('beforeunload',e=>{
+  if(gameActive){e.preventDefault();e.returnValue='';}
 });
 
 // === Init ===

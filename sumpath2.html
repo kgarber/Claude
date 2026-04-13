@@ -155,15 +155,31 @@ body::before{content:'';position:fixed;inset:0;
 <div class="help-overlay" id="help-overlay">
   <div class="help-content">
     <h2>How to Play SumPath 2</h2>
-    <p>Score as many paths as you can in 30 seconds. Each completed path gives you a new target to chase.</p>
+    <p>Score as many paths as you can before time runs out. Each completed path gives you a new target and <b>+10 seconds</b>.</p>
 
     <h3>Movement</h3>
+    <div style="display:flex;gap:16px;align-items:flex-start;margin:12px 0;">
+      <div style="display:grid;grid-template-columns:repeat(3,36px);gap:4px;flex-shrink:0;">
+        <div style="width:36px;height:36px;border-radius:8px;background:var(--cyan);color:#0d0d0d;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;">3</div>
+        <div style="width:36px;height:36px;border-radius:8px;background:#1a1a2e;color:#e0e0e0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;">8</div>
+        <div style="width:36px;height:36px;border-radius:8px;background:#1a1a2e;color:#e0e0e0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;">2</div>
+        <div style="width:36px;height:36px;border-radius:8px;background:var(--cyan);color:#0d0d0d;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;">5</div>
+        <div style="width:36px;height:36px;border-radius:8px;background:var(--cyan);color:#0d0d0d;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;">4</div>
+        <div style="width:36px;height:36px;border-radius:8px;background:#1a1a2e;color:#e0e0e0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;">7</div>
+        <div style="width:36px;height:36px;border-radius:8px;background:#1a1a2e;color:#e0e0e0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;">1</div>
+        <div style="width:36px;height:36px;border-radius:8px;background:#1a1a2e;color:#e0e0e0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;">6</div>
+        <div style="width:36px;height:36px;border-radius:8px;background:var(--cyan);color:#0d0d0d;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;">9</div>
+      </div>
+      <div style="font-size:13px;color:#c0c0c0;line-height:1.5;">
+        <div style="margin-bottom:4px;"><b style="color:var(--cyan);">Target: 21</b></div>
+        <div style="margin-bottom:6px;"><b style="color:var(--cyan);">3 + 5 + 4 + 9 = 21</b></div>
+        Start anywhere. Move up, down, left, or right. When your sum hits the target, it auto-accepts.
+      </div>
+    </div>
     <ul>
-      <li>Tap any cell to start a new path &mdash; start from anywhere</li>
-      <li>Move in any of 4 directions: up, down, left, or right</li>
-      <li>Each new cell must be adjacent to the last one</li>
-      <li>Tap a cell already in your path to backtrack to that point</li>
-      <li>Tap a non-adjacent cell to reset and start a fresh path</li>
+      <li>Tap a cell already in your path to backtrack</li>
+      <li>Tap a non-adjacent cell to start a fresh path from there</li>
+      <li>If adding a cell would overshoot, it flashes and is blocked</li>
     </ul>
 
     <h3>Scoring</h3>
@@ -450,6 +466,9 @@ $('grid').addEventListener('pointerdown',e=>{
   onCellTap(parseInt(cell.dataset.r),parseInt(cell.dataset.c));
 });
 
+window.addEventListener('beforeunload',e=>{
+  if(gameActive){e.preventDefault();e.returnValue='';}
+});
 window.addEventListener('resize',()=>{
   if(screens.game.classList.contains('active')&&grid){buildGrid();updateDisplay();}
 });
