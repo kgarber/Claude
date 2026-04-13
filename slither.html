@@ -84,13 +84,16 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
   transition:color 0.15s;}
 .current-word.invalid{color:var(--red);}
 .current-word.valid-word{color:#7dff3e;text-shadow:0 0 10px rgba(125,255,62,0.4);}
-.submit-word{display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
-  background:var(--lime);color:#0e1a13;border:none;z-index:50;
-  padding:12px 40px;border-radius:10px;font-family:var(--font-sans);font-size:16px;
-  font-weight:700;cursor:pointer;box-shadow:0 0 20px var(--lime-glow);
-  animation:fadeIn 0.15s ease;}
-.submit-word.visible{display:block;}
-@keyframes fadeIn{from{opacity:0;transform:scale(0.9)}to{opacity:1;transform:scale(1)}}
+.bottom-bar{position:fixed;bottom:0;left:0;right:0;z-index:50;
+  display:none;padding:12px 16px 20px;gap:10px;justify-content:center;
+  background:linear-gradient(transparent,rgba(14,26,19,0.95) 30%);}
+.bottom-bar.visible{display:flex;}
+.bottom-bar button{padding:12px 0;border-radius:10px;font-family:var(--font-sans);
+  font-size:14px;font-weight:700;cursor:pointer;border:none;flex:1;max-width:130px;}
+.bottom-bar button:disabled{opacity:0.3;pointer-events:none;}
+.btn-back{background:none;border:1px solid rgba(255,255,255,0.15) !important;color:var(--text-dim);}
+.btn-submit{background:var(--lime);color:#0e1a13;box-shadow:0 0 15px var(--lime-glow);}
+.btn-undo-word{background:none;border:1px solid rgba(168,255,62,0.3) !important;color:var(--lime);}
 .word-hint{font-size:11px;color:var(--text-dim);min-height:16px;text-align:center;}
 
 /* Grid */
@@ -295,7 +298,6 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
     <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
       <button class="undo-btn rotate-btn" id="rotate-btn" title="Rotate view">&#8635;</button>
       <button class="undo-btn" id="refresh-btn">New Grid</button>
-      <button class="undo-btn" id="undo-btn" disabled>Undo</button>
       <button class="end-btn" id="end-btn">End</button>
     </div>
   </div>
@@ -316,7 +318,12 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
   </div>
   <div class="word-list" id="word-list"></div>
 </div>
-<button class="submit-word" id="submit-btn">Submit Word</button>
+
+<div class="bottom-bar" id="bottom-bar">
+  <button class="btn-back" id="back-btn" disabled>&larr; Back</button>
+  <button class="btn-submit" id="submit-btn" disabled>Submit</button>
+  <button class="btn-undo-word" id="undo-btn" disabled>Undo Word</button>
+</div>
 
 <div id="end-screen" class="screen">
   <div class="end-title" id="end-title">Game Over</div>
@@ -489,7 +496,7 @@ let comboCount=0,comboActive=false,gameActive=false,pickingStart=true,processing
 let undoStack=[],refreshCount=0,lastStepDir=null,rotationCount=0;
 const $=id=>document.getElementById(id);
 const screens={title:$('title-screen'),game:$('game-screen'),end:$('end-screen')};
-function showScreen(n){Object.values(screens).forEach(s=>s.classList.remove('active'));screens[n].classList.add('active');$('submit-btn').classList.remove('visible');}
+function showScreen(n){Object.values(screens).forEach(s=>s.classList.remove('active'));screens[n].classList.add('active');$('bottom-bar').classList.toggle('visible',n==='game');}
 
 // === Grid Rendering ===
 // Rotation mapping: actual (r,c) → visual (vr,vc) for display
@@ -568,8 +575,10 @@ function updateGridDisplay(){
     if(isValidWord)cw.classList.add('valid-word');
     else if(!prefix)cw.classList.add('invalid');
   }
-  // Show/hide submit button
-  $('submit-btn').classList.toggle('visible',isValidWord&&tracePath.length>=2);
+  // Bottom bar button states
+  $('submit-btn').disabled=!(isValidWord&&tracePath.length>=2);
+  $('back-btn').disabled=tracePath.length<2;
+  $('undo-btn').disabled=undoStack.length===0;
 }
 function updateUI(){
   $('score-display').textContent=score;
@@ -1090,7 +1099,7 @@ gw.addEventListener('touchend',e=>{
   endTrace();
 },{passive:false});
 
-// Submit button for tap mode
+// Bottom bar actions
 function submitTracedWord(){
   if(tracePath.length<2)return;
   const word=tracePath.map(([r,c])=>grid[r][c]).join('').toLowerCase();
@@ -1100,11 +1109,17 @@ function submitTracedWord(){
     rejectWord();
   }
 }
+function backOneLetter(){
+  if(tracePath.length<2)return;
+  tracePath.pop();
+  updateGridDisplay();
+}
 $('submit-btn').addEventListener('click',e=>{e.stopPropagation();submitTracedWord();});
+$('back-btn').addEventListener('click',e=>{e.stopPropagation();backOneLetter();});
+$('undo-btn').addEventListener('click',e=>{e.stopPropagation();undoLastWord();});
 
 $('play-btn').addEventListener('click',startGame);
 $('end-btn').addEventListener('click',()=>endGame(true));
-$('undo-btn').addEventListener('click',undoLastWord);
 $('refresh-btn').addEventListener('click',refreshGrid);
 $('rotate-btn').addEventListener('click',rotateGrid);
 $('share-btn').addEventListener('click',shareResult);
