@@ -84,9 +84,10 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
   transition:color 0.15s;}
 .current-word.invalid{color:var(--red);}
 .current-word.valid-word{color:#7dff3e;text-shadow:0 0 10px rgba(125,255,62,0.4);}
-.submit-word{display:none;background:var(--lime);color:#0e1a13;border:none;
-  padding:8px 24px;border-radius:8px;font-family:var(--font-sans);font-size:14px;
-  font-weight:700;cursor:pointer;margin-top:-4px;box-shadow:0 0 15px var(--lime-glow);
+.submit-word{display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  background:var(--lime);color:#0e1a13;border:none;z-index:50;
+  padding:12px 40px;border-radius:10px;font-family:var(--font-sans);font-size:16px;
+  font-weight:700;cursor:pointer;box-shadow:0 0 20px var(--lime-glow);
   animation:fadeIn 0.15s ease;}
 .submit-word.visible{display:block;}
 @keyframes fadeIn{from{opacity:0;transform:scale(0.9)}to{opacity:1;transform:scale(1)}}
@@ -309,13 +310,13 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
     </div>
   </div>
   <div class="current-word" id="current-word">&nbsp;</div>
-  <button class="submit-word" id="submit-btn">Submit Word</button>
   <div class="word-hint" id="word-hint">Tap a starting cell</div>
   <div class="grid-wrap" id="grid-wrap">
     <div class="grid" id="grid"></div>
   </div>
   <div class="word-list" id="word-list"></div>
 </div>
+<button class="submit-word" id="submit-btn">Submit Word</button>
 
 <div id="end-screen" class="screen">
   <div class="end-title" id="end-title">Game Over</div>
@@ -488,7 +489,7 @@ let comboCount=0,comboActive=false,gameActive=false,pickingStart=true,processing
 let undoStack=[],refreshCount=0,lastStepDir=null,rotationCount=0;
 const $=id=>document.getElementById(id);
 const screens={title:$('title-screen'),game:$('game-screen'),end:$('end-screen')};
-function showScreen(n){Object.values(screens).forEach(s=>s.classList.remove('active'));screens[n].classList.add('active');}
+function showScreen(n){Object.values(screens).forEach(s=>s.classList.remove('active'));screens[n].classList.add('active');$('submit-btn').classList.remove('visible');}
 
 // === Grid Rendering ===
 // Rotation mapping: actual (r,c) → visual (vr,vc) for display
