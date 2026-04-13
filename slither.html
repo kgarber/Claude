@@ -116,6 +116,11 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
 .end-btn:active,.undo-btn:active{background:rgba(255,255,255,0.05);}
 .undo-btn{border-color:rgba(168,255,62,0.3);color:var(--lime);}
 .undo-btn:disabled{opacity:0.3;pointer-events:none;}
+.rotate-btn{border-color:rgba(168,255,62,0.3);color:var(--lime);font-size:14px;padding:8px 12px;}
+.grid.rotating{transition:transform 0.5s cubic-bezier(0.4,0,0.2,1),opacity 0.25s;
+  transform:rotate(90deg) scale(0.92);opacity:0.3;}
+.grid.rotating-in{transition:transform 0.4s cubic-bezier(0.4,0,0.2,1),opacity 0.3s;
+  transform:rotate(0deg) scale(1);opacity:1;}
 .gcell.double{background:linear-gradient(135deg,#f5eedc 60%,#ffe066 100%);
   box-shadow:0 1px 3px rgba(0,0,0,0.3),inset 0 0 0 1.5px rgba(245,166,35,0.5);}
 .gcell.double::after{content:'2x';position:absolute;top:1px;right:3px;
@@ -241,10 +246,11 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
       <div class="par-indicator" id="par-indicator">Par 80</div>
     </div>
     <div class="combo-badge" id="combo-badge"></div>
-    <div style="display:flex;gap:8px;">
+    <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
+      <button class="undo-btn rotate-btn" id="rotate-btn" title="Rotate view">&#8635;</button>
       <button class="undo-btn" id="refresh-btn">New Grid</button>
       <button class="undo-btn" id="undo-btn" disabled>Undo</button>
-      <button class="end-btn" id="end-btn">End Game</button>
+      <button class="end-btn" id="end-btn">End</button>
     </div>
   </div>
   <div class="cross-bars">
@@ -433,12 +439,27 @@ const PAR_SCORE=80,GREAT_SCORE=150,GENIUS_SCORE=250;
 // === Game State ===
 let grid,used,doublePoints,headCell=null,tracePath=[],score=0,wordsFound=[],cellsUsed=0;
 let comboCount=0,comboActive=false,gameActive=false,pickingStart=true,processing=false;
-let undoStack=[],refreshCount=0,lastStepDir=null;
+let undoStack=[],refreshCount=0,lastStepDir=null,rotationCount=0;
 const $=id=>document.getElementById(id);
 const screens={title:$('title-screen'),game:$('game-screen'),end:$('end-screen')};
 function showScreen(n){Object.values(screens).forEach(s=>s.classList.remove('active'));screens[n].classList.add('active');}
 
 // === Grid Rendering ===
+// Rotation mapping: actual (r,c) → visual (vr,vc) for display
+function actualToVisual(r,c){
+  const rot=rotationCount%4;
+  if(rot===0)return[r,c];
+  if(rot===1)return[c,N-1-r];
+  if(rot===2)return[N-1-r,N-1-c];
+  return[N-1-c,r];
+}
+function visualToActual(vr,vc){
+  const rot=rotationCount%4;
+  if(rot===0)return[vr,vc];
+  if(rot===1)return[N-1-vc,vr];
+  if(rot===2)return[N-1-vr,N-1-vc];
+  return[vc,N-1-vr];
+}
 function cellSize(){
   const maxW=Math.min(window.innerWidth-32,440);
   return Math.max(32,Math.floor((maxW-(N-1)*3)/N));
@@ -448,18 +469,22 @@ function buildGrid(){
   const cs=cellSize();
   g.style.gridTemplateColumns='repeat('+N+','+cs+'px)';
   g.style.gridTemplateRows='repeat('+N+','+cs+'px)';
-  for(let r=0;r<N;r++){
-    for(let c=0;c<N;c++){
+  for(let vr=0;vr<N;vr++){
+    for(let vc=0;vc<N;vc++){
+      const[ar,ac]=visualToActual(vr,vc);
       const el=document.createElement('div');
       el.className='gcell';
-      el.dataset.r=r;el.dataset.c=c;
-      el.textContent=grid[r][c];
+      el.dataset.r=ar;el.dataset.c=ac;
+      el.textContent=grid[ar][ac];
       el.style.fontSize=Math.max(12,cs*0.38)+'px';
       g.appendChild(el);
     }
   }
 }
-function getEl(r,c){return $('grid').children[r*N+c];}
+function getEl(r,c){
+  const[vr,vc]=actualToVisual(r,c);
+  return $('grid').children[vr*N+vc];
+}
 function updateGridDisplay(){
   for(let r=0;r<N;r++){
     for(let c=0;c<N;c++){
@@ -853,7 +878,7 @@ function startGame(){
   used=Array.from({length:N},()=>Array(N).fill(false));
   headCell=null;tracePath=[];score=0;wordsFound=[];cellsUsed=0;
   comboCount=0;comboActive=false;gameActive=true;pickingStart=true;processing=false;
-  undoStack=[];lastStepDir=null;
+  undoStack=[];lastStepDir=null;rotationCount=0;
   $('undo-btn').disabled=true;
   buildGrid();
   updateGridDisplay();
@@ -865,6 +890,19 @@ function refreshGrid(){
   if(!gameActive)return;
   refreshCount++;
   startGame();
+}
+function rotateGrid(){
+  if(!gameActive||processing)return;
+  const g=$('grid');
+  g.classList.add('rotating');
+  setTimeout(()=>{
+    rotationCount=(rotationCount+1)%4;
+    buildGrid();
+    updateGridDisplay();
+    g.classList.remove('rotating');
+    g.classList.add('rotating-in');
+    setTimeout(()=>g.classList.remove('rotating-in'),400);
+  },500);
 }
 
 // === Events ===
@@ -896,6 +934,7 @@ $('play-btn').addEventListener('click',startGame);
 $('end-btn').addEventListener('click',()=>endGame(true));
 $('undo-btn').addEventListener('click',undoLastWord);
 $('refresh-btn').addEventListener('click',refreshGrid);
+$('rotate-btn').addEventListener('click',rotateGrid);
 $('share-btn').addEventListener('click',shareResult);
 $('home-btn').addEventListener('click',()=>location.href='index.html');
 $('help-btn').addEventListener('click',()=>$('help-overlay').classList.add('active'));

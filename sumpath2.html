@@ -169,9 +169,9 @@ body::before{content:'';position:fixed;inset:0;
     <h3>Scoring</h3>
     <ul>
       <li>When your path sum exactly matches the target, it auto-accepts</li>
-      <li>Each accepted path = +1 combo</li>
+      <li>Each accepted path = +1 combo and <b>+10 seconds</b> added to the clock</li>
       <li>A new random target appears and the grid refreshes</li>
-      <li>Keep going until the timer hits zero</li>
+      <li>Keep going &mdash; the better you play, the more time you earn</li>
     </ul>
 
     <h3>Tips</h3>
@@ -344,12 +344,14 @@ function onCellTap(r,c){
 
 function acceptPath(){
   combos++;
+  // Add 10 seconds to the timer
+  startMs+=10*1000;
   $('combo-display').textContent=combos+' combo'+(combos!==1?'s':'');
   // Score popup at last cell
   const last=path[path.length-1];
   const popup=document.createElement('div');
   popup.className='popup';
-  popup.textContent='+1';
+  popup.innerHTML='+1<br><span style="font-size:13px;color:#ffc107;">+10s</span>';
   const cellEl=getEl(last[0],last[1]);
   const wrapRect=$('grid').parentElement.getBoundingClientRect();
   const cellRect=cellEl.getBoundingClientRect();
@@ -373,7 +375,9 @@ function updateTimer(){
   const elapsed=(Date.now()-startMs)/1000;
   const remaining=Math.max(0,GAME_DURATION-elapsed);
   $('timer-display').textContent=remaining.toFixed(1);
-  $('timer-fill').style.width=(remaining/GAME_DURATION*100)+'%';
+  // Bar fill relative to current total time
+  const totalTime=GAME_DURATION+(combos*10);
+  $('timer-fill').style.width=Math.min(100,remaining/Math.max(totalTime,GAME_DURATION)*100)+'%';
   const td=$('timer-display'),tf=$('timer-fill');
   td.classList.remove('warning','critical');
   tf.classList.remove('warning','critical');
