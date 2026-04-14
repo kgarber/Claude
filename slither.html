@@ -1230,16 +1230,21 @@ function showAllWordPaths(){
     const w=wordsFound[wi];
     if(!w.path||w.path.length<2)continue;
     const color=colors[wi%colors.length];
-    // Dot at top-left corner of the starting cell
+    // Square border around the starting cell
     const startEl=getEl(w.path[0][0],w.path[0][1]);
     const wrapRect=$('grid-wrap').getBoundingClientRect();
     const sRect=startEl.getBoundingClientRect();
-    const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');
-    dot.setAttribute('cx',sRect.left-wrapRect.left+5);
-    dot.setAttribute('cy',sRect.top-wrapRect.top+5);
-    dot.setAttribute('r','4');
-    dot.setAttribute('fill',color);dot.setAttribute('fill-opacity','0.9');
-    svg.appendChild(dot);
+    const rect=document.createElementNS('http://www.w3.org/2000/svg','rect');
+    rect.setAttribute('x',sRect.left-wrapRect.left+1);
+    rect.setAttribute('y',sRect.top-wrapRect.top+1);
+    rect.setAttribute('width',sRect.width-2);
+    rect.setAttribute('height',sRect.height-2);
+    rect.setAttribute('rx','4');
+    rect.setAttribute('fill','none');
+    rect.setAttribute('stroke',color);
+    rect.setAttribute('stroke-width','2.5');
+    rect.setAttribute('stroke-opacity','0.9');
+    svg.appendChild(rect);
     for(let i=0;i<w.path.length-1;i++){
       const a=getCellCenter(w.path[i][0],w.path[i][1]);
       const b=getCellCenter(w.path[i+1][0],w.path[i+1][1]);
