@@ -1224,6 +1224,8 @@ function showAllWordPaths(){
   const svg=$('path-overlay');
   svg.innerHTML='';
   const colors=['#f5a623','#a8ff3e','#00e5ff','#ff6b9d','#c084fc','#fbbf24','#34d399','#f87171','#60a5fa','#fb923c'];
+  const cs=cellSize();
+  const inset=cs*0.35; // stop line this far from center
   for(let wi=0;wi<wordsFound.length;wi++){
     const w=wordsFound[wi];
     if(!w.path||w.path.length<2)continue;
@@ -1238,9 +1240,16 @@ function showAllWordPaths(){
     for(let i=0;i<w.path.length-1;i++){
       const a=getCellCenter(w.path[i][0],w.path[i][1]);
       const b=getCellCenter(w.path[i+1][0],w.path[i+1][1]);
+      // Shorten line: start inset from center A, end inset from center B
+      const dx=b.x-a.x,dy=b.y-a.y;
+      const dist=Math.hypot(dx,dy);
+      if(dist<1)continue;
+      const ux=dx/dist,uy=dy/dist;
+      const x1=a.x+ux*inset,y1=a.y+uy*inset;
+      const x2=b.x-ux*inset,y2=b.y-uy*inset;
       const line=document.createElementNS('http://www.w3.org/2000/svg','line');
-      line.setAttribute('x1',a.x);line.setAttribute('y1',a.y);
-      line.setAttribute('x2',b.x);line.setAttribute('y2',b.y);
+      line.setAttribute('x1',x1);line.setAttribute('y1',y1);
+      line.setAttribute('x2',x2);line.setAttribute('y2',y2);
       line.setAttribute('stroke',color);
       line.setAttribute('stroke-width','3');
       line.setAttribute('stroke-opacity','0.8');
