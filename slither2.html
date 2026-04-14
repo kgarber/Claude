@@ -63,14 +63,20 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
 
 /* Score popup */
 .score-popup{position:absolute;pointer-events:none;z-index:50;
-  font-family:var(--font-display);font-size:22px;font-weight:700;
-  color:var(--lime);text-shadow:0 0 12px var(--lime-glow);
-  animation:popupFloat 1.2s ease-out forwards;}
-.score-popup .bonus{font-size:13px;color:#ffe066;display:block;margin-top:-4px;}
+  font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;
+  color:var(--text);text-align:center;white-space:nowrap;
+  animation:popupFloat 2s ease-out forwards;}
+.score-popup .formula{color:var(--text-dim);font-size:11px;display:block;}
+.score-popup .formula .factor{color:var(--text);font-weight:700;}
+.score-popup .formula .mult{color:#fbbf24;}
+.score-popup .formula .bonus-tag{color:#f5a623;font-weight:700;}
+.score-popup .result{font-family:var(--font-display);font-size:24px;
+  font-weight:700;color:var(--lime);text-shadow:0 0 12px var(--lime-glow);display:block;}
 @keyframes popupFloat{
   0%{opacity:0;transform:translate(-50%,0) scale(0.8);}
-  15%{opacity:1;transform:translate(-50%,-8px) scale(1.1);}
-  100%{opacity:0;transform:translate(-50%,-40px) scale(1);}
+  10%{opacity:1;transform:translate(-50%,-6px) scale(1);}
+  70%{opacity:1;transform:translate(-50%,-20px) scale(1);}
+  100%{opacity:0;transform:translate(-50%,-35px) scale(1);}
 }
 /* Bonus words */
 .bonus-words{display:flex;gap:10px;justify-content:center;width:100%;flex-wrap:wrap;}
@@ -682,9 +688,11 @@ function updateGridDisplay(){
 function updateUI(){
   $('score-display').textContent=score;
   $('words-count').textContent=cellsUsed+'/100 cells \u00b7 '+wordsFound.length+' word'+(wordsFound.length!==1?'s':'');
-  // Multiplier display
+  // Multiplier display — show next milestone
   const md=$('multiplier-display');
+  const nextMilestone=(Math.floor(cellsUsed/10)+1)*10;
   md.textContent='x'+multiplier.toFixed(1);
+  md.title=nextMilestone<=100?('Next +0.2x at '+nextMilestone+' cells'):'Max cells reached';
   md.classList.remove('hot','fire');
   if(multiplier>=3.0)md.classList.add('fire');
   else if(multiplier>=2.0)md.classList.add('hot');
@@ -879,21 +887,23 @@ function acceptWord(word){
     renderBonusSlots($('bonus-words'),bonusWords,bonusFound);
   }
 
-  // Floating score popup — show the math
+  // Floating score popup — show the formula
   const lastC=tracePath[tracePath.length-1];
   const popup=document.createElement('div');
   popup.className='score-popup';
-  let detail=len+'\u00b2';
-  if(multiplier>1.05)detail+=' \u00d7'+multiplier.toFixed(1);
-  if(isBonusWord)detail+=' \u00d73 BONUS';
-  popup.innerHTML='+'+pts+'<span class="bonus">'+detail+'</span>';
+  // Build formula: base × multiplier × bonus = total
+  let formulaParts=[];
+  formulaParts.push('<span class="factor">'+len+'&sup2;='+basePts+'</span>');
+  if(multiplier>1.05)formulaParts.push('<span class="mult">&times;'+multiplier.toFixed(1)+'</span>');
+  if(isBonusWord)formulaParts.push('<span class="bonus-tag">&times;3 BONUS</span>');
+  popup.innerHTML='<span class="formula">'+formulaParts.join(' ')+'</span><span class="result">+'+pts+'</span>';
   const cellEl=getEl(lastC[0],lastC[1]);
   const gridRect=$('grid').getBoundingClientRect();
   const cellRect=cellEl.getBoundingClientRect();
   popup.style.left=(cellRect.left-gridRect.left+cellRect.width/2)+'px';
-  popup.style.top=(cellRect.top-gridRect.top)+'px';
+  popup.style.top=(cellRect.top-gridRect.top-10)+'px';
   $('grid-wrap').appendChild(popup);
-  setTimeout(()=>popup.remove(),1250);
+  setTimeout(()=>popup.remove(),2000);
 
   score+=pts;
 
