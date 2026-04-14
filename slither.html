@@ -1228,6 +1228,13 @@ function showAllWordPaths(){
     const w=wordsFound[wi];
     if(!w.path||w.path.length<2)continue;
     const color=colors[wi%colors.length];
+    // Dot at the start of the word
+    const start=getCellCenter(w.path[0][0],w.path[0][1]);
+    const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    dot.setAttribute('cx',start.x);dot.setAttribute('cy',start.y);
+    dot.setAttribute('r','5');
+    dot.setAttribute('fill',color);dot.setAttribute('fill-opacity','0.9');
+    svg.appendChild(dot);
     for(let i=0;i<w.path.length-1;i++){
       const a=getCellCenter(w.path[i][0],w.path[i][1]);
       const b=getCellCenter(w.path[i+1][0],w.path[i+1][1]);
