@@ -106,7 +106,7 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
   -webkit-user-select:none;user-select:none;}
 .btn-show:disabled{opacity:0.3;pointer-events:none;}
 .path-overlay{position:absolute;top:0;left:0;width:100%;height:100%;
-  pointer-events:none;z-index:0;}
+  pointer-events:none;z-index:2;}
 .path-overlay line{stroke-linecap:round;}
 .gcell.path-start{box-shadow:0 0 0 3px #f5a623,0 0 12px rgba(245,166,35,0.5) !important;z-index:11;}
 .gcell.path-cell{box-shadow:0 0 0 2px #a8ff3e,0 0 10px var(--lime-glow) !important;z-index:11;}
@@ -118,7 +118,7 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
 .gcell{display:flex;align-items:center;justify-content:center;
   border-radius:5px;background:var(--cell);font-family:var(--font-display);
   font-weight:700;color:var(--text-dark);cursor:pointer;
-  transition:all 0.12s;position:relative;
+  transition:all 0.12s;position:relative;z-index:3;
   box-shadow:0 1px 3px rgba(0,0,0,0.3);}
 .gcell.used{background:var(--cell-used);color:rgba(255,255,255,0.15);
   box-shadow:none;cursor:pointer;}
