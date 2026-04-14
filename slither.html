@@ -1054,13 +1054,7 @@ gw.addEventListener('pointermove',e=>{
 });
 gw.addEventListener('pointerup',e=>{
   e.preventDefault();
-  // Tap (barely moved) = keep path alive for tap-to-extend, don't submit
-  if(dragDist<DRAG_THRESHOLD){
-    isTracing=false;
-    return;
-  }
-  // Real drag = submit
-  endTrace();
+  isTracing=false;
 });
 gw.addEventListener('pointercancel',e=>{e.preventDefault();isTracing=false;});
 // Touch fallbacks
@@ -1095,8 +1089,7 @@ gw.addEventListener('touchmove',e=>{
 },{passive:false});
 gw.addEventListener('touchend',e=>{
   e.preventDefault();
-  if(dragDist<DRAG_THRESHOLD){isTracing=false;return;}
-  endTrace();
+  isTracing=false;
 },{passive:false});
 
 // Bottom bar actions
