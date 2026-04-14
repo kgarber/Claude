@@ -56,18 +56,6 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
   text-align:right;min-height:14px;}
 .par-indicator.hit{color:var(--lime);}
 
-/* Cross-board progress bars */
-.cross-bars{display:flex;gap:12px;width:100%;font-size:10px;
-  font-family:'IBM Plex Mono',monospace;color:var(--text-dim);}
-.cross-bar{flex:1;display:flex;align-items:center;gap:6px;}
-.cross-bar-label{white-space:nowrap;}
-.cross-bar-track{flex:1;height:4px;background:rgba(255,255,255,0.05);
-  border-radius:2px;overflow:hidden;}
-.cross-bar-fill{height:100%;background:var(--text-dim);
-  transition:width 0.3s,background 0.3s;border-radius:2px;}
-.cross-bar.complete .cross-bar-fill{background:var(--lime);box-shadow:0 0 8px var(--lime-glow);}
-.cross-bar.complete .cross-bar-label{color:var(--lime);}
-
 /* Score popup */
 .score-popup{position:absolute;pointer-events:none;z-index:50;
   font-family:var(--font-display);font-size:22px;font-weight:700;
@@ -265,7 +253,6 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
       <li><b>Gold cells (2x):</b> each gold cell in a word doubles that word's score</li>
       <li><b>Chain bonus:</b> 3 words of 5+ letters in a row gives x1.5 on the next word</li>
       <li><b>Coverage bonus:</b> +1 point per 5 cells used at game end</li>
-      <li><b>Cross-board bonus:</b> if your connected snake reaches both opposite edges (left&rarr;right or top&rarr;bottom), you get bonus points equal to the snake's size</li>
     </ul>
 
     <h3>Goals</h3>
@@ -277,8 +264,8 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
 
     <h3>Tips</h3>
     <ul>
-      <li>Use the L&rarr;R and T&rarr;B bars to track edge-to-edge progress</li>
-      <li>Tap "Undo" to reverse your last word if you released early</li>
+      <li>Tap "Undo Word" to reverse your last word</li>
+      <li>Use "&larr; Back" to remove the last letter from your current trace</li>
       <li>"New Grid" gives a fresh letter layout if you're stuck</li>
       <li>The game ends automatically if no valid moves remain</li>
     </ul>
@@ -299,16 +286,6 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
       <button class="undo-btn rotate-btn" id="rotate-btn" title="Rotate view">&#8635;</button>
       <button class="undo-btn" id="refresh-btn">New Grid</button>
       <button class="end-btn" id="end-btn">End</button>
-    </div>
-  </div>
-  <div class="cross-bars">
-    <div class="cross-bar" id="cross-lr">
-      <span class="cross-bar-label">L&rarr;R</span>
-      <div class="cross-bar-track"><div class="cross-bar-fill" id="cross-lr-fill"></div></div>
-    </div>
-    <div class="cross-bar" id="cross-tb">
-      <span class="cross-bar-label">T&rarr;B</span>
-      <div class="cross-bar-track"><div class="cross-bar-fill" id="cross-tb-fill"></div></div>
     </div>
   </div>
   <div class="current-word" id="current-word">&nbsp;</div>
@@ -590,14 +567,6 @@ function updateUI(){
   else if(score>=GREAT_SCORE){parEl.textContent='Great! Aim '+GENIUS_SCORE;parEl.className='par-indicator hit';}
   else if(score>=PAR_SCORE){parEl.textContent='Par! Aim '+GREAT_SCORE;parEl.className='par-indicator hit';}
   else{parEl.textContent='Par '+PAR_SCORE;parEl.className='par-indicator';}
-  // Cross-board progress bars (based on connected components)
-  const conn=analyzeConnectivity();
-  $('cross-lr-fill').style.width=(conn.lrSpan/N*100)+'%';
-  $('cross-tb-fill').style.width=(conn.tbSpan/N*100)+'%';
-  $('cross-lr').classList.toggle('complete',conn.lrComplete);
-  $('cross-tb').classList.toggle('complete',conn.tbComplete);
-  $('cross-lr').querySelector('.cross-bar-label').textContent='L\u2192R '+conn.lrSpan+'/'+N;
-  $('cross-tb').querySelector('.cross-bar-label').textContent='T\u2192B '+conn.tbSpan+'/'+N;
   if(!pickingStart&&tracePath.length===0){
     $('word-hint').textContent='Drag from the glowing cell to trace a word';
   }
@@ -902,12 +871,6 @@ function endGame(manual){
   // Coverage bonus
   const coverageBonus=Math.floor(cellsUsed/5);
   score+=coverageBonus;
-  // Cross-board bonus: requires a connected chain from edge to edge
-  const conn=analyzeConnectivity();
-  let crossBonus=0;
-  if(conn.lrComplete)crossBonus+=conn.bestLRSize;
-  if(conn.tbComplete)crossBonus+=conn.bestTBSize;
-  score+=crossBonus;
   const best=wordsFound.reduce((b,w)=>w.len>b.len?w:b,{word:'-',len:0});
   // Tier title
   let tier='';
@@ -915,11 +878,7 @@ function endGame(manual){
   else if(score>=GREAT_SCORE)tier='GREAT';
   else if(score>=PAR_SCORE)tier='PAR';
   $('end-title').textContent=tier||(manual?'Game Over':'No more moves!');
-  let bonusText='';
-  if(coverageBonus>0)bonusText+=' +'+coverageBonus+' coverage';
-  if(conn.lrComplete)bonusText+=' +'+conn.bestLRSize+' L\u2192R';
-  if(conn.tbComplete)bonusText+=' +'+conn.bestTBSize+' T\u2192B';
-  $('end-score').textContent=score+(bonusText?' (incl'+bonusText+')':'');
+  $('end-score').textContent=score+(coverageBonus>0?' (incl +'+coverageBonus+' coverage)':'');
   $('end-words-count').textContent=wordsFound.length;
   $('end-cells').textContent=cellsUsed+'/100';
   $('end-best').textContent=best.word.toUpperCase()+' ('+best.len+' letters)';
