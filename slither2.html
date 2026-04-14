@@ -223,7 +223,7 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
 <div id="title-screen" class="screen active">
   <a href="index.html" class="back-link">&larr; All Games</a>
   <div class="logo">Slither v2</div>
-  <div class="tagline">Trace words. Build your multiplier. Chase 3 stars.</div>
+  <div class="tagline">Trace words. Grow your multiplier. Chase 3 stars.</div>
   <div class="puzzle-date" id="puzzle-date"></div>
   <div class="par-line">
     <span class="tier-par">&#9733; 100</span>
@@ -237,8 +237,8 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
 
 <div class="help-overlay" id="help-overlay">
   <div class="help-content">
-    <h2>How to Play Slither</h2>
-    <p>Build a snake of words on a 10&times;10 letter grid. Trace as many words as you can and try to span the board edge to edge for big bonus points.</p>
+    <h2>How to Play Slither v2</h2>
+    <p>Trace words on a 10&times;10 letter grid. Use as many cells as possible to grow your multiplier, hit diamond cells for big boosts, and hunt for bonus words to maximize your score.</p>
 
     <h3>Tracing Words</h3>
     <div style="display:flex;gap:16px;align-items:flex-start;margin:12px 0;">
@@ -258,66 +258,47 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
       </div>
       <div style="font-size:13px;color:#c0c8c0;line-height:1.5;">
         <div style="margin-bottom:6px;"><b style="color:#a8ff3e;">S &rarr; N &rarr; A &rarr; K &rarr; E</b></div>
-        Drag through adjacent cells in any direction (including diagonals) to spell words. Release to submit.
+        Tap or drag through adjacent cells in any of 8 directions to spell words. Tap <b>Submit</b> when ready.
       </div>
     </div>
 
-    <h3>Continuing Your Snake</h3>
-    <div style="display:flex;gap:16px;align-items:flex-start;margin:12px 0;">
-      <div style="display:grid;grid-template-columns:repeat(4,36px);gap:3px;flex-shrink:0;">
-        <div style="width:36px;height:36px;border-radius:5px;background:#f5eedc;color:#1a1a1a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;font-family:serif;">T</div>
-        <div style="width:36px;height:36px;border-radius:5px;background:#f5eedc;color:#1a1a1a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;font-family:serif;">R</div>
-        <div style="width:36px;height:36px;border-radius:5px;background:#f5eedc;color:#1a1a1a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;font-family:serif;">A</div>
-        <div style="width:36px;height:36px;border-radius:5px;background:#f5eedc;color:#1a1a1a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;font-family:serif;">N</div>
-        <div style="width:36px;height:36px;border-radius:5px;background:#2d3d2a;color:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;font-family:serif;">S</div>
-        <div style="width:36px;height:36px;border-radius:5px;background:#2d3d2a;color:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;font-family:serif;">N</div>
-        <div style="width:36px;height:36px;border-radius:5px;background:#2d3d2a;color:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;font-family:serif;">A</div>
-        <div style="width:36px;height:36px;border-radius:5px;background:#2d3d2a;color:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;font-family:serif;">K</div>
-        <div style="width:36px;height:36px;border-radius:5px;background:rgba(168,255,62,0.25);color:#1a1a1a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;font-family:serif;box-shadow:0 0 0 2px #a8ff3e;">O</div>
-        <div style="width:36px;height:36px;border-radius:5px;background:#f5eedc;color:#1a1a1a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;font-family:serif;">E</div>
-        <div style="width:36px;height:36px;border-radius:5px;background:#2d3d2a;color:rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;font-family:serif;box-shadow:0 0 0 3px #a8ff3e,0 0 12px rgba(168,255,62,0.3);">E</div>
-        <div style="width:36px;height:36px;border-radius:5px;background:rgba(168,255,62,0.25);color:#1a1a1a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;font-family:serif;box-shadow:0 0 0 2px #a8ff3e;">D</div>
-      </div>
-      <div style="font-size:13px;color:#c0c8c0;line-height:1.5;">
-        <div style="margin-bottom:6px;"><b style="color:#a8ff3e;">E &rarr; D &rarr; O = "EDO"?</b></div>
-        After "SNAKE" is accepted, those cells fade. The head (E) glows. Start your next word from the head, a neighbor, or any used/edge cell. Words use that cell's letter.
-      </div>
-    </div>
-
-    <ul>
-      <li>Move in any of 8 directions (including diagonals)</li>
-      <li>The current word turns <b style="color:#7dff3e;">green</b> when it's valid</li>
-      <li>Words must be at least 2 letters long</li>
-    </ul>
-
-    <h3>Starting a Word</h3>
+    <h3>Starting &amp; Continuing</h3>
     <ul>
       <li>Tap any <b>unused edge cell</b> to start a fresh word</li>
-      <li>Tap any <b>used cell</b> (faded) that has unused neighbors to start from that letter</li>
-      <li>The "head" cell glows brightest &mdash; your main launching point</li>
+      <li>Tap any <b>used cell</b> (faded) with unused neighbors to start from that letter</li>
+      <li>After submitting a word, tap adjacent cells or any used cell to begin the next one</li>
+      <li>The current word turns <b style="color:#7dff3e;">green</b> when it's valid &mdash; then tap Submit</li>
+      <li>Use <b>&larr; Back</b> to remove the last letter, or <b>Undo Word</b> to reverse a submitted word</li>
     </ul>
 
-    <h3>Scoring</h3>
+    <h3>Score Formula</h3>
+    <p>Your score is calculated as:</p>
+    <div style="text-align:center;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--text);padding:8px;background:rgba(255,255,255,0.03);border-radius:8px;margin:8px 0;">
+      <b>words</b> &times; <b style="color:#fbbf24;">grid</b> &times; <b style="color:#e5a820;">◆</b> &times; <b style="color:#f5a623;">bonus</b> = <b style="color:#a8ff3e;">score</b>
+    </div>
     <ul>
-      <li><b>Points = length&sup2;</b> &mdash; 2 letters = 4, 3 = 9, 4 = 16, 5 = 25, 6 = 36, 7 = 49</li>
-      <li><b>Grid multiplier:</b> starts at x1.00, grows +0.01x for every cell you use. Cover more of the grid to boost it.</li>
-      <li><b>◆ Diamond multiplier:</b> starts at x1.0, each diamond cell used adds +0.5x. Route through diamonds for big boosts.</li>
-      <li><b>Bonus words:</b> finding a bonus word gives 3x on top of the multiplier</li>
+      <li><b>Words:</b> sum of each word's points. Points = length&sup2; (2=4, 3=9, 4=16, 5=25, 6=36, 7=49)</li>
+      <li><b style="color:#fbbf24;">Grid:</b> starts at x1.00. Every cell you use adds +0.01x. Use 50 cells = x1.50. Use all 100 = x2.00.</li>
+      <li><b style="color:#e5a820;">◆ Diamond:</b> starts at x1.0. Each diamond cell (gold tint with ◆) you use adds +0.5x. Route through them!</li>
+      <li><b style="color:#f5a623;">Bonus:</b> starts at x1.0. 3 bonus words are shown above the grid. Finding one adds +0.5x to this multiplier.</li>
     </ul>
 
     <h3>Stars</h3>
     <ul>
-      <li><b>&#9733; 100:</b> a solid game</li>
-      <li><b>&#9733;&#9733; 200:</b> great play</li>
-      <li><b>&#9733;&#9733;&#9733; 350:</b> exceptional</li>
+      <li><b>&#9733;</b> 100 points</li>
+      <li><b>&#9733;&#9733;</b> 200 points</li>
+      <li><b>&#9733;&#9733;&#9733;</b> 350 points</li>
     </ul>
 
     <h3>Tips</h3>
     <ul>
-      <li>Tap "Undo Word" to reverse your last word</li>
-      <li>Use "&larr; Back" to remove the last letter from your current trace</li>
-      <li>"New Grid" gives a fresh letter layout if you're stuck</li>
-      <li>The game ends automatically if no valid moves remain</li>
+      <li>Longer words earn exponentially more &mdash; a 5-letter word (25 pts) is worth more than two 3-letter words (9+9=18)</li>
+      <li>Use more of the grid to grow your grid multiplier &mdash; every cell counts</li>
+      <li>Diamond cells are powerful &mdash; even 2 diamonds bumps your ◆ multiplier to x2.0</li>
+      <li>Bonus words are inside the grid (not on edges) so you need to work inward to reach them</li>
+      <li>Hold the <b>Show</b> button to see all your word paths at once</li>
+      <li>Tap the <b>&#8635;</b> rotate button to see the grid from a different angle</li>
+      <li>"New Grid" generates a fresh layout if you're stuck</li>
     </ul>
 
     <button class="close-help" id="close-help">Got it</button>
