@@ -67,6 +67,26 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
   15%{opacity:1;transform:translate(-50%,-8px) scale(1.1);}
   100%{opacity:0;transform:translate(-50%,-40px) scale(1);}
 }
+/* Bonus words */
+.bonus-words{display:flex;gap:10px;justify-content:center;width:100%;flex-wrap:wrap;}
+.bonus-slot{display:flex;gap:3px;align-items:center;padding:4px 8px;
+  border-radius:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);}
+.bonus-slot.found{border-color:rgba(245,166,35,0.5);background:rgba(245,166,35,0.08);}
+.bonus-letter{width:20px;height:24px;display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-display);font-size:14px;font-weight:700;
+  border-radius:4px;color:var(--text-dim);}
+.bonus-letter.revealed{color:var(--text);background:rgba(255,255,255,0.06);}
+.bonus-letter.blank{color:rgba(255,255,255,0.15);}
+.bonus-slot.found .bonus-letter{color:#f5a623;background:rgba(245,166,35,0.15);}
+.bonus-found-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  z-index:60;font-family:var(--font-display);font-size:32px;font-weight:700;
+  color:#f5a623;text-shadow:0 0 30px rgba(245,166,35,0.5);
+  pointer-events:none;animation:bonusPop 1.5s ease-out forwards;}
+@keyframes bonusPop{0%{opacity:0;transform:translate(-50%,-50%) scale(0.5);}
+  15%{opacity:1;transform:translate(-50%,-50%) scale(1.2);}
+  70%{opacity:1;transform:translate(-50%,-50%) scale(1);}
+  100%{opacity:0;transform:translate(-50%,-60%) scale(1);}}
+
 .current-word{font-family:var(--font-display);font-size:28px;font-weight:700;
   min-height:40px;color:var(--lime);text-align:center;letter-spacing:2px;
   transition:color 0.15s;}
@@ -288,6 +308,7 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
       <button class="end-btn" id="end-btn">End</button>
     </div>
   </div>
+  <div class="bonus-words" id="bonus-words"></div>
   <div class="current-word" id="current-word">&nbsp;</div>
   <div class="word-hint" id="word-hint">Tap a starting cell</div>
   <div class="grid-wrap" id="grid-wrap">
@@ -309,7 +330,9 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
     <div class="end-row"><span class="end-label">Words</span><span class="end-val" id="end-words-count"></span></div>
     <div class="end-row"><span class="end-label">Cells used</span><span class="end-val" id="end-cells"></span></div>
     <div class="end-row"><span class="end-label">Best word</span><span class="end-val" id="end-best"></span></div>
+    <div class="end-row"><span class="end-label">Bonus words</span><span class="end-val" id="end-bonus"></span></div>
   </div>
+  <div class="bonus-words" id="end-bonus-words" style="margin:4px 0;"></div>
   <div class="end-words" id="end-words"></div>
   <button class="share-btn" id="share-btn">Share Result</button>
   <div class="copied-msg" id="copied-msg"></div>
@@ -460,6 +483,81 @@ function generateDoublePoints(dateStr){
   return dp;
 }
 
+// === Bonus Words ===
+function findGridWords(grid,minLen,maxLen,limit){
+  if(!dictionary)return[];
+  const found=[];
+  const seen=new Set();
+  for(let r=0;r<N&&found.length<limit;r++){
+    for(let c=0;c<N&&found.length<limit;c++){
+      dfsWords(grid,r,c,[{r,c}],grid[r][c].toLowerCase(),found,seen,minLen,maxLen,limit);
+    }
+  }
+  return found;
+}
+function dfsWords(grid,r,c,path,word,found,seen,minLen,maxLen,limit){
+  if(found.length>=limit)return;
+  if(word.length>=minLen&&word.length<=maxLen&&dictionary.isWord(word)&&!seen.has(word)){
+    seen.add(word);
+    found.push({word,path:path.map(p=>[p.r,p.c])});
+  }
+  if(word.length>=maxLen)return;
+  for(let dr=-1;dr<=1;dr++){
+    for(let dc=-1;dc<=1;dc++){
+      if(dr===0&&dc===0)continue;
+      const nr=r+dr,nc=c+dc;
+      if(nr<0||nr>=N||nc<0||nc>=N)continue;
+      if(path.some(p=>p.r===nr&&p.c===nc))continue;
+      const nw=word+grid[nr][nc].toLowerCase();
+      if(!dictionary.isPrefix(nw))continue;
+      dfsWords(grid,nr,nc,[...path,{r:nr,c:nc}],nw,found,seen,minLen,maxLen,limit);
+    }
+  }
+}
+function generateBonusWords(grid,dateStr){
+  const rng=mulberry32(dateSeed(dateStr+'bonus'));
+  const short=findGridWords(grid,3,4,30);
+  const medium=findGridWords(grid,5,5,20);
+  const long=findGridWords(grid,6,7,15);
+  const bonus=[];
+  if(short.length>0)bonus.push(short[Math.floor(rng()*short.length)]);
+  if(medium.length>0)bonus.push(medium[Math.floor(rng()*medium.length)]);
+  if(long.length>0)bonus.push(long[Math.floor(rng()*long.length)]);
+  return bonus;
+}
+function getRevealedPositions(len){
+  if(len<=4)return[0,len-1];
+  if(len===5)return[0,2,len-1];
+  // 6+: first, two middles, last
+  const m1=Math.floor(len/3);
+  const m2=Math.floor(2*len/3);
+  return[0,m1,m2,len-1];
+}
+function renderBonusSlots(container,bonusWords,foundSet){
+  container.innerHTML='';
+  for(const bw of bonusWords){
+    const slot=document.createElement('div');
+    slot.className='bonus-slot'+(foundSet.has(bw.word)?' found':'');
+    const revealed=getRevealedPositions(bw.word.length);
+    for(let i=0;i<bw.word.length;i++){
+      const el=document.createElement('div');
+      el.className='bonus-letter';
+      if(foundSet.has(bw.word)){
+        el.textContent=bw.word[i].toUpperCase();
+        el.classList.add('revealed');
+      }else if(revealed.includes(i)){
+        el.textContent=bw.word[i].toUpperCase();
+        el.classList.add('revealed');
+      }else{
+        el.textContent='_';
+        el.classList.add('blank');
+      }
+      slot.appendChild(el);
+    }
+    container.appendChild(slot);
+  }
+}
+
 // === Scoring ===
 function wordScore(len){
   if(len<=1)return 0;if(len===2)return 1;if(len===3)return 2;if(len===4)return 4;
@@ -471,6 +569,7 @@ const PAR_SCORE=80,GREAT_SCORE=150,GENIUS_SCORE=250;
 let grid,used,doublePoints,headCell=null,tracePath=[],score=0,wordsFound=[],cellsUsed=0;
 let comboCount=0,comboActive=false,gameActive=false,pickingStart=true,processing=false;
 let undoStack=[],refreshCount=0,lastStepDir=null,rotationCount=0;
+let bonusWords=[],bonusFound=new Set();
 const $=id=>document.getElementById(id);
 const screens={title:$('title-screen'),game:$('game-screen'),end:$('end-screen')};
 function showScreen(n){Object.values(screens).forEach(s=>s.classList.remove('active'));screens[n].classList.add('active');$('bottom-bar').classList.toggle('visible',n==='game');}
@@ -533,7 +632,7 @@ function updateGridDisplay(){
           }
         }
       }
-      if(headCell&&r===headCell[0]&&c===headCell[1]&&tracePath.length===0)el.classList.add('head');
+      // No head highlight — player can start from any used cell or edge
       // Edge cells always a start option
       if(!used[r][c]&&isEdge(r,c)&&tracePath.length===0)el.classList.add('start-option');
     }
@@ -713,7 +812,8 @@ function acceptWord(word){
     headCell:headCell?[...headCell]:null,
     score,cellsUsed,comboCount,comboActive,
     wordsFound:[...wordsFound],
-    lastStepDir:lastStepDir?[...lastStepDir]:null
+    lastStepDir:lastStepDir?[...lastStepDir]:null,
+    bonusFound:new Set(bonusFound)
   });
   $('undo-btn').disabled=false;
 
@@ -723,7 +823,11 @@ function acceptWord(word){
   // Double-point bonus: count double cells in trace, add bonus
   let doubleCount=0;
   for(const[r,c] of tracePath){if(doublePoints&&doublePoints[r][c]&&!used[r][c])doubleCount++;}
-  pts+=pts*doubleCount; // each double cell doubles the word score additively
+  pts+=pts*doubleCount;
+
+  // Bonus word check — 3x score if it's a bonus word
+  const isBonusWord=bonusWords.some(bw=>bw.word===word)&&!bonusFound.has(word);
+  if(isBonusWord){pts*=3;bonusFound.add(word);}
 
   // Combo
   if(len>=5){comboCount++;if(comboCount>=3)comboActive=true;}else{comboCount=0;comboActive=false;}
@@ -733,12 +837,23 @@ function acceptWord(word){
   // Animate
   for(const[r,c] of tracePath)getEl(r,c).classList.add('accepted');
 
+  // Bonus word celebration
+  if(isBonusWord){
+    const bpop=document.createElement('div');
+    bpop.className='bonus-found-popup';
+    bpop.textContent='BONUS! '+word.toUpperCase();
+    document.body.appendChild(bpop);
+    setTimeout(()=>bpop.remove(),1500);
+    renderBonusSlots($('bonus-words'),bonusWords,bonusFound);
+  }
+
   // Floating score popup at last cell
   const lastC=tracePath[tracePath.length-1];
   const popup=document.createElement('div');
   popup.className='score-popup';
   let bonusLabel='';
-  if(doubleCount>0)bonusLabel+=(doubleCount+1)+'x';
+  if(isBonusWord)bonusLabel+='BONUS 3x';
+  else if(doubleCount>0)bonusLabel+=(doubleCount+1)+'x';
   if(comboApplied)bonusLabel+=(bonusLabel?' +':'')+'CHAIN';
   popup.innerHTML='+'+pts+(bonusLabel?'<span class="bonus">'+bonusLabel+'</span>':'');
   const cellEl=getEl(lastC[0],lastC[1]);
@@ -789,7 +904,9 @@ function undoLastWord(){
   comboActive=state.comboActive;
   wordsFound=state.wordsFound;
   lastStepDir=state.lastStepDir;
+  bonusFound=state.bonusFound||new Set();
   tracePath=[];
+  renderBonusSlots($('bonus-words'),bonusWords,bonusFound);
   if(!headCell)pickingStart=true;
   $('undo-btn').disabled=undoStack.length===0;
   updateGridDisplay();
@@ -882,6 +999,9 @@ function endGame(manual){
   $('end-words-count').textContent=wordsFound.length;
   $('end-cells').textContent=cellsUsed+'/100';
   $('end-best').textContent=best.word.toUpperCase()+' ('+best.len+' letters)';
+  $('end-bonus').textContent=bonusFound.size+'/'+bonusWords.length;
+  // Show all bonus words revealed on end screen
+  renderBonusSlots($('end-bonus-words'),bonusWords,new Set(bonusWords.map(b=>b.word)));
   $('end-words').textContent=wordsFound.map(w=>w.word.toUpperCase()).join(', ');
   $('copied-msg').textContent='';
   // Save
@@ -919,8 +1039,11 @@ function startGame(){
   headCell=null;tracePath=[];score=0;wordsFound=[];cellsUsed=0;
   comboCount=0;comboActive=false;gameActive=true;pickingStart=true;processing=false;
   undoStack=[];lastStepDir=null;rotationCount=0;
+  bonusWords=generateBonusWords(grid,seed);
+  bonusFound=new Set();
   $('undo-btn').disabled=true;
   buildGrid();
+  renderBonusSlots($('bonus-words'),bonusWords,bonusFound);
   updateGridDisplay();
   updateUI();
   $('word-hint').textContent='Tap any edge cell to start';
