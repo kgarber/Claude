@@ -1223,23 +1223,20 @@ function showAllWordPaths(){
   showActive=true;
   const svg=$('path-overlay');
   svg.innerHTML='';
-  for(const w of wordsFound){
+  const colors=['#f5a623','#a8ff3e','#00e5ff','#ff6b9d','#c084fc','#fbbf24','#34d399','#f87171','#60a5fa','#fb923c'];
+  for(let wi=0;wi<wordsFound.length;wi++){
+    const w=wordsFound[wi];
     if(!w.path||w.path.length<2)continue;
-    // First cell orange, rest green
-    getEl(w.path[0][0],w.path[0][1]).classList.add('path-start');
-    for(let i=1;i<w.path.length;i++){
-      getEl(w.path[i][0],w.path[i][1]).classList.add('path-cell');
-    }
-    // Draw lines
+    const color=colors[wi%colors.length];
     for(let i=0;i<w.path.length-1;i++){
       const a=getCellCenter(w.path[i][0],w.path[i][1]);
       const b=getCellCenter(w.path[i+1][0],w.path[i+1][1]);
       const line=document.createElementNS('http://www.w3.org/2000/svg','line');
       line.setAttribute('x1',a.x);line.setAttribute('y1',a.y);
       line.setAttribute('x2',b.x);line.setAttribute('y2',b.y);
-      line.setAttribute('stroke',i===0?'#f5a623':'#a8ff3e');
+      line.setAttribute('stroke',color);
       line.setAttribute('stroke-width','3');
-      line.setAttribute('stroke-opacity','0.7');
+      line.setAttribute('stroke-opacity','0.8');
       svg.appendChild(line);
     }
   }
@@ -1247,9 +1244,6 @@ function showAllWordPaths(){
 function clearShowOverlay(){
   showActive=false;
   $('path-overlay').innerHTML='';
-  document.querySelectorAll('.gcell.path-start,.gcell.path-cell').forEach(el=>{
-    el.classList.remove('path-start','path-cell');
-  });
 }
 $('submit-btn').addEventListener('click',e=>{e.stopPropagation();submitTracedWord();});
 $('back-btn').addEventListener('click',e=>{e.stopPropagation();backOneLetter();});
