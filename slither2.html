@@ -281,8 +281,8 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
     <h3>Scoring</h3>
     <ul>
       <li><b>Points = length&sup2;</b> &mdash; 2 letters = 4, 3 = 9, 4 = 16, 5 = 25, 6 = 36, 7 = 49</li>
-      <li><b>Multiplier:</b> starts at x1.0, grows +0.1x per letter in each word you find. Every word you play makes the next one worth more.</li>
-      <li><b>Gold cells:</b> using a gold cell in a word adds +0.5x to your multiplier</li>
+      <li><b>Multiplier:</b> starts at x1.0, grows +0.2x for every 10 cells you use. Cover more of the grid to boost it.</li>
+      <li><b>Gold cells:</b> each gold cell used adds +0.1x to your multiplier</li>
       <li><b>Bonus words:</b> finding a bonus word gives 3x on top of the multiplier</li>
     </ul>
 
@@ -681,7 +681,7 @@ function updateGridDisplay(){
 }
 function updateUI(){
   $('score-display').textContent=score;
-  $('words-count').textContent=wordsFound.length+' word'+(wordsFound.length!==1?'s':'');
+  $('words-count').textContent=cellsUsed+'/100 cells \u00b7 '+wordsFound.length+' word'+(wordsFound.length!==1?'s':'');
   // Multiplier display
   const md=$('multiplier-display');
   md.textContent='x'+multiplier.toFixed(1);
@@ -846,16 +846,25 @@ function acceptWord(word){
   const len=word.length;
   const basePts=wordScore(len);
 
-  // Apply multiplier
+  // Mark used FIRST (only count newly consumed cells)
+  let newCells=0;
+  for(const[r,c] of tracePath){if(!used[r][c]){used[r][c]=true;newCells++;}}
+  cellsUsed+=newCells;
+
+  // Recalculate multiplier based on total cells used: +0.2x per 10 cells
+  multiplier=1.0+Math.floor(cellsUsed/10)*0.2;
+  // Gold cells add +0.1x each
+  let totalGold=0;
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){if(used[r][c]&&doublePoints&&doublePoints[r][c])totalGold++;}
+  multiplier+=totalGold*0.1;
+  multiplier=Math.round(multiplier*10)/10;
+
+  // Apply multiplier to word score
   let pts=Math.round(basePts*multiplier);
 
   // Bonus word check — 3x on top of multiplier
   const isBonusWord=bonusWords.some(bw=>bw.word===word)&&!bonusFound.has(word);
   if(isBonusWord){pts*=3;bonusFound.add(word);}
-
-  // Count gold cells for multiplier boost
-  let goldCount=0;
-  for(const[r,c] of tracePath){if(doublePoints&&doublePoints[r][c]&&!used[r][c])goldCount++;}
 
   // Animate
   for(const[r,c] of tracePath)getEl(r,c).classList.add('accepted');
@@ -886,15 +895,7 @@ function acceptWord(word){
   $('grid-wrap').appendChild(popup);
   setTimeout(()=>popup.remove(),1250);
 
-  // Mark used (only count newly consumed cells)
-  let newCells=0;
-  for(const[r,c] of tracePath){if(!used[r][c]){used[r][c]=true;newCells++;}}
-  cellsUsed+=newCells;
   score+=pts;
-
-  // Grow multiplier: +0.1x per letter + 0.5x per gold cell
-  multiplier+=len*0.1+goldCount*0.5;
-  multiplier=Math.round(multiplier*10)/10;
 
   wordsFound.push({word,pts,len,path:tracePath.map(([r,c])=>[r,c])});
 
