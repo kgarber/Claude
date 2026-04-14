@@ -110,10 +110,6 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
 .path-overlay line{stroke-linecap:round;}
 .gcell.path-start{box-shadow:0 0 0 3px #f5a623,0 0 12px rgba(245,166,35,0.5) !important;z-index:11;}
 .gcell.path-cell{box-shadow:0 0 0 2px #a8ff3e,0 0 10px var(--lime-glow) !important;z-index:11;}
-.show-word-label{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
-  z-index:60;font-family:var(--font-display);font-size:28px;font-weight:700;
-  color:var(--text);text-shadow:0 2px 12px rgba(0,0,0,0.8);pointer-events:none;
-  background:rgba(14,26,19,0.85);padding:8px 20px;border-radius:10px;}
 .word-hint{font-size:11px;color:var(--text-dim);min-height:16px;text-align:center;}
 
 /* Grid */
@@ -1214,7 +1210,7 @@ function backOneLetter(){
 }
 
 // === Show Words Replay ===
-let showInterval=null,showWordIdx=0,showLabel=null;
+let showActive=false;
 function getCellCenter(r,c){
   const el=getEl(r,c);
   if(!el)return{x:0,y:0};
@@ -1222,71 +1218,48 @@ function getCellCenter(r,c){
   const rect=el.getBoundingClientRect();
   return{x:rect.left-wrap.left+rect.width/2,y:rect.top-wrap.top+rect.height/2};
 }
-function showWordPath(w){
+function showAllWordPaths(){
+  if(wordsFound.length===0)return;
+  showActive=true;
   const svg=$('path-overlay');
   svg.innerHTML='';
-  // Clear previous cell highlights
-  document.querySelectorAll('.gcell.path-start,.gcell.path-cell').forEach(el=>{
-    el.classList.remove('path-start','path-cell');
-  });
-  if(!w||!w.path||w.path.length<2)return;
-  // Highlight first cell orange, rest green
-  const[fr,fc]=w.path[0];
-  getEl(fr,fc).classList.add('path-start');
-  for(let i=1;i<w.path.length;i++){
-    getEl(w.path[i][0],w.path[i][1]).classList.add('path-cell');
-  }
-  // Draw lines
-  for(let i=0;i<w.path.length-1;i++){
-    const a=getCellCenter(w.path[i][0],w.path[i][1]);
-    const b=getCellCenter(w.path[i+1][0],w.path[i+1][1]);
-    const line=document.createElementNS('http://www.w3.org/2000/svg','line');
-    line.setAttribute('x1',a.x);line.setAttribute('y1',a.y);
-    line.setAttribute('x2',b.x);line.setAttribute('y2',b.y);
-    line.setAttribute('stroke',i===0?'#f5a623':'#a8ff3e');
-    line.setAttribute('stroke-width','3');
-    line.setAttribute('stroke-opacity','0.8');
-    svg.appendChild(line);
+  for(const w of wordsFound){
+    if(!w.path||w.path.length<2)continue;
+    // First cell orange, rest green
+    getEl(w.path[0][0],w.path[0][1]).classList.add('path-start');
+    for(let i=1;i<w.path.length;i++){
+      getEl(w.path[i][0],w.path[i][1]).classList.add('path-cell');
+    }
+    // Draw lines
+    for(let i=0;i<w.path.length-1;i++){
+      const a=getCellCenter(w.path[i][0],w.path[i][1]);
+      const b=getCellCenter(w.path[i+1][0],w.path[i+1][1]);
+      const line=document.createElementNS('http://www.w3.org/2000/svg','line');
+      line.setAttribute('x1',a.x);line.setAttribute('y1',a.y);
+      line.setAttribute('x2',b.x);line.setAttribute('y2',b.y);
+      line.setAttribute('stroke',i===0?'#f5a623':'#a8ff3e');
+      line.setAttribute('stroke-width','3');
+      line.setAttribute('stroke-opacity','0.7');
+      svg.appendChild(line);
+    }
   }
 }
 function clearShowOverlay(){
+  showActive=false;
   $('path-overlay').innerHTML='';
   document.querySelectorAll('.gcell.path-start,.gcell.path-cell').forEach(el=>{
     el.classList.remove('path-start','path-cell');
   });
-  if(showLabel){showLabel.remove();showLabel=null;}
-}
-function startShowWords(){
-  if(wordsFound.length===0)return;
-  showWordIdx=0;
-  showCurrentWord();
-  showInterval=setInterval(()=>{
-    showWordIdx=(showWordIdx+1)%wordsFound.length;
-    showCurrentWord();
-  },1500);
-}
-function showCurrentWord(){
-  const w=wordsFound[showWordIdx];
-  showWordPath(w);
-  if(showLabel)showLabel.remove();
-  showLabel=document.createElement('div');
-  showLabel.className='show-word-label';
-  showLabel.textContent=w.word.toUpperCase()+' (+'+w.pts+')';
-  document.body.appendChild(showLabel);
-}
-function stopShowWords(){
-  if(showInterval){clearInterval(showInterval);showInterval=null;}
-  clearShowOverlay();
 }
 $('submit-btn').addEventListener('click',e=>{e.stopPropagation();submitTracedWord();});
 $('back-btn').addEventListener('click',e=>{e.stopPropagation();backOneLetter();});
 $('undo-btn').addEventListener('click',e=>{e.stopPropagation();undoLastWord();});
 // Show button: hold to cycle through words
-$('show-btn').addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();startShowWords();});
-$('show-btn').addEventListener('pointerup',e=>{e.stopPropagation();stopShowWords();});
-$('show-btn').addEventListener('pointerleave',e=>{stopShowWords();});
-$('show-btn').addEventListener('touchstart',e=>{e.stopPropagation();e.preventDefault();startShowWords();},{passive:false});
-$('show-btn').addEventListener('touchend',e=>{e.stopPropagation();stopShowWords();},{passive:false});
+$('show-btn').addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();showAllWordPaths();});
+$('show-btn').addEventListener('pointerup',e=>{e.stopPropagation();clearShowOverlay();});
+$('show-btn').addEventListener('pointerleave',e=>{clearShowOverlay();});
+$('show-btn').addEventListener('touchstart',e=>{e.stopPropagation();e.preventDefault();showAllWordPaths();},{passive:false});
+$('show-btn').addEventListener('touchend',e=>{e.stopPropagation();clearShowOverlay();},{passive:false});
 
 $('play-btn').addEventListener('click',startGame);
 $('end-btn').addEventListener('click',()=>endGame(true));
