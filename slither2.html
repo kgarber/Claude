@@ -46,7 +46,7 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
 .par-line .tier-genius{color:var(--lime);}
 
 /* Game */
-#game-screen{gap:8px;padding-top:12px;}
+#game-screen{gap:4px;padding-top:8px;}
 .game-header{display:flex;justify-content:space-between;align-items:center;width:100%;font-size:12px;}
 .game-header .left{display:flex;flex-direction:column;gap:2px;}
 .words-count{font-size:11px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;}
@@ -57,19 +57,19 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
 
 /* Formula bar */
 .formula-bar{display:flex;align-items:center;justify-content:center;
-  gap:6px;width:100%;padding:8px 4px;margin:2px 0;
+  gap:4px;width:100%;padding:6px 4px;
   background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);
-  border-radius:10px;}
+  border-radius:8px;}
 .formula-factor{text-align:center;flex:1;}
-.formula-value{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700;
-  color:var(--text);line-height:1.2;}
-.formula-label{font-family:var(--font-sans);font-size:9px;color:var(--text-dim);
-  text-transform:uppercase;letter-spacing:0.5px;line-height:1.2;margin-top:2px;}
-.formula-op{font-family:'IBM Plex Mono',monospace;font-size:16px;color:var(--text-dim);
+.formula-value{font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:700;
+  color:var(--text);line-height:1;}
+.formula-label{font-family:var(--font-sans);font-size:8px;color:var(--text-dim);
+  text-transform:uppercase;letter-spacing:0.5px;line-height:1;margin-top:2px;}
+.formula-op{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--text-dim);
   flex-shrink:0;}
 .formula-mult{color:#fbbf24;}
 .formula-bonus{color:#f5a623;}
-.formula-total{color:var(--lime);font-size:24px;text-shadow:0 0 10px var(--lime-glow);}
+.formula-total{color:var(--lime);font-size:20px;text-shadow:0 0 10px var(--lime-glow);}
 
 /* Score popup */
 .score-popup{position:absolute;pointer-events:none;z-index:50;
@@ -108,8 +108,8 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
   70%{opacity:1;transform:translate(-50%,-50%) scale(1);}
   100%{opacity:0;transform:translate(-50%,-60%) scale(1);}}
 
-.current-word{font-family:var(--font-display);font-size:28px;font-weight:700;
-  min-height:40px;color:var(--lime);text-align:center;letter-spacing:2px;
+.current-word{font-family:var(--font-display);font-size:24px;font-weight:700;
+  min-height:30px;color:var(--lime);text-align:center;letter-spacing:2px;
   transition:color 0.15s;}
 .current-word.invalid{color:var(--red);}
 .current-word.valid-word{color:#7dff3e;text-shadow:0 0 10px rgba(125,255,62,0.4);}
@@ -134,7 +134,7 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
 .word-hint{font-size:11px;color:var(--text-dim);min-height:16px;text-align:center;}
 
 /* Grid */
-.grid-wrap{position:relative;margin:4px auto;touch-action:none;}
+.grid-wrap{position:relative;margin:2px auto;touch-action:none;}
 .grid{display:grid;gap:3px;position:relative;z-index:1;}
 .gcell{display:flex;align-items:center;justify-content:center;
   border-radius:5px;background:var(--cell);font-family:var(--font-display);
@@ -934,7 +934,7 @@ function acceptWord(word){
   $('grid-wrap').appendChild(popup);
   setTimeout(()=>popup.remove(),1500);
 
-  wordsFound.push({word,pts,len,path:tracePath.map(([r,c])=>[r,c])});
+  wordsFound.push({word,pts:basePts,len,path:tracePath.map(([r,c])=>[r,c])});
 
   // New head = last cell of trace; remember direction of final step
   const lastIdx=tracePath.length-1;
