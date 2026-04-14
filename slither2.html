@@ -49,17 +49,27 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
 #game-screen{gap:8px;padding-top:12px;}
 .game-header{display:flex;justify-content:space-between;align-items:center;width:100%;font-size:12px;}
 .game-header .left{display:flex;flex-direction:column;gap:2px;}
-.score-display{font-family:var(--font-display);font-size:22px;color:var(--lime);font-weight:700;}
-.words-count{font-size:11px;color:var(--text-dim);}
-.multiplier-display{font-family:var(--font-display);font-size:20px;font-weight:700;
-  color:var(--lime);min-width:50px;text-align:center;
-  transition:color 0.3s,text-shadow 0.3s;}
-.multiplier-display.hot{color:#fbbf24;text-shadow:0 0 12px rgba(251,191,36,0.5);}
-.multiplier-display.fire{color:#f87171;text-shadow:0 0 15px rgba(248,113,113,0.5);}
+.words-count{font-size:11px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;}
 .star-bar{display:flex;gap:2px;}
 .star{font-size:18px;transition:color 0.3s,text-shadow 0.3s;}
 .star.empty{color:rgba(255,255,255,0.12);}
 .star.filled{color:#fbbf24;text-shadow:0 0 8px rgba(251,191,36,0.5);}
+
+/* Formula bar */
+.formula-bar{display:flex;align-items:center;justify-content:center;
+  gap:6px;width:100%;padding:8px 4px;margin:2px 0;
+  background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);
+  border-radius:10px;}
+.formula-factor{text-align:center;flex:1;}
+.formula-value{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700;
+  color:var(--text);line-height:1.2;}
+.formula-label{font-family:var(--font-sans);font-size:9px;color:var(--text-dim);
+  text-transform:uppercase;letter-spacing:0.5px;line-height:1.2;margin-top:2px;}
+.formula-op{font-family:'IBM Plex Mono',monospace;font-size:16px;color:var(--text-dim);
+  flex-shrink:0;}
+.formula-mult{color:#fbbf24;}
+.formula-bonus{color:#f5a623;}
+.formula-total{color:var(--lime);font-size:24px;text-shadow:0 0 10px var(--lime-glow);}
 
 /* Score popup */
 .score-popup{position:absolute;pointer-events:none;z-index:50;
@@ -313,20 +323,37 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
 
 <div id="game-screen" class="screen">
   <div class="game-header">
-    <div class="left">
-      <div class="score-display" id="score-display">0</div>
-      <div class="words-count" id="words-count">0 words</div>
-    </div>
     <div class="star-bar" id="star-bar">
       <span class="star empty" id="star1">&#9733;</span>
       <span class="star empty" id="star2">&#9733;</span>
       <span class="star empty" id="star3">&#9733;</span>
     </div>
-    <div class="multiplier-display" id="multiplier-display">x1.0</div>
+    <div class="words-count" id="words-count">0 cells</div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
       <button class="undo-btn rotate-btn" id="rotate-btn" title="Rotate view">&#8635;</button>
       <button class="undo-btn" id="refresh-btn">New Grid</button>
       <button class="end-btn" id="end-btn">End</button>
+    </div>
+  </div>
+  <div class="formula-bar" id="formula-bar">
+    <div class="formula-factor">
+      <div class="formula-value" id="f-words">0</div>
+      <div class="formula-label">word pts</div>
+    </div>
+    <div class="formula-op">&times;</div>
+    <div class="formula-factor">
+      <div class="formula-value formula-mult" id="f-mult">1.0</div>
+      <div class="formula-label">grid <span id="f-cells">0</span>/100</div>
+    </div>
+    <div class="formula-op">&times;</div>
+    <div class="formula-factor">
+      <div class="formula-value formula-bonus" id="f-bonus">1.0</div>
+      <div class="formula-label">bonus</div>
+    </div>
+    <div class="formula-op">=</div>
+    <div class="formula-factor">
+      <div class="formula-value formula-total" id="f-total">0</div>
+      <div class="formula-label">score</div>
     </div>
   </div>
   <div class="bonus-words" id="bonus-words"></div>
@@ -595,7 +622,8 @@ const STAR1=100,STAR2=200,STAR3=350;
 
 // === Game State ===
 let grid,used,doublePoints,headCell=null,tracePath=[],score=0,wordsFound=[],cellsUsed=0;
-let multiplier=1.0,gameActive=false,pickingStart=true,processing=false;
+let rawWordPoints=0,multiplier=1.0,bonusMultiplier=1.0;
+let gameActive=false,pickingStart=true,processing=false;
 let undoStack=[],refreshCount=0,lastStepDir=null,rotationCount=0;
 let bonusWords=[],bonusFound=new Set();
 const $=id=>document.getElementById(id);
@@ -686,16 +714,13 @@ function updateGridDisplay(){
   $('show-btn').disabled=wordsFound.length===0;
 }
 function updateUI(){
-  $('score-display').textContent=score;
+  // Formula bar
+  $('f-words').textContent=rawWordPoints;
+  $('f-mult').textContent=multiplier.toFixed(1);
+  $('f-cells').textContent=cellsUsed;
+  $('f-bonus').textContent=bonusMultiplier.toFixed(1);
+  $('f-total').textContent=score;
   $('words-count').textContent=cellsUsed+'/100 cells \u00b7 '+wordsFound.length+' word'+(wordsFound.length!==1?'s':'');
-  // Multiplier display — show next milestone
-  const md=$('multiplier-display');
-  const nextMilestone=(Math.floor(cellsUsed/10)+1)*10;
-  md.textContent='x'+multiplier.toFixed(1);
-  md.title=nextMilestone<=100?('Next +0.2x at '+nextMilestone+' cells'):'Max cells reached';
-  md.classList.remove('hot','fire');
-  if(multiplier>=3.0)md.classList.add('fire');
-  else if(multiplier>=2.0)md.classList.add('hot');
   // Stars
   $('star1').className='star '+(score>=STAR1?'filled':'empty');
   $('star2').className='star '+(score>=STAR2?'filled':'empty');
@@ -704,7 +729,7 @@ function updateUI(){
     $('word-hint').textContent='Tap a cell to start tracing a word';
   }
   // Word list
-  $('word-list').textContent=wordsFound.map(w=>w.word.toUpperCase()+' (+'+w.pts+')').join('  \u00b7  ');
+  $('word-list').textContent=wordsFound.map(w=>w.word.toUpperCase()+' ('+w.len+'\u00b2='+wordScore(w.len)+')').join('  \u00b7  ');
 }
 
 // === Adjacency ===
@@ -838,13 +863,17 @@ function endTrace(){
     rejectWord();
   }
 }
+function recalcScore(){
+  // Total score = rawWordPoints × multiplier × bonusMultiplier
+  score=Math.round(rawWordPoints*multiplier*bonusMultiplier);
+}
 function acceptWord(word){
   processing=true;
   // Save undo state BEFORE modifying anything
   undoStack.push({
     used:used.map(row=>[...row]),
     headCell:headCell?[...headCell]:null,
-    score,cellsUsed,multiplier,
+    rawWordPoints,cellsUsed,multiplier,bonusMultiplier,
     wordsFound:[...wordsFound],
     lastStepDir:lastStepDir?[...lastStepDir]:null,
     bonusFound:new Set(bonusFound)
@@ -854,25 +883,30 @@ function acceptWord(word){
   const len=word.length;
   const basePts=wordScore(len);
 
-  // Mark used FIRST (only count newly consumed cells)
+  // Add to raw word points
+  rawWordPoints+=basePts;
+
+  // Mark used (only count newly consumed cells)
   let newCells=0;
   for(const[r,c] of tracePath){if(!used[r][c]){used[r][c]=true;newCells++;}}
   cellsUsed+=newCells;
 
-  // Recalculate multiplier based on total cells used: +0.2x per 10 cells
+  // Recalculate grid multiplier: +0.2x per 10 cells
   multiplier=1.0+Math.floor(cellsUsed/10)*0.2;
-  // Gold cells add +0.1x each
   let totalGold=0;
   for(let r=0;r<N;r++)for(let c=0;c<N;c++){if(used[r][c]&&doublePoints&&doublePoints[r][c])totalGold++;}
   multiplier+=totalGold*0.1;
   multiplier=Math.round(multiplier*10)/10;
 
-  // Apply multiplier to word score
-  let pts=Math.round(basePts*multiplier);
-
-  // Bonus word check — 3x on top of multiplier
+  // Bonus word check — adds to bonus multiplier
   const isBonusWord=bonusWords.some(bw=>bw.word===word)&&!bonusFound.has(word);
-  if(isBonusWord){pts*=3;bonusFound.add(word);}
+  if(isBonusWord){
+    bonusFound.add(word);
+    bonusMultiplier=1.0+bonusFound.size*0.5; // each bonus word adds +0.5x
+  }
+
+  // Recalc total score
+  recalcScore();
 
   // Animate
   for(const[r,c] of tracePath)getEl(r,c).classList.add('accepted');
@@ -887,25 +921,18 @@ function acceptWord(word){
     renderBonusSlots($('bonus-words'),bonusWords,bonusFound);
   }
 
-  // Floating score popup — show the formula
+  // Small popup showing word value
   const lastC=tracePath[tracePath.length-1];
   const popup=document.createElement('div');
   popup.className='score-popup';
-  // Build formula: base × multiplier × bonus = total
-  let formulaParts=[];
-  formulaParts.push('<span class="factor">'+len+'&sup2;='+basePts+'</span>');
-  if(multiplier>1.05)formulaParts.push('<span class="mult">&times;'+multiplier.toFixed(1)+'</span>');
-  if(isBonusWord)formulaParts.push('<span class="bonus-tag">&times;3 BONUS</span>');
-  popup.innerHTML='<span class="formula">'+formulaParts.join(' ')+'</span><span class="result">+'+pts+'</span>';
+  popup.innerHTML='<span class="result">'+word.toUpperCase()+' +'+basePts+'</span>';
   const cellEl=getEl(lastC[0],lastC[1]);
   const gridRect=$('grid').getBoundingClientRect();
   const cellRect=cellEl.getBoundingClientRect();
   popup.style.left=(cellRect.left-gridRect.left+cellRect.width/2)+'px';
   popup.style.top=(cellRect.top-gridRect.top-10)+'px';
   $('grid-wrap').appendChild(popup);
-  setTimeout(()=>popup.remove(),2000);
-
-  score+=pts;
+  setTimeout(()=>popup.remove(),1500);
 
   wordsFound.push({word,pts,len,path:tracePath.map(([r,c])=>[r,c])});
 
@@ -936,10 +963,12 @@ function undoLastWord(){
   const state=undoStack.pop();
   used=state.used;
   headCell=state.headCell;
-  score=state.score;
+  rawWordPoints=state.rawWordPoints;
   cellsUsed=state.cellsUsed;
   multiplier=state.multiplier;
+  bonusMultiplier=state.bonusMultiplier;
   wordsFound=state.wordsFound;
+  recalcScore();
   lastStepDir=state.lastStepDir;
   bonusFound=state.bonusFound||new Set();
   tracePath=[];
@@ -1026,7 +1055,7 @@ function endGame(manual){
   const stars=score>=STAR3?3:score>=STAR2?2:score>=STAR1?1:0;
   const starStr='\u2605'.repeat(stars)+'\u2606'.repeat(3-stars);
   $('end-title').textContent=stars===3?starStr+' Incredible!':stars===2?starStr+' Great game!':stars===1?starStr+' Solid!':manual?'Game Over':'No more moves!';
-  $('end-score').textContent=score+' (x'+multiplier.toFixed(1)+' final multiplier)';
+  $('end-score').textContent=rawWordPoints+' \u00d7 '+multiplier.toFixed(1)+' \u00d7 '+bonusMultiplier.toFixed(1)+' = '+score;
   $('end-words-count').textContent=wordsFound.length;
   $('end-cells').textContent=cellsUsed+'/100';
   $('end-best').textContent=best.word.toUpperCase()+' ('+best.len+' letters, +'+best.pts+')';
@@ -1068,7 +1097,8 @@ function startGame(){
   doublePoints=generateDoublePoints(seed);
   used=Array.from({length:N},()=>Array(N).fill(false));
   headCell=null;tracePath=[];score=0;wordsFound=[];cellsUsed=0;
-  multiplier=1.0;gameActive=true;pickingStart=true;processing=false;
+  rawWordPoints=0;multiplier=1.0;bonusMultiplier=1.0;
+  gameActive=true;pickingStart=true;processing=false;
   undoStack=[];lastStepDir=null;rotationCount=0;
   bonusWords=generateBonusWords(grid,seed);
   bonusFound=new Set();
