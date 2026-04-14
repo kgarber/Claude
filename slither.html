@@ -538,20 +538,11 @@ function renderBonusSlots(container,bonusWords,foundSet){
   for(const bw of bonusWords){
     const slot=document.createElement('div');
     slot.className='bonus-slot'+(foundSet.has(bw.word)?' found':'');
-    const revealed=getRevealedPositions(bw.word.length);
     for(let i=0;i<bw.word.length;i++){
       const el=document.createElement('div');
-      el.className='bonus-letter';
-      if(foundSet.has(bw.word)){
-        el.textContent=bw.word[i].toUpperCase();
-        el.classList.add('revealed');
-      }else if(revealed.includes(i)){
-        el.textContent=bw.word[i].toUpperCase();
-        el.classList.add('revealed');
-      }else{
-        el.textContent='_';
-        el.classList.add('blank');
-      }
+      el.className='bonus-letter revealed';
+      el.textContent=bw.word[i].toUpperCase();
+      if(foundSet.has(bw.word))el.style.color='#f5a623';
       slot.appendChild(el);
     }
     container.appendChild(slot);
