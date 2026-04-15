@@ -147,11 +147,14 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
 .gcell.used{background:var(--cell-used);color:rgba(255,255,255,0.08);
   box-shadow:none;cursor:default;}
 .gcell.used.restartable{color:rgba(255,255,255,0.4);cursor:pointer;
-  box-shadow:inset 0 0 0 1.5px rgba(168,255,62,0.2);background:#2d4d2a;}
+  box-shadow:0 0 0 2px rgba(168,255,62,0.35);background:#2d4d2a;}
 .gcell.head{box-shadow:0 0 0 3px var(--lime),0 0 15px var(--lime-glow);}
 .gcell.tracing,.gcell.double.tracing{background:var(--cell-active);color:var(--text-dark);
   box-shadow:0 0 0 2px var(--lime),0 0 12px var(--lime-glow);}
-.gcell.start-option{box-shadow:0 0 0 2px rgba(168,255,62,0.4);}
+.gcell.start-option{box-shadow:0 0 0 2.5px rgba(168,255,62,0.6);
+  background:linear-gradient(135deg,var(--cell),rgba(168,255,62,0.08));}
+.gcell.next-option{box-shadow:0 0 0 2px rgba(168,255,62,0.5);
+  background:linear-gradient(135deg,var(--cell),rgba(168,255,62,0.06));}
 .gcell.accepted{animation:acceptPop 0.3s ease;}
 .gcell.rejected{animation:shake 0.35s ease;}
 
@@ -174,10 +177,11 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
   box-shadow:0 1px 3px rgba(0,0,0,0.3),inset 0 0 0 1.5px rgba(245,166,35,0.5);}
 .gcell.double::after{content:'◆';position:absolute;top:1px;right:3px;
   font-size:8px;font-family:var(--font-sans);font-weight:700;color:#c87f0a;line-height:1;}
-.gcell.double.start-option{box-shadow:0 0 0 2px rgba(168,255,62,0.4),inset 0 0 0 1.5px rgba(245,166,35,0.5);}
+.gcell.double.start-option{box-shadow:0 0 0 2.5px rgba(168,255,62,0.6),inset 0 0 0 1.5px rgba(245,166,35,0.5);}
 .gcell.double.used{background:var(--cell-used);box-shadow:none;}
 .gcell.double.used.restartable{background:#2d4d2a;
-  box-shadow:inset 0 0 0 1.5px rgba(168,255,62,0.2);}
+  box-shadow:0 0 0 2px rgba(168,255,62,0.35);}
+.gcell.double.next-option{box-shadow:0 0 0 2px rgba(168,255,62,0.5),inset 0 0 0 1.5px rgba(245,166,35,0.5);}
 .gcell.double.used::after{color:rgba(255,255,255,0.1);}
 .gcell.double.used.restartable::after{color:rgba(200,127,10,0.4);}
 
@@ -787,11 +791,23 @@ function updateGridDisplay(){
         }
       }
       // No head highlight — player can start from any used cell or edge
-      // Edge cells always a start option
+      // Edge cells always a start option (when no active trace)
       if(!used[r][c]&&isEdge(r,c)&&tracePath.length===0)el.classList.add('start-option');
     }
   }
   for(const[r,c] of tracePath){getEl(r,c).classList.add('tracing');}
+  // Highlight available next cells when there's an active trace
+  if(tracePath.length>=1){
+    const[lr,lc]=tracePath[tracePath.length-1];
+    for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){
+      if(dr===0&&dc===0)continue;
+      const nr=lr+dr,nc=lc+dc;
+      if(nr<0||nr>=N||nc<0||nc>=N)continue;
+      if(used[nr][nc])continue;
+      if(tracePath.some(([pr,pc])=>pr===nr&&pc===nc))continue;
+      getEl(nr,nc).classList.add('next-option');
+    }
+  }
   // Current word display
   const letters=tracePath.map(([r,c])=>grid[r][c]).join('');
   const cw=$('current-word');
