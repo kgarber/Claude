@@ -629,6 +629,10 @@ function generateBonusWords(grid,dateStr){
     for(const candidate of shuffled){
       const cells=candidate.path.map(([r,c])=>r+','+c);
       if(cells.some(k=>usedCells.has(k)))continue;
+      // Check reachability: can we find a real word starting from an edge
+      // that passes through or adjacent to the bonus word's first letter?
+      const[sr,sc]=candidate.path[0];
+      if(!isBonusReachable(grid,sr,sc))continue;
       bonus.push(candidate);
       for(const k of cells)usedCells.add(k);
       break;
@@ -636,6 +640,51 @@ function generateBonusWords(grid,dateStr){
   }
   bonus.sort((a,b)=>a.word.length-b.word.length);
   return bonus;
+}
+
+// Check if a cell at (tr,tc) is reachable: does any valid 2-5 letter word
+// starting from an edge cell have a path that ends adjacent to (tr,tc)?
+function isBonusReachable(grid,tr,tc){
+  if(!dictionary)return true;
+  // Cells adjacent to the target (these are the "bridge" destinations)
+  const targetNeighbors=new Set();
+  for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){
+    if(dr===0&&dc===0)continue;
+    const nr=tr+dr,nc=tc+dc;
+    if(nr>=0&&nr<N&&nc>=0&&nc<N)targetNeighbors.add(nr+','+nc);
+  }
+  // BFS/DFS from every edge cell, looking for valid words whose path
+  // includes or is adjacent to the target
+  for(let r=0;r<N;r++){
+    for(let c=0;c<N;c++){
+      if(!(r===0||r===N-1||c===0||c===N-1))continue;
+      // DFS from this edge cell up to depth 5
+      if(bridgeDFS(grid,r,c,[{r,c}],grid[r][c].toLowerCase(),targetNeighbors,tr,tc))return true;
+    }
+  }
+  return false;
+}
+function bridgeDFS(grid,r,c,path,word,targetNeighbors,tr,tc){
+  // If this path reaches adjacent to target and forms a valid word, success
+  const key=r+','+c;
+  if(word.length>=2&&dictionary.isWord(word)){
+    // Check if any cell in path is adjacent to target
+    if(path.some(p=>targetNeighbors.has(p.r+','+p.c)))return true;
+  }
+  if(word.length>=5)return false; // limit search depth
+  for(let dr=-1;dr<=1;dr++){
+    for(let dc=-1;dc<=1;dc++){
+      if(dr===0&&dc===0)continue;
+      const nr=r+dr,nc=c+dc;
+      if(nr<0||nr>=N||nc<0||nc>=N)continue;
+      if(nr===tr&&nc===tc)continue; // don't use the target cell itself
+      if(path.some(p=>p.r===nr&&p.c===nc))continue;
+      const nw=word+grid[nr][nc].toLowerCase();
+      if(!dictionary.isPrefix(nw))continue;
+      if(bridgeDFS(grid,nr,nc,[...path,{r:nr,c:nc}],nw,targetNeighbors,tr,tc))return true;
+    }
+  }
+  return false;
 }
 function getRevealedPositions(len){
   if(len<=4)return[0,len-1];
