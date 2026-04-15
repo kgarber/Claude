@@ -314,6 +314,7 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
     </div>
     <div class="words-count" id="words-count">0 cells</div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
+      <button class="undo-btn" id="game-help-btn" title="How to play" style="font-size:14px;padding:6px 10px;">?</button>
       <button class="undo-btn rotate-btn" id="rotate-btn" title="Rotate view"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="6" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.6"/><rect x="10" y="6" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.6"/><rect x="6" y="10" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.6"/><rect x="10" y="10" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.6"/><path d="M16 4 A8 8 0 0 1 16 16" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M16 16 L14 14 M16 16 L18 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M4 16 A8 8 0 0 1 4 4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M4 4 L6 6 M4 4 L2 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
       <button class="undo-btn" id="refresh-btn">New Grid</button>
       <button class="end-btn" id="end-btn">End</button>
@@ -1317,6 +1318,7 @@ $('rotate-btn').addEventListener('click',rotateGrid);
 $('share-btn').addEventListener('click',shareResult);
 $('home-btn').addEventListener('click',()=>location.href='index.html');
 $('help-btn').addEventListener('click',()=>$('help-overlay').classList.add('active'));
+$('game-help-btn').addEventListener('click',()=>$('help-overlay').classList.add('active'));
 $('close-help').addEventListener('click',()=>$('help-overlay').classList.remove('active'));
 $('help-overlay').addEventListener('click',e=>{if(e.target.id==='help-overlay')$('help-overlay').classList.remove('active');});
 
