@@ -583,18 +583,14 @@ function generateDoublePoints(dateStr){
 }
 
 // === Bonus Words ===
-function findGridWords(grid,minLen,maxLen,limit,nearEdge){
+function findGridWords(grid,minLen,maxLen,limit){
   if(!dictionary)return[];
   const found=[];
   const seen=new Set();
   for(let r=0;r<N&&found.length<limit;r++){
     for(let c=0;c<N&&found.length<limit;c++){
-      // nearEdge: must NOT be on the edge, but must be within 2 cells of an edge
-      if(nearEdge){
-        const isEdge=r===0||r===N-1||c===0||c===N-1;
-        const distFromEdge=Math.min(r,c,N-1-r,N-1-c);
-        if(isEdge||distFromEdge>2)continue;
-      }
+      // Skip edge cells — bonus words should be interior
+      if(r===0||r===N-1||c===0||c===N-1)continue;
       dfsWords(grid,r,c,[{r,c}],grid[r][c].toLowerCase(),found,seen,minLen,maxLen,limit);
     }
   }
@@ -621,10 +617,9 @@ function dfsWords(grid,r,c,path,word,found,seen,minLen,maxLen,limit){
 }
 function generateBonusWords(grid,dateStr){
   const rng=mulberry32(dateSeed(dateStr+'bonus'));
-  // nearEdge=true: start cell 1-2 from edge
-  const short=findGridWords(grid,3,4,40,true);
-  const medium=findGridWords(grid,5,5,30,true);
-  const long=findGridWords(grid,6,7,20,true);
+  const short=findGridWords(grid,3,4,40);
+  const medium=findGridWords(grid,5,5,30);
+  const long=findGridWords(grid,6,7,20);
   const buckets=[long,medium,short];
   const bonus=[];
   const usedCells=new Set();
@@ -634,19 +629,6 @@ function generateBonusWords(grid,dateStr){
     for(const candidate of shuffled){
       const cells=candidate.path.map(([r,c])=>r+','+c);
       if(cells.some(k=>usedCells.has(k)))continue;
-      // Ensure the word is reachable: at least one cell in the path must be
-      // on the edge OR adjacent to an edge cell. This guarantees the player
-      // can start an edge word that touches the bonus word's path.
-      const touchesEdge=candidate.path.some(([r,c])=>{
-        if(r===0||r===N-1||c===0||c===N-1)return true;
-        for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){
-          if(dr===0&&dc===0)continue;
-          const nr=r+dr,nc=c+dc;
-          if(nr===0||nr===N-1||nc===0||nc===N-1)return true;
-        }
-        return false;
-      });
-      if(!touchesEdge)continue;
       bonus.push(candidate);
       for(const k of cells)usedCells.add(k);
       break;
