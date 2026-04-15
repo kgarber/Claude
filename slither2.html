@@ -239,13 +239,60 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
   <div class="help-content">
     <h2>How to Play</h2>
 
-    <h3>1. Make Words</h3>
-    <p>Tap letters next to each other to spell a word. You can go in any direction, even diagonally. When the word turns <b style="color:#7dff3e;">green</b>, hit <b>Submit</b>.</p>
+    <h3>1. Start from the Edge</h3>
+    <p>Your first word must start from a letter on the edge of the grid (any side).</p>
+    <div style="display:grid;grid-template-columns:repeat(5,30px);gap:2px;margin:10px auto;width:fit-content;">
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">E</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">T</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">A</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">R</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">S</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">N</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:var(--text-dim);">O</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:var(--text-dim);">I</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:var(--text-dim);">L</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">E</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">T</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:var(--text-dim);">H</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:var(--text-dim);">A</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:var(--text-dim);">N</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">D</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">P</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:var(--text-dim);">E</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:var(--text-dim);">R</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:var(--text-dim);">S</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">T</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">O</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">N</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">E</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">S</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">I</div>
+    </div>
+    <p style="text-align:center;font-size:12px;color:var(--text-dim);">Glowing cells = edges you can start from</p>
 
-    <h3>2. Keep Going</h3>
-    <p>After a word is accepted, those letters fade out. Tap any faded letter or any letter on the edge to start your next word.</p>
+    <h3>2. Spell a Word</h3>
+    <p>Tap letters next to each other to spell a word. You can go any direction, even diagonally. When it turns <b style="color:#7dff3e;">green</b>, hit <b>Submit</b>.</p>
+    <div style="display:flex;gap:4px;justify-content:center;margin:8px 0;">
+      <div style="width:30px;height:30px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">S</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">T</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">O</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">N</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">E</div>
+      <span style="color:#7dff3e;font-size:14px;font-weight:700;display:flex;align-items:center;margin-left:8px;">&#10003;</span>
+    </div>
 
-    <h3>3. Score More</h3>
+    <h3>3. Work Your Way In</h3>
+    <p>Used letters fade out. Now you can tap any <b>faded letter</b> or <b>edge letter</b> to start your next word. Work inward to reach more of the grid!</p>
+    <div style="display:flex;gap:4px;justify-content:center;margin:8px 0;">
+      <div style="width:30px;height:30px;border-radius:4px;background:#2d3d2a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:rgba(255,255,255,0.2);">S</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:#2d3d2a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:rgba(255,255,255,0.2);">T</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:#2d3d2a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:rgba(255,255,255,0.2);">O</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:#2d3d2a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:rgba(255,255,255,0.2);">N</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:#2d3d2a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:rgba(255,255,255,0.3);">E</div>
+      <span style="color:var(--text-dim);font-size:11px;display:flex;align-items:center;margin-left:6px;">tap any to<br>start next</span>
+    </div>
+
+    <h3>4. Score More</h3>
     <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:10px;margin:8px 0;font-size:13px;line-height:1.8;">
       <div><b>Longer words = way more points</b></div>
       <div style="color:var(--text-dim);">2 letters = 4 pts &middot; 3 = 9 &middot; 4 = 16 &middot; 5 = 25 &middot; 6 = 36</div>
