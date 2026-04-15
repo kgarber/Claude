@@ -237,69 +237,35 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
 
 <div class="help-overlay" id="help-overlay">
   <div class="help-content">
-    <h2>How to Play Slither v2</h2>
-    <p>Trace words on a 10&times;10 letter grid. Use as many cells as possible to grow your multiplier, hit diamond cells for big boosts, and hunt for bonus words to maximize your score.</p>
+    <h2>How to Play</h2>
 
-    <h3>Tracing Words</h3>
-    <div style="display:flex;gap:16px;align-items:flex-start;margin:12px 0;">
-      <div style="display:grid;grid-template-columns:repeat(4,36px);gap:3px;flex-shrink:0;">
-        <div style="width:36px;height:36px;border-radius:5px;background:#f5eedc;color:#1a1a1a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;font-family:serif;">T</div>
-        <div style="width:36px;height:36px;border-radius:5px;background:#f5eedc;color:#1a1a1a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;font-family:serif;">R</div>
-        <div style="width:36px;height:36px;border-radius:5px;background:#f5eedc;color:#1a1a1a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;font-family:serif;">A</div>
-        <div style="width:36px;height:36px;border-radius:5px;background:#f5eedc;color:#1a1a1a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;font-family:serif;">N</div>
-        <div style="width:36px;height:36px;border-radius:5px;background:rgba(168,255,62,0.25);color:#1a1a1a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;font-family:serif;box-shadow:0 0 0 2px #a8ff3e;">S</div>
-        <div style="width:36px;height:36px;border-radius:5px;background:rgba(168,255,62,0.25);color:#1a1a1a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;font-family:serif;box-shadow:0 0 0 2px #a8ff3e;">N</div>
-        <div style="width:36px;height:36px;border-radius:5px;background:rgba(168,255,62,0.25);color:#1a1a1a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;font-family:serif;box-shadow:0 0 0 2px #a8ff3e;">A</div>
-        <div style="width:36px;height:36px;border-radius:5px;background:rgba(168,255,62,0.25);color:#1a1a1a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;font-family:serif;box-shadow:0 0 0 2px #a8ff3e;">K</div>
-        <div style="width:36px;height:36px;border-radius:5px;background:#f5eedc;color:#1a1a1a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;font-family:serif;">O</div>
-        <div style="width:36px;height:36px;border-radius:5px;background:#f5eedc;color:#1a1a1a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;font-family:serif;">E</div>
-        <div style="width:36px;height:36px;border-radius:5px;background:rgba(168,255,62,0.25);color:#1a1a1a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;font-family:serif;box-shadow:0 0 0 2px #a8ff3e;">E</div>
-        <div style="width:36px;height:36px;border-radius:5px;background:#f5eedc;color:#1a1a1a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;font-family:serif;">D</div>
-      </div>
-      <div style="font-size:13px;color:#c0c8c0;line-height:1.5;">
-        <div style="margin-bottom:6px;"><b style="color:#a8ff3e;">S &rarr; N &rarr; A &rarr; K &rarr; E</b></div>
-        Tap or drag through adjacent cells in any of 8 directions to spell words. Tap <b>Submit</b> when ready.
-      </div>
+    <h3>1. Make Words</h3>
+    <p>Tap letters next to each other to spell a word. You can go in any direction, even diagonally. When the word turns <b style="color:#7dff3e;">green</b>, hit <b>Submit</b>.</p>
+
+    <h3>2. Keep Going</h3>
+    <p>After a word is accepted, those letters fade out. Tap any faded letter or any letter on the edge to start your next word.</p>
+
+    <h3>3. Score More</h3>
+    <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:10px;margin:8px 0;font-size:13px;line-height:1.8;">
+      <div><b>Longer words = way more points</b></div>
+      <div style="color:var(--text-dim);">2 letters = 4 pts &middot; 3 = 9 &middot; 4 = 16 &middot; 5 = 25 &middot; 6 = 36</div>
+      <div style="margin-top:6px;"><b style="color:#fbbf24;">Use more cells = higher multiplier</b></div>
+      <div style="color:var(--text-dim);">Every cell you use adds +0.01x</div>
+      <div style="margin-top:6px;"><b style="color:#e5a820;">◆ Diamond cells = big boost</b></div>
+      <div style="color:var(--text-dim);">Each diamond adds +0.5x to your multiplier</div>
+      <div style="margin-top:6px;"><b style="color:#f5a623;">Bonus words = extra multiplier</b></div>
+      <div style="color:var(--text-dim);">3 hidden words shown above the grid. Find one = +0.5x</div>
     </div>
 
-    <h3>Starting &amp; Continuing</h3>
-    <ul>
-      <li>Tap any <b>unused edge cell</b> to start a fresh word</li>
-      <li>Tap any <b>used cell</b> (faded) with unused neighbors to start from that letter</li>
-      <li>After submitting a word, tap adjacent cells or any used cell to begin the next one</li>
-      <li>The current word turns <b style="color:#7dff3e;">green</b> when it's valid &mdash; then tap Submit</li>
-      <li>Use <b>&larr; Back</b> to remove the last letter, or <b>Undo Word</b> to reverse a submitted word</li>
-    </ul>
+    <h3>4. Get Stars</h3>
+    <p>&#9733; 100 pts &middot; &#9733;&#9733; 200 pts &middot; &#9733;&#9733;&#9733; 350 pts</p>
 
-    <h3>Score Formula</h3>
-    <p>Your score is calculated as:</p>
-    <div style="text-align:center;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--text);padding:8px;background:rgba(255,255,255,0.03);border-radius:8px;margin:8px 0;">
-      <b>words</b> &times; <b style="color:#fbbf24;">grid</b> &times; <b style="color:#e5a820;">◆</b> &times; <b style="color:#f5a623;">bonus</b> = <b style="color:#a8ff3e;">score</b>
+    <h3>Buttons</h3>
+    <div style="font-size:13px;line-height:1.8;color:#c0c8c0;">
+      <b>⌫</b> Remove last letter &middot; <b>Undo Word</b> Take back a word<br>
+      <b>Show</b> See your word paths &middot; <b>?</b> This screen<br>
+      <b>Rotate</b> Turn the grid 90&deg; &middot; <b>New Grid</b> Fresh letters
     </div>
-    <ul>
-      <li><b>Words:</b> sum of each word's points. Points = length&sup2; (2=4, 3=9, 4=16, 5=25, 6=36, 7=49)</li>
-      <li><b style="color:#fbbf24;">Grid:</b> starts at x1.00. Every cell you use adds +0.01x. Use 50 cells = x1.50. Use all 100 = x2.00.</li>
-      <li><b style="color:#e5a820;">◆ Diamond:</b> starts at x1.0. Each diamond cell (gold tint with ◆) you use adds +0.5x. Route through them!</li>
-      <li><b style="color:#f5a623;">Bonus:</b> starts at x1.0. 3 bonus words are shown above the grid. Finding one adds +0.5x to this multiplier.</li>
-    </ul>
-
-    <h3>Stars</h3>
-    <ul>
-      <li><b>&#9733;</b> 100 points</li>
-      <li><b>&#9733;&#9733;</b> 200 points</li>
-      <li><b>&#9733;&#9733;&#9733;</b> 350 points</li>
-    </ul>
-
-    <h3>Tips</h3>
-    <ul>
-      <li>Longer words earn exponentially more &mdash; a 5-letter word (25 pts) is worth more than two 3-letter words (9+9=18)</li>
-      <li>Use more of the grid to grow your grid multiplier &mdash; every cell counts</li>
-      <li>Diamond cells are powerful &mdash; even 2 diamonds bumps your ◆ multiplier to x2.0</li>
-      <li>Bonus words are inside the grid (not on edges) so you need to work inward to reach them</li>
-      <li>Hold the <b>Show</b> button to see all your word paths at once</li>
-      <li>Tap the <b>&#8635;</b> rotate button to see the grid from a different angle</li>
-      <li>"New Grid" generates a fresh layout if you're stuck</li>
-    </ul>
 
     <button class="close-help" id="close-help">Got it</button>
   </div>
