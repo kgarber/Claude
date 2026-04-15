@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Slither v3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0e1a13;--cell:#f5eedc;--cell-used:#2d3d2a;--cell-active:rgba(168,255,62,0.25);
+  --lime:#a8ff3e;--lime-glow:rgba(168,255,62,0.35);--red:#e74c3c;
+  --text:#e0e0e0;--text-dim:#6a7a6a;--text-dark:#1a1a1a;
+  --font-display:'Playfair Display',serif;--font-sans:'DM Sans',sans-serif;
+}
+html,body{width:100%;height:100%;background:var(--bg);color:var(--text);
+  font-family:var(--font-sans);overflow-x:hidden;touch-action:manipulation;
+  -webkit-user-select:none;user-select:none;}
+body{display:flex;flex-direction:column;align-items:center;min-height:100vh;min-height:100dvh;}
+body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 2c0 10-8 18-18 18M38 20c-10 0-18 8-18 18' stroke='%23fff' fill='none' stroke-width='0.5'/%3E%3C/svg%3E");
+  background-size:40px 40px;}
+.screen{display:none;flex-direction:column;align-items:center;
+  width:100%;max-width:480px;padding:16px;position:relative;z-index:1;}
+.screen.active{display:flex;}
+
+/* Title */
+#title-screen{justify-content:center;min-height:100vh;min-height:100dvh;gap:20px;text-align:center;}
+.logo{font-family:var(--font-display);font-size:48px;font-weight:800;color:var(--lime);}
+.tagline{font-size:13px;color:var(--text-dim);font-style:italic;margin-top:-8px;}
+.puzzle-date{font-family:var(--font-sans);font-size:12px;color:var(--text-dim);margin-top:4px;}
+.play-btn{background:var(--lime);color:#0e1a13;border:none;padding:16px 40px;
+  border-radius:12px;font-family:var(--font-sans);font-size:17px;font-weight:700;
+  cursor:pointer;transition:all 0.2s;box-shadow:0 0 30px var(--lime-glow);}
+.play-btn:active{transform:scale(0.96);}
+.back-link{color:var(--text-dim);font-size:13px;text-decoration:none;
+  font-family:var(--font-sans);}
+.loading-msg{font-size:13px;color:var(--text-dim);min-height:20px;}
+.par-line{font-family:var(--font-sans);font-size:12px;color:var(--text-dim);
+  display:flex;gap:14px;justify-content:center;}
+.par-line span{font-family:'IBM Plex Mono',monospace;}
+.par-line .tier-par{color:#888;}
+.par-line .tier-great{color:#a8c8a8;}
+.par-line .tier-genius{color:var(--lime);}
+
+/* Game */
+#game-screen{gap:2px;padding-top:4px;padding-bottom:70px;}
+.game-header{display:flex;justify-content:space-between;align-items:center;width:100%;font-size:12px;}
+.game-header .left{display:flex;flex-direction:column;gap:2px;}
+.words-count{font-size:11px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;}
+.star-bar{display:flex;gap:2px;}
+.star{font-size:18px;transition:color 0.3s,text-shadow 0.3s;}
+.star.empty{color:rgba(255,255,255,0.12);}
+.star.filled{color:#fbbf24;text-shadow:0 0 8px rgba(251,191,36,0.5);}
+
+/* Formula bar */
+.formula-bar{display:flex;align-items:center;justify-content:center;
+  gap:4px;width:100%;padding:4px 4px;
+  background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);
+  border-radius:8px;}
+.formula-factor{text-align:center;flex:1;}
+.formula-value{font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:700;
+  color:var(--text);line-height:1;}
+.formula-label{font-family:var(--font-sans);font-size:8px;color:var(--text-dim);
+  text-transform:uppercase;letter-spacing:0.5px;line-height:1;margin-top:2px;}
+.formula-op{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--text-dim);
+  flex-shrink:0;}
+.formula-mult{color:#fbbf24;}
+.formula-diamond{color:#e5a820;}
+.formula-bonus{color:#f5a623;}
+.formula-total{color:var(--lime);font-size:20px;text-shadow:0 0 10px var(--lime-glow);}
+
+/* Score popup */
+.score-popup{position:absolute;pointer-events:none;z-index:50;
+  font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;
+  color:var(--text);text-align:center;white-space:nowrap;
+  background:rgba(14,26,19,0.85);padding:4px 10px;border-radius:8px;
+  border:1px solid rgba(168,255,62,0.2);
+  animation:popupFloat 2s ease-out forwards;}
+.score-popup .formula{color:var(--text-dim);font-size:11px;display:block;}
+.score-popup .formula .factor{color:var(--text);font-weight:700;}
+.score-popup .formula .mult{color:#fbbf24;}
+.score-popup .formula .bonus-tag{color:#f5a623;font-weight:700;}
+.score-popup .result{font-family:var(--font-display);font-size:24px;
+  font-weight:700;color:var(--lime);text-shadow:0 0 12px var(--lime-glow);display:block;}
+@keyframes popupFloat{
+  0%{opacity:0;transform:translate(-50%,0) scale(0.8);}
+  10%{opacity:1;transform:translate(-50%,-6px) scale(1);}
+  70%{opacity:1;transform:translate(-50%,-20px) scale(1);}
+  100%{opacity:0;transform:translate(-50%,-35px) scale(1);}
+}
+/* Bonus words */
+.bonus-words{display:flex;gap:6px;justify-content:center;width:100%;flex-wrap:wrap;}
+.bonus-slot{display:flex;gap:2px;align-items:center;padding:2px 5px;
+  border-radius:6px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);}
+.bonus-slot.found{border-color:rgba(245,166,35,0.5);background:rgba(245,166,35,0.08);}
+.bonus-letter{width:16px;height:20px;display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-display);font-size:14px;font-weight:700;
+  border-radius:4px;color:var(--text-dim);}
+.bonus-letter.revealed{color:var(--text);background:rgba(255,255,255,0.06);}
+.bonus-letter.blank{color:rgba(255,255,255,0.15);}
+.bonus-slot.found .bonus-letter{color:#f5a623;background:rgba(245,166,35,0.15);}
+.bonus-found-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  z-index:60;font-family:var(--font-display);font-size:32px;font-weight:700;
+  color:#f5a623;text-shadow:0 0 30px rgba(245,166,35,0.5);
+  pointer-events:none;animation:bonusPop 1.5s ease-out forwards;}
+@keyframes bonusPop{0%{opacity:0;transform:translate(-50%,-50%) scale(0.5);}
+  15%{opacity:1;transform:translate(-50%,-50%) scale(1.2);}
+  70%{opacity:1;transform:translate(-50%,-50%) scale(1);}
+  100%{opacity:0;transform:translate(-50%,-60%) scale(1);}}
+
+.current-word{font-family:var(--font-display);font-size:20px;font-weight:700;
+  min-height:24px;color:var(--lime);text-align:center;letter-spacing:2px;
+  transition:color 0.15s;}
+.current-word.invalid{color:var(--red);}
+.current-word.valid-word{color:#7dff3e;text-shadow:0 0 10px rgba(125,255,62,0.4);}
+.bottom-bar{position:fixed;bottom:0;left:0;right:0;z-index:50;
+  display:none;padding:12px 16px 32px;gap:10px;justify-content:center;
+  background:linear-gradient(transparent,rgba(14,26,19,0.95) 30%);}
+.bottom-bar.visible{display:flex;}
+.bottom-bar button{padding:12px 0;border-radius:10px;font-family:var(--font-sans);
+  font-size:14px;font-weight:700;cursor:pointer;border:none;flex:1;max-width:130px;}
+.bottom-bar button:disabled{opacity:0.3;pointer-events:none;}
+.btn-back{background:none;border:1px solid rgba(255,255,255,0.15) !important;color:var(--text-dim);}
+.btn-submit{background:var(--lime);color:#0e1a13;box-shadow:0 0 15px var(--lime-glow);}
+.btn-undo-word{background:none;border:1px solid rgba(168,255,62,0.3) !important;color:var(--lime);}
+.btn-show{background:none;border:1px solid rgba(245,166,35,0.4) !important;color:#f5a623;
+  -webkit-user-select:none;user-select:none;}
+.btn-show:disabled{opacity:0.3;pointer-events:none;}
+.path-overlay{position:absolute;top:0;left:0;width:100%;height:100%;
+  pointer-events:none;z-index:2;}
+.path-overlay line{stroke-linecap:round;}
+.gcell.path-start{box-shadow:0 0 0 3px #f5a623,0 0 12px rgba(245,166,35,0.5) !important;z-index:11;}
+.gcell.path-cell{box-shadow:0 0 0 2px #a8ff3e,0 0 10px var(--lime-glow) !important;z-index:11;}
+.word-hint{font-size:10px;color:var(--text-dim);min-height:0;text-align:center;}
+
+/* Grid */
+.grid-wrap{position:relative;margin:1px auto;touch-action:none;}
+.grid{display:grid;gap:3px;position:relative;z-index:1;}
+.gcell{display:flex;align-items:center;justify-content:center;
+  border-radius:5px;background:var(--cell);font-family:var(--font-display);
+  font-weight:700;color:var(--text-dark);cursor:pointer;
+  transition:all 0.12s;position:relative;z-index:3;
+  box-shadow:0 1px 3px rgba(0,0,0,0.3);}
+.gcell.used{background:var(--cell-used);color:rgba(255,255,255,0.15);
+  box-shadow:none;cursor:pointer;}
+.gcell.used.restartable{color:rgba(255,255,255,0.3);cursor:pointer;}
+.gcell.head{box-shadow:0 0 0 3px var(--lime),0 0 15px var(--lime-glow);}
+.gcell.tracing,.gcell.double.tracing{background:var(--cell-active);color:var(--text-dark);
+  box-shadow:0 0 0 2px var(--lime),0 0 12px var(--lime-glow);}
+.gcell.start-option{box-shadow:0 0 0 2px rgba(168,255,62,0.4);}
+.gcell.accepted{animation:acceptPop 0.3s ease;}
+.gcell.rejected{animation:shake 0.35s ease;}
+
+@keyframes acceptPop{0%{transform:scale(1)}50%{transform:scale(1.1)}100%{transform:scale(1)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-4px)}
+  40%{transform:translateX(4px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+
+.game-footer{display:flex;justify-content:space-between;align-items:center;width:100%;margin-top:6px;}
+.word-list{font-size:11px;color:var(--text-dim);max-height:60px;overflow-y:auto;
+  width:100%;text-align:center;line-height:1.6;}
+.end-btn,.undo-btn{background:none;border:1px solid rgba(255,255,255,0.1);color:var(--text-dim);
+  padding:8px 16px;border-radius:8px;font-family:var(--font-sans);font-size:12px;cursor:pointer;}
+.end-btn:active,.undo-btn:active{background:rgba(255,255,255,0.05);}
+.undo-btn{border-color:rgba(168,255,62,0.3);color:var(--lime);}
+.undo-btn:disabled{opacity:0.3;pointer-events:none;}
+.rotate-btn{border-color:rgba(168,255,62,0.3);color:var(--lime);padding:6px 8px;display:flex;align-items:center;}
+.grid.rotating{transition:transform 0.4s cubic-bezier(0.4,0,0.2,1),opacity 0.2s;
+  transform:rotate(90deg) scale(0.92);opacity:0;}
+.gcell.double{background:linear-gradient(135deg,#f5eedc 60%,#ffe066 100%);
+  box-shadow:0 1px 3px rgba(0,0,0,0.3),inset 0 0 0 1.5px rgba(245,166,35,0.5);}
+.gcell.double::after{content:'◆';position:absolute;top:1px;right:3px;
+  font-size:8px;font-family:var(--font-sans);font-weight:700;color:#c87f0a;line-height:1;}
+.gcell.double.used{background:var(--cell-used);box-shadow:none;}
+.gcell.double.used::after{color:rgba(255,255,255,0.1);}
+
+/* End Screen */
+#end-screen{justify-content:center;min-height:100vh;min-height:100dvh;gap:16px;text-align:center;}
+.end-title{font-family:var(--font-display);font-size:28px;font-weight:700;color:var(--lime);}
+.end-stats{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);
+  border-radius:14px;padding:20px;width:100%;display:flex;flex-direction:column;gap:10px;}
+.end-row{display:flex;justify-content:space-between;font-size:14px;}
+.end-label{color:var(--text-dim);}
+.end-val{color:var(--text);font-weight:600;}
+.end-words{font-size:12px;color:var(--text-dim);line-height:1.8;max-height:120px;overflow-y:auto;}
+.share-btn{background:var(--lime);color:#0e1a13;border:none;padding:12px 28px;
+  border-radius:10px;font-family:var(--font-sans);font-size:15px;font-weight:700;cursor:pointer;}
+.share-btn:active{transform:scale(0.96);}
+.copied-msg{font-size:12px;color:var(--lime);min-height:18px;}
+.countdown{font-size:13px;color:var(--text-dim);}
+.countdown-time{font-size:24px;color:var(--text);font-weight:600;}
+.home-link{color:var(--text-dim);font-size:13px;cursor:pointer;background:none;border:none;
+  font-family:var(--font-sans);padding:8px;}
+
+/* Help button + modal */
+.help-btn{background:none;border:1px solid rgba(168,255,62,0.3);color:var(--lime);
+  padding:8px 16px;border-radius:8px;font-family:var(--font-sans);font-size:13px;
+  font-weight:600;cursor:pointer;}
+.help-btn:active{background:rgba(168,255,62,0.1);}
+.help-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);
+  z-index:200;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;}
+.help-overlay.active{display:flex;}
+.help-content{background:#0e1a13;border:1px solid rgba(168,255,62,0.2);
+  border-radius:14px;padding:24px;max-width:480px;width:100%;color:var(--text);
+  font-family:var(--font-sans);font-size:14px;line-height:1.6;}
+.help-content h2{font-family:var(--font-display);color:var(--lime);font-size:24px;
+  margin-bottom:8px;}
+.help-content h3{color:var(--lime);font-size:14px;margin-top:16px;margin-bottom:6px;
+  text-transform:uppercase;letter-spacing:1px;font-family:var(--font-sans);}
+.help-content p{margin-bottom:8px;color:#c0c8c0;}
+.help-content ul{list-style:none;padding-left:0;margin-bottom:8px;}
+.help-content li{padding-left:14px;position:relative;margin-bottom:4px;color:#c0c8c0;}
+.help-content li::before{content:'\2022';position:absolute;left:0;color:var(--lime);}
+.help-content .close-help{margin-top:20px;background:var(--lime);color:#0e1a13;
+  border:none;padding:12px 28px;border-radius:10px;font-family:var(--font-sans);
+  font-size:14px;font-weight:700;cursor:pointer;width:100%;}
+</style>
+</head>
+<body>
+
+<div id="title-screen" class="screen active">
+  <a href="index.html" class="back-link">&larr; All Games</a>
+  <div class="logo">Slither v3</div>
+  <div class="tagline">8&times;8 grid. Bigger letters. Same scoring.</div>
+  <div class="puzzle-date" id="puzzle-date"></div>
+  <div class="par-line">
+    <span class="tier-par">&#9733; 100</span>
+    <span class="tier-great">&#9733;&#9733; 200</span>
+    <span class="tier-genius">&#9733;&#9733;&#9733; 350</span>
+  </div>
+  <button class="play-btn" id="play-btn">Play Today's Puzzle</button>
+  <button class="help-btn" id="help-btn">How to Play</button>
+  <div class="loading-msg" id="loading-msg"></div>
+</div>
+
+<div class="help-overlay" id="help-overlay">
+  <div class="help-content">
+    <h2>How to Play</h2>
+
+    <h3>1. Start from the Edge</h3>
+    <p>Your first word must start from a letter on the edge of the grid (any side).</p>
+    <div style="display:grid;grid-template-columns:repeat(5,30px);gap:2px;margin:10px auto;width:fit-content;">
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">E</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">T</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">A</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">R</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">S</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">N</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:var(--text-dim);">O</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:var(--text-dim);">I</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:var(--text-dim);">L</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">E</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">T</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:var(--text-dim);">H</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:var(--text-dim);">A</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:var(--text-dim);">N</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">D</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">P</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:var(--text-dim);">E</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:var(--text-dim);">R</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:var(--text-dim);">S</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">T</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">O</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">N</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">E</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">S</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">I</div>
+    </div>
+    <p style="text-align:center;font-size:12px;color:var(--text-dim);">Glowing cells = edges you can start from</p>
+
+    <h3>2. Spell a Word</h3>
+    <p>Tap letters next to each other to spell a word. You can go any direction, even diagonally. When it turns <b style="color:#7dff3e;">green</b>, hit <b>Submit</b>.</p>
+    <div style="display:flex;gap:4px;justify-content:center;margin:8px 0;">
+      <div style="width:30px;height:30px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">S</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">T</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">O</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">N</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">E</div>
+      <span style="color:#7dff3e;font-size:14px;font-weight:700;display:flex;align-items:center;margin-left:8px;">&#10003;</span>
+    </div>
+
+    <h3>3. Work Your Way In</h3>
+    <p>Used letters fade out. Tap any <b>faded letter</b> to start your next word from it. Words can twist and turn!</p>
+    <div style="display:grid;grid-template-columns:repeat(5,30px);gap:2px;margin:10px auto;width:fit-content;">
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;">E</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:#2d3d2a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:rgba(255,255,255,0.2);">T</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;">S</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;">N</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;">O</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;">I</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:#2d3d2a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:rgba(255,255,255,0.2);">R</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:#2d3d2a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:rgba(255,255,255,0.2);">A</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;">D</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;">G</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;">H</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:#2d3d2a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:rgba(255,255,255,0.3);box-shadow:0 0 0 2px rgba(168,255,62,0.4);">P</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">U</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;">M</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;">C</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;">F</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;">B</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">L</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;">R</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;">T</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;">A</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;">N</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">L</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;">E</div>
+      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;">S</div>
+    </div>
+    <p style="text-align:center;font-size:12px;color:var(--text-dim);line-height:1.5;"><b style="color:rgba(255,255,255,0.3);">TRAP</b> was the first word (faded). Now starting from the faded <b style="color:#a8ff3e;">P</b> to spell <b style="color:#a8ff3e;">PULL</b> going deeper into the grid.</p>
+
+    <h3>4. Score More</h3>
+    <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:10px;margin:8px 0;font-size:13px;line-height:1.8;">
+      <div><b>Longer words = way more points</b></div>
+      <div style="color:var(--text-dim);">2 letters = 4 pts &middot; 3 = 9 &middot; 4 = 16 &middot; 5 = 25 &middot; 6 = 36</div>
+      <div style="margin-top:6px;"><b style="color:#fbbf24;">Use more cells = higher multiplier</b></div>
+      <div style="color:var(--text-dim);">Every cell you use adds +0.01x</div>
+      <div style="margin-top:6px;"><b style="color:#e5a820;">◆ Diamond cells = big boost</b></div>
+      <div style="color:var(--text-dim);">Each diamond adds +0.5x to your multiplier</div>
+      <div style="margin-top:6px;"><b style="color:#f5a623;">Bonus words = extra multiplier</b></div>
+      <div style="color:var(--text-dim);">3 words shown above the grid. Find one = +0.5x</div>
+    </div>
+
+    <h3>Example</h3>
+    <p style="font-size:13px;color:#c0c8c0;">Say you played these words:</p>
+    <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:10px;margin:8px 0;font-size:12px;font-family:'IBM Plex Mono',monospace;line-height:2;">
+      <div>STONE (5 letters) = 5&times;5 = <b>25</b></div>
+      <div>TRAP (4 letters) = 4&times;4 = <b>16</b></div>
+      <div>PULL (4 letters) = 4&times;4 = <b>16</b></div>
+      <div>HER (3 letters) = 3&times;3 = <b>9</b></div>
+      <div style="border-top:1px solid rgba(255,255,255,0.1);margin-top:4px;padding-top:4px;"><b>Word pts = 66</b></div>
+    </div>
+    <p style="font-size:13px;color:#c0c8c0;margin-top:6px;">That used <b>16 cells</b> and <b>2 ◆ diamonds</b>, and you found <b>1 bonus word</b>:</p>
+    <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:10px;margin:8px 0;font-family:'IBM Plex Mono',monospace;text-align:center;line-height:1.8;">
+      <div style="font-size:14px;">
+        <span>66</span>
+        <span style="color:var(--text-dim);"> &times; </span>
+        <span style="color:#fbbf24;">1.16</span>
+        <span style="color:var(--text-dim);"> &times; </span>
+        <span style="color:#e5a820;">2.0</span>
+        <span style="color:var(--text-dim);"> &times; </span>
+        <span style="color:#f5a623;">1.5</span>
+        <span style="color:var(--text-dim);"> = </span>
+        <span style="color:#a8ff3e;font-size:18px;font-weight:700;">229</span>
+      </div>
+      <div style="font-size:9px;color:var(--text-dim);margin-top:2px;">
+        words &times; grid (16 cells) &times; ◆ (2 diamonds) &times; bonus (1 found)
+      </div>
+    </div>
+
+    <h3>5. Get Stars</h3>
+    <p>&#9733; 100 pts &middot; &#9733;&#9733; 200 pts &middot; &#9733;&#9733;&#9733; 350 pts</p>
+
+    <h3>Buttons</h3>
+    <div style="font-size:13px;line-height:1.8;color:#c0c8c0;">
+      <b>⌫</b> Remove last letter &middot; <b>Undo Word</b> Take back a word<br>
+      <b>Show</b> See your word paths &middot; <b>?</b> This screen<br>
+      <b>Rotate</b> Turn the grid 90&deg; &middot; <b>New Grid</b> Fresh letters
+    </div>
+
+    <button class="close-help" id="close-help">Got it</button>
+  </div>
+</div>
+
+<div id="game-screen" class="screen">
+  <div class="game-header">
+    <div class="star-bar" id="star-bar">
+      <span class="star empty" id="star1">&#9733;</span>
+      <span class="star empty" id="star2">&#9733;</span>
+      <span class="star empty" id="star3">&#9733;</span>
+    </div>
+    <div class="words-count" id="words-count">0 cells</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
+      <button class="undo-btn" id="game-help-btn" title="How to play" style="font-size:14px;padding:6px 10px;">?</button>
+      <button class="undo-btn rotate-btn" id="rotate-btn" title="Rotate view"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="6" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.6"/><rect x="10" y="6" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.6"/><rect x="6" y="10" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.6"/><rect x="10" y="10" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.6"/><path d="M16 4 A8 8 0 0 1 16 16" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M16 16 L14 14 M16 16 L18 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M4 16 A8 8 0 0 1 4 4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M4 4 L6 6 M4 4 L2 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+      <button class="undo-btn" id="refresh-btn">New Grid</button>
+      <button class="end-btn" id="end-btn">End</button>
+    </div>
+  </div>
+  <div class="formula-bar" id="formula-bar">
+    <div class="formula-factor">
+      <div class="formula-value" id="f-words">0</div>
+      <div class="formula-label">words</div>
+    </div>
+    <div class="formula-op">&times;</div>
+    <div class="formula-factor">
+      <div class="formula-value formula-mult" id="f-mult">1.00</div>
+      <div class="formula-label">grid</div>
+    </div>
+    <div class="formula-op">&times;</div>
+    <div class="formula-factor">
+      <div class="formula-value formula-diamond" id="f-diamond">1.0</div>
+      <div class="formula-label">◆</div>
+    </div>
+    <div class="formula-op">&times;</div>
+    <div class="formula-factor">
+      <div class="formula-value formula-bonus" id="f-bonus">1.0</div>
+      <div class="formula-label">bonus</div>
+    </div>
+    <div class="formula-op">=</div>
+    <div class="formula-factor">
+      <div class="formula-value formula-total" id="f-total">0</div>
+      <div class="formula-label">score</div>
+    </div>
+  </div>
+  <div class="bonus-words" id="bonus-words"></div>
+  <div class="current-word" id="current-word">&nbsp;</div>
+  <div class="word-hint" id="word-hint">Tap a starting cell</div>
+  <div class="grid-wrap" id="grid-wrap">
+    <div class="grid" id="grid"></div>
+    <svg class="path-overlay" id="path-overlay"></svg>
+  </div>
+</div>
+
+<div class="bottom-bar" id="bottom-bar">
+  <button class="btn-back" id="back-btn" disabled>&#9003;</button>
+  <button class="btn-submit" id="submit-btn" disabled>Submit</button>
+  <button class="btn-undo-word" id="undo-btn" disabled>Undo Word</button>
+  <button class="btn-show" id="show-btn" disabled>Show</button>
+</div>
+
+<div id="end-screen" class="screen">
+  <div class="end-title" id="end-title">Game Over</div>
+  <div class="end-stats">
+    <div class="end-row"><span class="end-label">Score</span><span class="end-val" id="end-score"></span></div>
+    <div class="end-row"><span class="end-label">Words</span><span class="end-val" id="end-words-count"></span></div>
+    <div class="end-row"><span class="end-label">Cells used</span><span class="end-val" id="end-cells"></span></div>
+    <div class="end-row"><span class="end-label">Best word</span><span class="end-val" id="end-best"></span></div>
+    <div class="end-row"><span class="end-label">Bonus words</span><span class="end-val" id="end-bonus"></span></div>
+  </div>
+  <div class="bonus-words" id="end-bonus-words" style="margin:4px 0;"></div>
+  <div class="end-words" id="end-words"></div>
+  <button class="share-btn" id="share-btn">Share Result</button>
+  <div class="copied-msg" id="copied-msg"></div>
+  <div class="countdown">Next puzzle in<br><span class="countdown-time" id="end-countdown"></span></div>
+  <button class="home-link" id="home-btn">Back to games</button>
+</div>
+
+<script>
+// === PRNG ===
+function mulberry32(s){return function(){s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function dateSeed(str){let h=0;for(let i=0;i<str.length;i++)h=Math.imul(31,h)+str.charCodeAt(i)|0;return h;}
+function todayUTC(){const d=new Date();return d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0')+'-'+String(d.getUTCDate()).padStart(2,'0');}
+function puzzleNumber(){return Math.floor((new Date()-new Date('2026-01-01T00:00:00Z'))/86400000)+1;}
+function msToMidnight(){const n=new Date();return new Date(Date.UTC(n.getUTCFullYear(),n.getUTCMonth(),n.getUTCDate()+1))-n;}
+function fmtCountdown(ms){const s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');}
+
+// === Dictionary (Trie) ===
+class TrieNode{constructor(){this.c={};this.end=false;}}
+class Trie{
+  constructor(){this.root=new TrieNode();}
+  insert(w){let n=this.root;for(const ch of w){if(!n.c[ch])n.c[ch]=new TrieNode();n=n.c[ch];}n.end=true;}
+  isWord(w){let n=this.root;for(const ch of w){if(!n.c[ch])return false;n=n.c[ch];}return n.end;}
+  isPrefix(p){let n=this.root;for(const ch of p){if(!n.c[ch])return false;n=n.c[ch];}return true;}
+}
+let dictionary=null;
+let dictLoaded=false;
+
+async function loadDictionary(){
+  const msg=document.getElementById('loading-msg');
+  msg.textContent='Loading dictionary...';
+  try{
+    const res=await fetch('https://raw.githubusercontent.com/dolph/dictionary/master/enable1.txt');
+    const text=await res.text();
+    dictionary=new Trie();
+    const words=text.split('\n');
+    for(const w of words){
+      const clean=w.trim().toLowerCase();
+      if(clean.length>=2&&clean.length<=15)dictionary.insert(clean);
+    }
+    dictLoaded=true;
+    msg.textContent='';
+  }catch(e){
+    msg.textContent='Failed to load dictionary. Check connection and refresh.';
+  }
+}
+
+// === Grid Generation ===
+const N=8;
+// Word-friendly letter distribution (64 tiles): ~42% vowels, common consonants heavy
+const LETTERS='EEEEEEEEAAAAAAIIIIIOOOOOTTTTNNNNRRRRSSSSLLLUUUDDDHHHCCMMPPGBFYWK';
+const GOOD_STARTERS='ETAOINSRHLDCUMBFPGWY';
+const GOOD_SECONDS='ETAOINSRHLDCUMAEIOU';
+function generateGridRaw(rng){
+  const pool=LETTERS.split('');
+  for(let i=pool.length-1;i>0;i--){const j=Math.floor(rng()*((i+1)|0));[pool[i],pool[j]]=[pool[j],pool[i]];}
+  const grid=[];
+  for(let r=0;r<N;r++){grid[r]=[];for(let c=0;c<N;c++)grid[r][c]=pool[r*N+c];}
+  // Left column: 4-5 vowels + common consonants
+  const vowels='AEIOU';
+  const leftVowelCount=4+Math.floor(rng()*2);
+  const leftLetters=[];
+  for(let i=0;i<leftVowelCount;i++)leftLetters.push(vowels[Math.floor(rng()*5)]);
+  while(leftLetters.length<N)leftLetters.push(GOOD_STARTERS[Math.floor(rng()*GOOD_STARTERS.length)]);
+  for(let i=leftLetters.length-1;i>0;i--){const j=Math.floor(rng()*((i+1)|0));[leftLetters[i],leftLetters[j]]=[leftLetters[j],leftLetters[i]];}
+  for(let r=0;r<N;r++)grid[r][0]=leftLetters[r];
+  // Column 1: also good letters to pair with left column starters
+  for(let r=0;r<N;r++){
+    if(!'AEIOUETAOINSRHLDCUMBFPGWY'.includes(grid[r][1])){
+      grid[r][1]=GOOD_SECONDS[Math.floor(rng()*GOOD_SECONDS.length)];
+    }
+  }
+  // Ensure vowels in every 3x3 region
+  for(let r=0;r<=N-3;r+=2){
+    for(let c=0;c<=N-3;c+=2){
+      let hasVowel=false;
+      for(let dr=0;dr<3&&r+dr<N;dr++)for(let dc=0;dc<3&&c+dc<N;dc++)
+        if(vowels.includes(grid[r+dr][c+dc]))hasVowel=true;
+      if(!hasVowel){
+        const dr=Math.floor(rng()*3),dc=Math.floor(rng()*3);
+        const rr=Math.min(r+dr,N-1),cc=Math.min(c+dc,N-1);
+        grid[rr][cc]=vowels[Math.floor(rng()*5)];
+      }
+    }
+  }
+  return grid;
+}
+function countEdgeStarts(grid){
+  // Count how many edge cells can form at least one 2-3 letter word with neighbors
+  if(!dictionary)return 40; // assume fine if dict not loaded
+  let count=0;
+  const checked=new Set();
+  for(let r=0;r<N;r++){
+    for(let c=0;c<N;c++){
+      if(!(r===0||r===N-1||c===0||c===N-1))continue;
+      const key=r+','+c;
+      if(checked.has(key))continue;
+      checked.add(key);
+      const ch=grid[r][c].toLowerCase();
+      let canWord=false;
+      for(let dr=-1;dr<=1&&!canWord;dr++){
+        for(let dc=-1;dc<=1&&!canWord;dc++){
+          if(dr===0&&dc===0)continue;
+          const nr=r+dr,nc=c+dc;
+          if(nr<0||nr>=N||nc<0||nc>=N)continue;
+          const pair=ch+grid[nr][nc].toLowerCase();
+          if(dictionary.isWord(pair)){canWord=true;break;}
+          if(dictionary.isPrefix(pair)){
+            for(let dr2=-1;dr2<=1&&!canWord;dr2++){
+              for(let dc2=-1;dc2<=1&&!canWord;dc2++){
+                if(dr2===0&&dc2===0)continue;
+                const nr2=nr+dr2,nc2=nc+dc2;
+                if(nr2<0||nr2>=N||nc2<0||nc2>=N)continue;
+                if(nr2===r&&nc2===c)continue;
+                const tri=pair+grid[nr2][nc2].toLowerCase();
+                if(dictionary.isWord(tri))canWord=true;
+              }
+            }
+          }
+        }
+      }
+      if(canWord)count++;
+    }
+  }
+  return count;
+}
+function generateGrid(dateStr){
+  // Try with base seed, then variations until at least 4 left-column starts work
+  for(let attempt=0;attempt<20;attempt++){
+    const seed=dateSeed(dateStr)+(attempt*7919);
+    const rng=mulberry32(seed);
+    const grid=generateGridRaw(rng);
+    if(countEdgeStarts(grid)>=8)return grid;
+  }
+  // Fallback: return last attempt
+  return generateGridRaw(mulberry32(dateSeed(dateStr)));
+}
+function generateDoublePoints(dateStr){
+  const rng=mulberry32(dateSeed(dateStr+'dbl'));
+  const dp=Array.from({length:N},()=>Array(N).fill(false));
+  // Place 7-9 double-point cells randomly
+  const count=7+Math.floor(rng()*3);
+  let placed=0;
+  while(placed<count){
+    const r=Math.floor(rng()*N),c=1+Math.floor(rng()*(N-1));
+    if(!dp[r][c]){dp[r][c]=true;placed++;}
+  }
+  return dp;
+}
+
+// === Bonus Words ===
+function findGridWords(grid,minLen,maxLen,limit,innerOnly){
+  if(!dictionary)return[];
+  const found=[];
+  const seen=new Set();
+  for(let r=0;r<N&&found.length<limit;r++){
+    for(let c=0;c<N&&found.length<limit;c++){
+      // If innerOnly, skip edge cells as starting points
+      if(innerOnly&&(r===0||r===N-1||c===0||c===N-1))continue;
+      dfsWords(grid,r,c,[{r,c}],grid[r][c].toLowerCase(),found,seen,minLen,maxLen,limit);
+    }
+  }
+  return found;
+}
+function dfsWords(grid,r,c,path,word,found,seen,minLen,maxLen,limit){
+  if(found.length>=limit)return;
+  if(word.length>=minLen&&word.length<=maxLen&&dictionary.isWord(word)&&!seen.has(word)){
+    seen.add(word);
+    found.push({word,path:path.map(p=>[p.r,p.c])});
+  }
+  if(word.length>=maxLen)return;
+  for(let dr=-1;dr<=1;dr++){
+    for(let dc=-1;dc<=1;dc++){
+      if(dr===0&&dc===0)continue;
+      const nr=r+dr,nc=c+dc;
+      if(nr<0||nr>=N||nc<0||nc>=N)continue;
+      if(path.some(p=>p.r===nr&&p.c===nc))continue;
+      const nw=word+grid[nr][nc].toLowerCase();
+      if(!dictionary.isPrefix(nw))continue;
+      dfsWords(grid,nr,nc,[...path,{r:nr,c:nc}],nw,found,seen,minLen,maxLen,limit);
+    }
+  }
+}
+function generateBonusWords(grid,dateStr){
+  const rng=mulberry32(dateSeed(dateStr+'bonus'));
+  // innerOnly=true: starting letter must not be on the edge
+  const short=findGridWords(grid,3,4,40,true);
+  const medium=findGridWords(grid,5,5,30,true);
+  const long=findGridWords(grid,6,7,20,true);
+  const buckets=[long,medium,short]; // pick longest first to reserve cells
+  const bonus=[];
+  const usedCells=new Set();
+  for(const bucket of buckets){
+    // Shuffle candidates with seeded rng
+    const shuffled=[...bucket];
+    for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(rng()*((i+1)|0));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}
+    for(const candidate of shuffled){
+      // Check no cell overlap with already-picked bonus words
+      const cells=candidate.path.map(([r,c])=>r+','+c);
+      if(cells.some(k=>usedCells.has(k)))continue;
+      bonus.push(candidate);
+      for(const k of cells)usedCells.add(k);
+      break;
+    }
+  }
+  // Sort by length for display (short first)
+  bonus.sort((a,b)=>a.word.length-b.word.length);
+  return bonus;
+}
+function getRevealedPositions(len){
+  if(len<=4)return[0,len-1];
+  if(len===5)return[0,2,len-1];
+  // 6+: first, two middles, last
+  const m1=Math.floor(len/3);
+  const m2=Math.floor(2*len/3);
+  return[0,m1,m2,len-1];
+}
+function renderBonusSlots(container,bonusWords,foundSet){
+  container.innerHTML='';
+  for(const bw of bonusWords){
+    const slot=document.createElement('div');
+    slot.className='bonus-slot'+(foundSet.has(bw.word)?' found':'');
+    for(let i=0;i<bw.word.length;i++){
+      const el=document.createElement('div');
+      el.className='bonus-letter revealed';
+      el.textContent=bw.word[i].toUpperCase();
+      if(foundSet.has(bw.word))el.style.color='#f5a623';
+      slot.appendChild(el);
+    }
+    container.appendChild(slot);
+  }
+}
+
+// === Scoring ===
+function wordScore(len){return len*len;}
+const STAR1=100,STAR2=200,STAR3=350;
+
+// === Game State ===
+let grid,used,doublePoints,headCell=null,tracePath=[],score=0,wordsFound=[],cellsUsed=0;
+let rawWordPoints=0,multiplier=1.0,diamondMultiplier=1.0,bonusMultiplier=1.0;
+let gameActive=false,pickingStart=true,processing=false;
+let undoStack=[],refreshCount=0,lastStepDir=null,rotationCount=0;
+let bonusWords=[],bonusFound=new Set();
+const $=id=>document.getElementById(id);
+const screens={title:$('title-screen'),game:$('game-screen'),end:$('end-screen')};
+function showScreen(n){Object.values(screens).forEach(s=>s.classList.remove('active'));screens[n].classList.add('active');$('bottom-bar').classList.toggle('visible',n==='game');}
+
+// === Grid Rendering ===
+// Rotation mapping: actual (r,c) → visual (vr,vc) for display
+function actualToVisual(r,c){
+  const rot=rotationCount%4;
+  if(rot===0)return[r,c];
+  if(rot===1)return[c,N-1-r];
+  if(rot===2)return[N-1-r,N-1-c];
+  return[N-1-c,r];
+}
+function visualToActual(vr,vc){
+  const rot=rotationCount%4;
+  if(rot===0)return[vr,vc];
+  if(rot===1)return[N-1-vc,vr];
+  if(rot===2)return[N-1-vr,N-1-vc];
+  return[vc,N-1-vr];
+}
+function cellSize(){
+  const maxW=Math.min(window.innerWidth-32,440);
+  return Math.max(32,Math.floor((maxW-(N-1)*3)/N));
+}
+function buildGrid(){
+  const g=$('grid');g.innerHTML='';
+  const cs=cellSize();
+  g.style.gridTemplateColumns='repeat('+N+','+cs+'px)';
+  g.style.gridTemplateRows='repeat('+N+','+cs+'px)';
+  for(let vr=0;vr<N;vr++){
+    for(let vc=0;vc<N;vc++){
+      const[ar,ac]=visualToActual(vr,vc);
+      const el=document.createElement('div');
+      el.className='gcell';
+      el.dataset.r=ar;el.dataset.c=ac;
+      el.textContent=grid[ar][ac];
+      el.style.fontSize=Math.max(12,cs*0.38)+'px';
+      g.appendChild(el);
+    }
+  }
+}
+function getEl(r,c){
+  const[vr,vc]=actualToVisual(r,c);
+  return $('grid').children[vr*N+vc];
+}
+function updateGridDisplay(){
+  for(let r=0;r<N;r++){
+    for(let c=0;c<N;c++){
+      const el=getEl(r,c);
+      el.className='gcell';
+      if(doublePoints&&doublePoints[r][c])el.classList.add('double');
+      if(used[r][c]){
+        el.classList.add('used');
+        // Mark used cells that have unused neighbors as restartable
+        if(tracePath.length===0){
+          for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){
+            if(dr===0&&dc===0)continue;
+            const nr=r+dr,nc=c+dc;
+            if(nr>=0&&nr<N&&nc>=0&&nc<N&&!used[nr][nc]){el.classList.add('restartable');break;}
+          }
+        }
+      }
+      // No head highlight — player can start from any used cell or edge
+      // Edge cells always a start option
+      if(!used[r][c]&&isEdge(r,c)&&tracePath.length===0)el.classList.add('start-option');
+    }
+  }
+  for(const[r,c] of tracePath){getEl(r,c).classList.add('tracing');}
+  // Current word display
+  const letters=tracePath.map(([r,c])=>grid[r][c]).join('');
+  const cw=$('current-word');
+  cw.textContent=letters||'\u00a0';
+  cw.classList.remove('invalid','valid-word');
+  let isValidWord=false;
+  if(letters.length>=2&&dictionary){
+    const lc=letters.toLowerCase();
+    isValidWord=dictionary.isWord(lc)&&!wordsFound.some(w=>w.word===lc);
+    const prefix=dictionary.isPrefix(lc);
+    if(isValidWord)cw.classList.add('valid-word');
+    else if(!prefix)cw.classList.add('invalid');
+  }
+  // Bottom bar button states
+  $('submit-btn').disabled=!(isValidWord&&tracePath.length>=2);
+  $('back-btn').disabled=tracePath.length<2;
+  $('undo-btn').disabled=undoStack.length===0;
+  $('show-btn').disabled=wordsFound.length===0;
+}
+function updateUI(){
+  // Formula bar
+  $('f-words').textContent=rawWordPoints;
+  $('f-mult').textContent=multiplier.toFixed(2);
+  $('f-diamond').textContent=diamondMultiplier.toFixed(1);
+  $('f-bonus').textContent=bonusMultiplier.toFixed(1);
+  $('f-total').textContent=score;
+  $('words-count').textContent=cellsUsed+'/64 cells \u00b7 '+wordsFound.length+' word'+(wordsFound.length!==1?'s':'');
+  // Stars
+  $('star1').className='star '+(score>=STAR1?'filled':'empty');
+  $('star2').className='star '+(score>=STAR2?'filled':'empty');
+  $('star3').className='star '+(score>=STAR3?'filled':'empty');
+  if(!pickingStart&&tracePath.length===0){
+    $('word-hint').textContent='Tap a cell to start tracing a word';
+  }
+}
+
+// === Adjacency ===
+function isAdj(r1,c1,r2,c2){return Math.abs(r1-r2)<=1&&Math.abs(c1-c2)<=1&&!(r1===r2&&c1===c2);}
+function isEdge(r,c){return r===0||r===N-1||c===0||c===N-1;}
+
+// === Connected Component Analysis ===
+// Returns {lrSpan,tbSpan,lrComplete,tbComplete,bestLRSize,bestTBSize}
+// where lrComplete means a single connected component touches both col 0 and col N-1
+function analyzeConnectivity(){
+  if(!used)return{lrSpan:0,tbSpan:0,lrComplete:false,tbComplete:false,bestLRSize:0,bestTBSize:0};
+  const visited=Array.from({length:N},()=>Array(N).fill(false));
+  let bestLRSpan=0,bestTBSpan=0,lrComplete=false,tbComplete=false,bestLRSize=0,bestTBSize=0;
+  for(let r=0;r<N;r++){
+    for(let c=0;c<N;c++){
+      if(!used[r][c]||visited[r][c])continue;
+      // Flood fill (8-directional)
+      const stack=[[r,c]];
+      let minC=N,maxC=-1,minR=N,maxR=-1,size=0;
+      while(stack.length>0){
+        const[cr,cc]=stack.pop();
+        if(visited[cr][cc])continue;
+        visited[cr][cc]=true;
+        size++;
+        if(cc<minC)minC=cc;if(cc>maxC)maxC=cc;
+        if(cr<minR)minR=cr;if(cr>maxR)maxR=cr;
+        for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){
+          if(dr===0&&dc===0)continue;
+          const nr=cr+dr,nc=cc+dc;
+          if(nr<0||nr>=N||nc<0||nc>=N)continue;
+          if(used[nr][nc]&&!visited[nr][nc])stack.push([nr,nc]);
+        }
+      }
+      const lrSpan=maxC-minC+1,tbSpan=maxR-minR+1;
+      if(lrSpan>bestLRSpan){bestLRSpan=lrSpan;bestLRSize=size;}
+      if(tbSpan>bestTBSpan){bestTBSpan=tbSpan;bestTBSize=size;}
+      if(minC===0&&maxC===N-1){lrComplete=true;bestLRSize=size;}
+      if(minR===0&&maxR===N-1){tbComplete=true;bestTBSize=size;}
+    }
+  }
+  return{lrSpan:bestLRSpan,tbSpan:bestTBSpan,lrComplete,tbComplete,bestLRSize,bestTBSize};
+}
+
+// === Tracing Logic ===
+let isTracing=false;
+function startTrace(r,c){
+  if(!gameActive||!dictionary||processing)return;
+  // Tap-to-extend: if there's an existing traced path, tapping adjacent extends it
+  if(tracePath.length>=1){
+    const[lr,lc]=tracePath[tracePath.length-1];
+    // Backtrack: tapping a cell already in the path
+    const idx=tracePath.findIndex(([pr,pc])=>pr===r&&pc===c);
+    if(idx>=0){
+      tracePath=tracePath.slice(0,idx+1);
+      updateGridDisplay();
+      return;
+    }
+    // Extend: tapping an adjacent unused cell
+    if(!used[r][c]&&isAdj(lr,lc,r,c)){
+      tracePath.push([r,c]);
+      isTracing=false;
+      updateGridDisplay();
+      return;
+    }
+    // Tapping a non-adjacent cell: clear old trace, fall through to start a new one
+    tracePath=[];
+    isTracing=false;
+    $('submit-btn').classList.remove('visible');
+  }
+  // Start from any used cell — word begins with that letter
+  if(used[r][c]){
+    // Must have at least one unused neighbor to trace into
+    let hasUnusedNeighbor=false;
+    for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){
+      if(dr===0&&dc===0)continue;
+      const nr=r+dr,nc=c+dc;
+      if(nr>=0&&nr<N&&nc>=0&&nc<N&&!used[nr][nc])hasUnusedNeighbor=true;
+    }
+    if(!hasUnusedNeighbor)return;
+    // If starting from a non-head used cell, clear direction restriction
+    if(!headCell||r!==headCell[0]||c!==headCell[1])lastStepDir=null;
+    headCell=[r,c];
+    pickingStart=false;
+    tracePath=[[r,c]];
+    isTracing=true;
+    updateGridDisplay();updateUI();
+    $('word-hint').textContent='';
+    return;
+  }
+  // Start from any unused edge cell
+  if(isEdge(r,c)&&!used[r][c]){
+    lastStepDir=null;
+    headCell=[r,c];
+    pickingStart=false;
+    tracePath=[[r,c]];
+    isTracing=true;
+    updateGridDisplay();updateUI();
+    $('word-hint').textContent='';
+    return;
+  }
+}
+function continueTrace(r,c){
+  if(!isTracing)return;
+  // Already in path? Backtrack
+  const idx=tracePath.findIndex(([pr,pc])=>pr===r&&pc===c);
+  if(idx>=0){
+    tracePath=tracePath.slice(0,idx+1);
+    updateGridDisplay();
+    return;
+  }
+  if(used[r][c])return;
+  const[lr,lc]=tracePath[tracePath.length-1];
+  if(!isAdj(lr,lc,r,c))return;
+  // Check not already in trace
+  if(tracePath.some(([pr,pc])=>pr===r&&pc===c))return;
+  tracePath.push([r,c]);
+  updateGridDisplay();
+}
+function endTrace(){
+  if(!isTracing)return;
+  isTracing=false;
+  if(tracePath.length<2){
+    tracePath=[];
+    updateGridDisplay();
+    return;
+  }
+  const word=tracePath.map(([r,c])=>grid[r][c]).join('').toLowerCase();
+  if(dictionary.isWord(word)&&!wordsFound.some(w=>w.word===word)){
+    acceptWord(word);
+  }else{
+    rejectWord();
+  }
+}
+function recalcScore(){
+  // Total score = rawWordPoints × multiplier × bonusMultiplier
+  score=Math.round(rawWordPoints*multiplier*diamondMultiplier*bonusMultiplier);
+}
+function acceptWord(word){
+  processing=true;
+  // Save undo state BEFORE modifying anything
+  undoStack.push({
+    used:used.map(row=>[...row]),
+    headCell:headCell?[...headCell]:null,
+    rawWordPoints,cellsUsed,multiplier,diamondMultiplier,bonusMultiplier,
+    wordsFound:[...wordsFound],
+    lastStepDir:lastStepDir?[...lastStepDir]:null,
+    bonusFound:new Set(bonusFound)
+  });
+  $('undo-btn').disabled=false;
+
+  const len=word.length;
+  const basePts=wordScore(len);
+
+  // Add to raw word points
+  rawWordPoints+=basePts;
+
+  // Mark used (only count newly consumed cells)
+  let newCells=0;
+  for(const[r,c] of tracePath){if(!used[r][c]){used[r][c]=true;newCells++;}}
+  cellsUsed+=newCells;
+
+  // Recalculate grid multiplier: +0.01x per cell used
+  multiplier=1.0+cellsUsed*0.01;
+  multiplier=Math.round(multiplier*100)/100;
+  // Diamond multiplier: +0.5x per gold cell used
+  let totalGold=0;
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){if(used[r][c]&&doublePoints&&doublePoints[r][c])totalGold++;}
+  diamondMultiplier=1.0+totalGold*0.5;
+  diamondMultiplier=Math.round(diamondMultiplier*10)/10;
+
+  // Bonus word check — adds to bonus multiplier
+  const isBonusWord=bonusWords.some(bw=>bw.word===word)&&!bonusFound.has(word);
+  if(isBonusWord){
+    bonusFound.add(word);
+    bonusMultiplier=1.0+bonusFound.size*0.5; // each bonus word adds +0.5x
+  }
+
+  // Recalc total score
+  recalcScore();
+
+  // Animate
+  for(const[r,c] of tracePath)getEl(r,c).classList.add('accepted');
+
+  // Bonus word celebration
+  if(isBonusWord){
+    const bpop=document.createElement('div');
+    bpop.className='bonus-found-popup';
+    bpop.textContent='BONUS! '+word.toUpperCase();
+    document.body.appendChild(bpop);
+    setTimeout(()=>bpop.remove(),1500);
+    renderBonusSlots($('bonus-words'),bonusWords,bonusFound);
+  }
+
+  // Small popup showing word value
+  const lastC=tracePath[tracePath.length-1];
+  const popup=document.createElement('div');
+  popup.className='score-popup';
+  popup.innerHTML='<span class="result">'+word.toUpperCase()+' +'+basePts+'</span>';
+  const cellEl=getEl(lastC[0],lastC[1]);
+  const gridRect=$('grid').getBoundingClientRect();
+  const cellRect=cellEl.getBoundingClientRect();
+  popup.style.left=(cellRect.left-gridRect.left+cellRect.width/2)+'px';
+  popup.style.top=(cellRect.top-gridRect.top-10)+'px';
+  $('grid-wrap').appendChild(popup);
+  setTimeout(()=>popup.remove(),1500);
+
+  wordsFound.push({word,pts:basePts,len,path:tracePath.map(([r,c])=>[r,c])});
+
+  // New head = last cell of trace; remember direction of final step
+  const lastIdx=tracePath.length-1;
+  if(lastIdx>=1){
+    lastStepDir=[tracePath[lastIdx][0]-tracePath[lastIdx-1][0],tracePath[lastIdx][1]-tracePath[lastIdx-1][1]];
+  }else{
+    lastStepDir=null;
+  }
+  headCell=[tracePath[lastIdx][0],tracePath[lastIdx][1]];
+  tracePath=[];
+
+  setTimeout(()=>{
+    updateGridDisplay();
+    updateUI();
+    processing=false;
+    // Check for dead end
+    if(!hasValidMoves()){endGame(false);}
+  },300);
+}
+function rejectWord(){
+  for(const[r,c] of tracePath)getEl(r,c).classList.add('rejected');
+  setTimeout(()=>{tracePath=[];updateGridDisplay();},350);
+}
+function undoLastWord(){
+  if(!gameActive||processing||undoStack.length===0)return;
+  const state=undoStack.pop();
+  used=state.used;
+  headCell=state.headCell;
+  rawWordPoints=state.rawWordPoints;
+  cellsUsed=state.cellsUsed;
+  multiplier=state.multiplier;
+  diamondMultiplier=state.diamondMultiplier;
+  bonusMultiplier=state.bonusMultiplier;
+  wordsFound=state.wordsFound;
+  recalcScore();
+  lastStepDir=state.lastStepDir;
+  bonusFound=state.bonusFound||new Set();
+  tracePath=[];
+  renderBonusSlots($('bonus-words'),bonusWords,bonusFound);
+  if(!headCell)pickingStart=true;
+  $('undo-btn').disabled=undoStack.length===0;
+  updateGridDisplay();
+  updateUI();
+}
+
+// === Dead End Detection ===
+function checkMovesFrom(sr,sc,isHead){
+  // Check if words can be formed starting from cell (sr,sc)
+  // isHead=true means cell is used (head), so neighbors must be unused
+  // isHead=false means cell itself is unused (left-column fresh start)
+  const startLetter=grid[sr][sc].toLowerCase();
+  let paths=[];
+  for(let dr=-1;dr<=1;dr++){
+    for(let dc=-1;dc<=1;dc++){
+      if(dr===0&&dc===0)continue;
+      const nr=sr+dr,nc=sc+dc;
+      if(nr<0||nr>=N||nc<0||nc>=N||used[nr][nc])continue;
+      if(nr===sr&&nc===sc)continue;
+      const w=startLetter+grid[nr][nc].toLowerCase();
+      if(!dictionary.isPrefix(w))continue;
+      if(dictionary.isWord(w)&&!wordsFound.some(x=>x.word===w))return true;
+      paths.push({cells:[{r:nr,c:nc}],word:w});
+    }
+  }
+  for(let depth=0;depth<3;depth++){
+    const next=[];
+    for(const p of paths){
+      const last=p.cells[p.cells.length-1];
+      for(let dr=-1;dr<=1;dr++){
+        for(let dc=-1;dc<=1;dc++){
+          if(dr===0&&dc===0)continue;
+          const nr=last.r+dr,nc=last.c+dc;
+          if(nr<0||nr>=N||nc<0||nc>=N||used[nr][nc])continue;
+          if(nr===sr&&nc===sc)continue;
+          if(p.cells.some(c=>c.r===nr&&c.c===nc))continue;
+          const w=p.word+grid[nr][nc].toLowerCase();
+          if(!dictionary.isPrefix(w))continue;
+          if(dictionary.isWord(w)&&!wordsFound.some(x=>x.word===w))return true;
+          next.push({cells:[...p.cells,{r:nr,c:nc}],word:w});
+        }
+      }
+    }
+    paths=next;
+    if(paths.length>1500)return true;
+  }
+  return false;
+}
+function hasValidMoves(){
+  if(!dictionary)return false;
+  // Check from current head + adjacent unused
+  if(headCell){
+    if(checkMovesFrom(headCell[0],headCell[1],true))return true;
+    // Also check neighbors of head
+    const[hr,hc]=headCell;
+    for(let dr=-1;dr<=1;dr++){
+      for(let dc=-1;dc<=1;dc++){
+        if(dr===0&&dc===0)continue;
+        const nr=hr+dr,nc=hc+dc;
+        if(nr>=0&&nr<N&&nc>=0&&nc<N&&!used[nr][nc]){
+          if(checkMovesFrom(nr,nc,false))return true;
+        }
+      }
+    }
+  }
+  // Edge cells are always available as fresh starts
+  for(let r=0;r<N;r++){
+    for(let c=0;c<N;c++){
+      if(!(r===0||r===N-1||c===0||c===N-1))continue;
+      if(!used[r][c]&&checkMovesFrom(r,c,false))return true;
+    }
+  }
+  return false;
+}
+
+// === End Game ===
+function endGame(manual){
+  gameActive=false;
+  const best=wordsFound.reduce((b,w)=>w.len>b.len?w:b,{word:'-',len:0});
+  const stars=score>=STAR3?3:score>=STAR2?2:score>=STAR1?1:0;
+  const starStr='\u2605'.repeat(stars)+'\u2606'.repeat(3-stars);
+  $('end-title').textContent=stars===3?starStr+' Incredible!':stars===2?starStr+' Great game!':stars===1?starStr+' Solid!':manual?'Game Over':'No more moves!';
+  $('end-score').textContent=rawWordPoints+' \u00d7 '+multiplier.toFixed(2)+' \u00d7 '+diamondMultiplier.toFixed(1)+' \u00d7 '+bonusMultiplier.toFixed(1)+' = '+score;
+  $('end-words-count').textContent=wordsFound.length;
+  $('end-cells').textContent=cellsUsed+'/64';
+  $('end-best').textContent=best.word.toUpperCase()+' ('+best.len+' letters, +'+best.pts+')';
+  $('end-bonus').textContent=bonusFound.size+'/'+bonusWords.length;
+  // Show all bonus words revealed on end screen
+  renderBonusSlots($('end-bonus-words'),bonusWords,new Set(bonusWords.map(b=>b.word)));
+  $('end-words').textContent=wordsFound.map(w=>w.word.toUpperCase()).join(', ');
+  $('copied-msg').textContent='';
+  // Save
+  const data=JSON.parse(localStorage.getItem('slither3')||'{}');
+  data[todayUTC()]={score,words:wordsFound.length,cells:cellsUsed,best:best.word};
+  localStorage.setItem('slither3',JSON.stringify(data));
+  showScreen('end');
+  startCountdown();
+}
+
+// === Countdown ===
+let cdInterval;
+function startCountdown(){
+  if(cdInterval)clearInterval(cdInterval);
+  function tick(){$('end-countdown').textContent=fmtCountdown(msToMidnight());}
+  tick();cdInterval=setInterval(tick,1000);
+}
+
+// === Share ===
+function shareResult(){
+  const pNum=puzzleNumber();
+  const text='Slither #'+pNum+'\nScore: '+score+' | '+wordsFound.length+' words | '+cellsUsed+'/64 cells';
+  if(navigator.share)navigator.share({text}).catch(()=>{});
+  else if(navigator.clipboard)navigator.clipboard.writeText(text).then(()=>{$('copied-msg').textContent='Copied!';});
+}
+
+// === Start Game ===
+function startGame(){
+  if(!dictLoaded)return;
+  const today=todayUTC();
+  const seed=today+(refreshCount>0?'-r'+refreshCount:'');
+  grid=generateGrid(seed);
+  doublePoints=generateDoublePoints(seed);
+  used=Array.from({length:N},()=>Array(N).fill(false));
+  headCell=null;tracePath=[];score=0;wordsFound=[];cellsUsed=0;
+  rawWordPoints=0;multiplier=1.0;diamondMultiplier=1.0;bonusMultiplier=1.0;
+  gameActive=true;pickingStart=true;processing=false;
+  undoStack=[];lastStepDir=null;rotationCount=0;
+  bonusWords=generateBonusWords(grid,seed);
+  bonusFound=new Set();
+  $('undo-btn').disabled=true;
+  buildGrid();
+  renderBonusSlots($('bonus-words'),bonusWords,bonusFound);
+  updateGridDisplay();
+  updateUI();
+  $('word-hint').textContent='Tap any edge cell to start';
+  showScreen('game');
+}
+function refreshGrid(){
+  if(!gameActive)return;
+  refreshCount++;
+  startGame();
+}
+function rotateGrid(){
+  if(!gameActive||processing)return;
+  const g=$('grid');
+  g.classList.add('rotating');
+  setTimeout(()=>{
+    rotationCount=(rotationCount+1)%4;
+    buildGrid();
+    updateGridDisplay();
+    // Remove rotating class with no transition so it snaps to 0 instantly
+    g.style.transition='none';
+    g.classList.remove('rotating');
+    // Force reflow then restore transition
+    void g.offsetHeight;
+    g.style.transition='';
+  },400);
+}
+
+// === Events ===
+function cellFromEvent(e){
+  const touch=e.touches?e.touches[0]:e;
+  const el=document.elementFromPoint(touch.clientX,touch.clientY);
+  if(!el||!el.classList.contains('gcell'))return null;
+  return[parseInt(el.dataset.r),parseInt(el.dataset.c)];
+}
+// Snap-to-nearest: find the closest valid adjacent cell to the finger
+function snapToNearest(touchX,touchY){
+  if(tracePath.length===0)return null;
+  const[lr,lc]=tracePath[tracePath.length-1];
+  let best=null,bestDist=Infinity;
+  for(let dr=-1;dr<=1;dr++){
+    for(let dc=-1;dc<=1;dc++){
+      if(dr===0&&dc===0)continue;
+      const nr=lr+dr,nc=lc+dc;
+      if(nr<0||nr>=N||nc<0||nc>=N)continue;
+      if(used[nr][nc])continue;
+      if(tracePath.some(([pr,pc])=>pr===nr&&pc===nc))continue;
+      const el=getEl(nr,nc);
+      if(!el)continue;
+      const rect=el.getBoundingClientRect();
+      const cx=rect.left+rect.width/2,cy=rect.top+rect.height/2;
+      const dist=Math.hypot(touchX-cx,touchY-cy);
+      if(dist<bestDist){bestDist=dist;best=[nr,nc];}
+    }
+  }
+  // Only snap if finger is very close to a valid cell (0.7x cell size)
+  const cs=cellSize();
+  if(best&&bestDist<cs*0.7)return best;
+  return null;
+}
+let pointerStartPos={x:0,y:0},dragDist=0;
+const DRAG_THRESHOLD=12; // px — below this = tap
+const gw=$('grid');
+gw.addEventListener('pointerdown',e=>{
+  e.preventDefault();
+  pointerStartPos={x:e.clientX,y:e.clientY};
+  dragDist=0;
+  const pos=cellFromEvent(e);
+  if(pos)startTrace(pos[0],pos[1]);
+});
+gw.addEventListener('pointermove',e=>{
+  e.preventDefault();
+  dragDist=Math.hypot(e.clientX-pointerStartPos.x,e.clientY-pointerStartPos.y);
+  if(!isTracing||dragDist<DRAG_THRESHOLD)return;
+  const pos=cellFromEvent(e);
+  if(pos){
+    if(tracePath.length>0){
+      const[lr,lc]=tracePath[tracePath.length-1];
+      if(isAdj(lr,lc,pos[0],pos[1])||tracePath.some(([pr,pc])=>pr===pos[0]&&pc===pos[1])){
+        continueTrace(pos[0],pos[1]);
+        return;
+      }
+    }
+    // Only snap if actually dragging a fair distance
+    const snapped=snapToNearest(e.clientX,e.clientY);
+    if(snapped)continueTrace(snapped[0],snapped[1]);
+  }else{
+    const snapped=snapToNearest(e.clientX,e.clientY);
+    if(snapped)continueTrace(snapped[0],snapped[1]);
+  }
+});
+gw.addEventListener('pointerup',e=>{
+  e.preventDefault();
+  isTracing=false;
+});
+gw.addEventListener('pointercancel',e=>{e.preventDefault();isTracing=false;});
+// Touch fallbacks
+gw.addEventListener('touchstart',e=>{
+  e.preventDefault();
+  const touch=e.touches[0];
+  pointerStartPos={x:touch.clientX,y:touch.clientY};
+  dragDist=0;
+  const pos=cellFromEvent(e);
+  if(pos)startTrace(pos[0],pos[1]);
+},{passive:false});
+gw.addEventListener('touchmove',e=>{
+  e.preventDefault();
+  const touch=e.touches[0];
+  dragDist=Math.hypot(touch.clientX-pointerStartPos.x,touch.clientY-pointerStartPos.y);
+  if(!isTracing||dragDist<DRAG_THRESHOLD)return;
+  const pos=cellFromEvent(e);
+  if(pos){
+    if(tracePath.length>0){
+      const[lr,lc]=tracePath[tracePath.length-1];
+      if(isAdj(lr,lc,pos[0],pos[1])||tracePath.some(([pr,pc])=>pr===pos[0]&&pc===pos[1])){
+        continueTrace(pos[0],pos[1]);
+        return;
+      }
+    }
+    const snapped=snapToNearest(touch.clientX,touch.clientY);
+    if(snapped)continueTrace(snapped[0],snapped[1]);
+  }else{
+    const snapped=snapToNearest(touch.clientX,touch.clientY);
+    if(snapped)continueTrace(snapped[0],snapped[1]);
+  }
+},{passive:false});
+gw.addEventListener('touchend',e=>{
+  e.preventDefault();
+  isTracing=false;
+},{passive:false});
+
+// Bottom bar actions
+function submitTracedWord(){
+  if(tracePath.length<2)return;
+  const word=tracePath.map(([r,c])=>grid[r][c]).join('').toLowerCase();
+  if(dictionary&&dictionary.isWord(word)&&!wordsFound.some(w=>w.word===word)){
+    acceptWord(word);
+  }else{
+    rejectWord();
+  }
+}
+function backOneLetter(){
+  if(tracePath.length<2)return;
+  tracePath.pop();
+  updateGridDisplay();
+}
+
+// === Show Words Replay ===
+let showActive=false;
+function getCellCenter(r,c){
+  const el=getEl(r,c);
+  if(!el)return{x:0,y:0};
+  const wrap=$('grid-wrap').getBoundingClientRect();
+  const rect=el.getBoundingClientRect();
+  return{x:rect.left-wrap.left+rect.width/2,y:rect.top-wrap.top+rect.height/2};
+}
+function showAllWordPaths(){
+  if(wordsFound.length===0)return;
+  showActive=true;
+  const svg=$('path-overlay');
+  svg.innerHTML='';
+  const colors=['#f5a623','#a8ff3e','#00e5ff','#ff6b9d','#c084fc','#fbbf24','#34d399','#f87171','#60a5fa','#fb923c'];
+  const cs=cellSize();
+  const inset=cs*0.35; // stop line this far from center
+  for(let wi=0;wi<wordsFound.length;wi++){
+    const w=wordsFound[wi];
+    if(!w.path||w.path.length<2)continue;
+    const color=colors[wi%colors.length];
+    // Square border around the starting cell
+    const startEl=getEl(w.path[0][0],w.path[0][1]);
+    const wrapRect=$('grid-wrap').getBoundingClientRect();
+    const sRect=startEl.getBoundingClientRect();
+    const rect=document.createElementNS('http://www.w3.org/2000/svg','rect');
+    rect.setAttribute('x',sRect.left-wrapRect.left+1);
+    rect.setAttribute('y',sRect.top-wrapRect.top+1);
+    rect.setAttribute('width',sRect.width-2);
+    rect.setAttribute('height',sRect.height-2);
+    rect.setAttribute('rx','4');
+    rect.setAttribute('fill','none');
+    rect.setAttribute('stroke',color);
+    rect.setAttribute('stroke-width','2.5');
+    rect.setAttribute('stroke-opacity','0.9');
+    svg.appendChild(rect);
+    for(let i=0;i<w.path.length-1;i++){
+      const a=getCellCenter(w.path[i][0],w.path[i][1]);
+      const b=getCellCenter(w.path[i+1][0],w.path[i+1][1]);
+      // Shorten line: start inset from center A, end inset from center B
+      const dx=b.x-a.x,dy=b.y-a.y;
+      const dist=Math.hypot(dx,dy);
+      if(dist<1)continue;
+      const ux=dx/dist,uy=dy/dist;
+      const x1=a.x+ux*inset,y1=a.y+uy*inset;
+      const x2=b.x-ux*inset,y2=b.y-uy*inset;
+      const line=document.createElementNS('http://www.w3.org/2000/svg','line');
+      line.setAttribute('x1',x1);line.setAttribute('y1',y1);
+      line.setAttribute('x2',x2);line.setAttribute('y2',y2);
+      line.setAttribute('stroke',color);
+      line.setAttribute('stroke-width','3');
+      line.setAttribute('stroke-opacity','0.8');
+      svg.appendChild(line);
+    }
+  }
+}
+function clearShowOverlay(){
+  showActive=false;
+  $('path-overlay').innerHTML='';
+}
+$('submit-btn').addEventListener('click',e=>{e.stopPropagation();submitTracedWord();});
+$('back-btn').addEventListener('click',e=>{e.stopPropagation();backOneLetter();});
+$('undo-btn').addEventListener('click',e=>{e.stopPropagation();undoLastWord();});
+// Show button: hold to cycle through words
+$('show-btn').addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();showAllWordPaths();});
+$('show-btn').addEventListener('pointerup',e=>{e.stopPropagation();clearShowOverlay();});
+$('show-btn').addEventListener('pointerleave',e=>{clearShowOverlay();});
+$('show-btn').addEventListener('touchstart',e=>{e.stopPropagation();e.preventDefault();showAllWordPaths();},{passive:false});
+$('show-btn').addEventListener('touchend',e=>{e.stopPropagation();clearShowOverlay();},{passive:false});
+
+$('play-btn').addEventListener('click',startGame);
+$('end-btn').addEventListener('click',()=>endGame(true));
+$('refresh-btn').addEventListener('click',refreshGrid);
+$('rotate-btn').addEventListener('click',rotateGrid);
+$('share-btn').addEventListener('click',shareResult);
+$('home-btn').addEventListener('click',()=>location.href='index.html');
+$('help-btn').addEventListener('click',()=>$('help-overlay').classList.add('active'));
+$('game-help-btn').addEventListener('click',()=>$('help-overlay').classList.add('active'));
+$('close-help').addEventListener('click',()=>$('help-overlay').classList.remove('active'));
+$('help-overlay').addEventListener('click',e=>{if(e.target.id==='help-overlay')$('help-overlay').classList.remove('active');});
+
+window.addEventListener('resize',()=>{
+  if(screens.game.classList.contains('active')&&grid){buildGrid();updateGridDisplay();}
+});
+window.addEventListener('beforeunload',e=>{
+  if(gameActive&&wordsFound.length>0){e.preventDefault();e.returnValue='';}
+});
+
+// === Init ===
+(function(){
+  const pNum=puzzleNumber();
+  const today=todayUTC();
+  const parts=today.split('-');
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  $('puzzle-date').textContent='Puzzle #'+pNum+' \u2014 '+months[parseInt(parts[1])-1]+' '+parseInt(parts[2])+', '+parts[0];
+  loadDictionary().then(()=>{
+    if(dictLoaded)$('play-btn').style.opacity='1';
+  });
+})();
+</script>
+</body>
+</html>
