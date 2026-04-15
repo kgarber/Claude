@@ -814,10 +814,17 @@ function updateGridDisplay(){
   let isValidWord=false;
   if(letters.length>=2&&dictionary){
     const lc=letters.toLowerCase();
-    isValidWord=dictionary.isWord(lc)&&!wordsFound.some(w=>w.word===lc);
+    const inDict=dictionary.isWord(lc);
+    const alreadyUsed=wordsFound.some(w=>w.word===lc);
+    isValidWord=inDict&&!alreadyUsed;
     const prefix=dictionary.isPrefix(lc);
     if(isValidWord)cw.classList.add('valid-word');
-    else if(!prefix)cw.classList.add('invalid');
+    else if(alreadyUsed){cw.classList.add('invalid');$('word-hint').textContent='Already used';}
+    else if(inDict){cw.classList.add('valid-word');} // valid but somehow blocked?
+    else if(!prefix){cw.classList.add('invalid');$('word-hint').textContent='Not a word';}
+    else{$('word-hint').textContent='';}
+  }else if(letters.length>=1){
+    $('word-hint').textContent='';
   }
   // Bottom bar button states
   $('submit-btn').disabled=!(isValidWord&&tracePath.length>=2);
