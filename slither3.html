@@ -648,46 +648,96 @@ function generateBonusWords(grid,dateStr){
   return bonus;
 }
 
-// Check if a cell at (tr,tc) is reachable: does any valid 2-5 letter word
-// starting from an edge cell have a path that ends adjacent to (tr,tc)?
+// Check if a bonus word starting at (tr,tc) is reachable.
+// We need a valid word starting from an edge cell whose path
+// INCLUDES (tr,tc) — making it a used cell so the player can
+// then start the bonus word from it.
 function isBonusReachable(grid,tr,tc){
   if(!dictionary)return true;
-  // Cells adjacent to the target (these are the "bridge" destinations)
-  const targetNeighbors=new Set();
-  for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){
-    if(dr===0&&dc===0)continue;
-    const nr=tr+dr,nc=tc+dc;
-    if(nr>=0&&nr<N&&nc>=0&&nc<N)targetNeighbors.add(nr+','+nc);
-  }
-  // BFS/DFS from every edge cell, looking for valid words whose path
-  // includes or is adjacent to the target
+  // If target is adjacent to an edge cell, check if any word from
+  // that edge cell can route THROUGH the target
   for(let r=0;r<N;r++){
     for(let c=0;c<N;c++){
       if(!(r===0||r===N-1||c===0||c===N-1))continue;
-      // DFS from this edge cell up to depth 5
-      if(bridgeDFS(grid,r,c,[{r,c}],grid[r][c].toLowerCase(),targetNeighbors,tr,tc))return true;
+      if(!isAdj(r,c,tr,tc))continue;
+      // DFS from this edge cell, looking for words that pass through (tr,tc)
+      if(throughDFS(grid,r,c,[{r,c}],grid[r][c].toLowerCase(),tr,tc))return true;
+    }
+  }
+  // Also check 2-hop: edge → intermediate → through target
+  // Find edge cells that can reach a cell adjacent to target via a word,
+  // then from THAT used cell, find a word through target
+  for(let r=0;r<N;r++){
+    for(let c=0;c<N;c++){
+      if(!(r===0||r===N-1||c===0||c===N-1))continue;
+      if(isAdj(r,c,tr,tc))continue; // already checked above
+      // DFS from edge looking for words whose path ends adjacent to target
+      if(bridgeThenThroughDFS(grid,r,c,[{r,c}],grid[r][c].toLowerCase(),tr,tc))return true;
     }
   }
   return false;
 }
-function bridgeDFS(grid,r,c,path,word,targetNeighbors,tr,tc){
-  // If this path reaches adjacent to target and forms a valid word, success
-  const key=r+','+c;
-  if(word.length>=2&&dictionary.isWord(word)){
-    // Check if any cell in path is adjacent to target
-    if(path.some(p=>targetNeighbors.has(p.r+','+p.c)))return true;
-  }
-  if(word.length>=5)return false; // limit search depth
+// Find a word from (r,c) that passes through (tr,tc)
+function throughDFS(grid,r,c,path,word,tr,tc){
+  const passedTarget=path.some(p=>p.r===tr&&p.c===tc);
+  if(word.length>=2&&passedTarget&&dictionary.isWord(word))return true;
+  if(word.length>=6)return false;
   for(let dr=-1;dr<=1;dr++){
     for(let dc=-1;dc<=1;dc++){
       if(dr===0&&dc===0)continue;
       const nr=r+dr,nc=c+dc;
       if(nr<0||nr>=N||nc<0||nc>=N)continue;
-      if(nr===tr&&nc===tc)continue; // don't use the target cell itself
       if(path.some(p=>p.r===nr&&p.c===nc))continue;
       const nw=word+grid[nr][nc].toLowerCase();
       if(!dictionary.isPrefix(nw))continue;
-      if(bridgeDFS(grid,nr,nc,[...path,{r:nr,c:nc}],nw,targetNeighbors,tr,tc))return true;
+      if(throughDFS(grid,nr,nc,[...path,{r:nr,c:nc}],nw,tr,tc))return true;
+    }
+  }
+  return false;
+}
+// Find a word from edge that ends adjacent to target, then check if
+// from that endpoint a second word can pass through target
+function bridgeThenThroughDFS(grid,r,c,path,word,tr,tc){
+  if(word.length>=2&&dictionary.isWord(word)){
+    // Check if last cell in path is adjacent to target
+    const last=path[path.length-1];
+    if(isAdj(last.r,last.c,tr,tc)){
+      // Now check: from this last cell (which would be used), can we
+      // find a word that passes through (tr,tc)?
+      const usedInPath=new Set(path.map(p=>p.r+','+p.c));
+      if(throughFromUsed(grid,last.r,last.c,[{r:last.r,c:last.c}],
+        grid[last.r][last.c].toLowerCase(),tr,tc,usedInPath))return true;
+    }
+  }
+  if(word.length>=5)return false;
+  for(let dr=-1;dr<=1;dr++){
+    for(let dc=-1;dc<=1;dc++){
+      if(dr===0&&dc===0)continue;
+      const nr=r+dr,nc=c+dc;
+      if(nr<0||nr>=N||nc<0||nc>=N)continue;
+      if(nr===tr&&nc===tc)continue; // don't consume target in bridge word
+      if(path.some(p=>p.r===nr&&p.c===nc))continue;
+      const nw=word+grid[nr][nc].toLowerCase();
+      if(!dictionary.isPrefix(nw))continue;
+      if(bridgeThenThroughDFS(grid,nr,nc,[...path,{r:nr,c:nc}],nw,tr,tc))return true;
+    }
+  }
+  return false;
+}
+function throughFromUsed(grid,r,c,path,word,tr,tc,forbidden){
+  const passedTarget=path.some(p=>p.r===tr&&p.c===tc);
+  if(word.length>=2&&passedTarget&&dictionary.isWord(word))return true;
+  if(word.length>=5)return false;
+  for(let dr=-1;dr<=1;dr++){
+    for(let dc=-1;dc<=1;dc++){
+      if(dr===0&&dc===0)continue;
+      const nr=r+dr,nc=c+dc;
+      if(nr<0||nr>=N||nc<0||nc>=N)continue;
+      if(forbidden.has(nr+','+nc)&&!(nr===tr&&nc===tc))continue;
+      if(path.some(p=>p.r===nr&&p.c===nc))continue;
+      const nw=word+grid[nr][nc].toLowerCase();
+      if(!dictionary.isPrefix(nw))continue;
+      if(throughFromUsed(grid,nr,nc,[...path,{r:nr,c:nc}],nw,tr,tc,forbidden))return true;
     }
   }
   return false;
@@ -1452,6 +1502,6 @@ window.addEventListener('beforeunload',e=>{
   });
 })();
 </script>
-<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:1;pointer-events:none;">v1.13</div>
+<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:1;pointer-events:none;">v1.14</div>
 </body>
 </html>
