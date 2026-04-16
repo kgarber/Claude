@@ -147,12 +147,12 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
 .gcell.used{background:var(--cell-used);color:rgba(255,255,255,0.08);
   box-shadow:none;cursor:default;}
 .gcell.used.restartable{color:rgba(255,255,255,0.4);cursor:pointer;
-  outline:3.5px solid rgba(60,120,220,0.85);outline-offset:-3px;background:#2d4d2a;}
+  box-shadow:inset 0 0 0 3px rgba(60,120,220,0.85);background:#2d4d2a;}
 .gcell.head{box-shadow:0 0 0 3px var(--lime),0 0 15px var(--lime-glow);}
 .gcell.tracing,.gcell.double.tracing,.gcell.double.used.tracing{background:var(--cell-active);color:var(--text-dark);
   box-shadow:0 0 0 2px var(--lime),0 0 12px var(--lime-glow) !important;}
-.gcell.start-option{outline:3.5px solid rgba(60,120,220,0.85);outline-offset:-3px;}
-.gcell.next-option{outline:3.5px solid rgba(60,120,220,0.85);outline-offset:-3px;}
+.gcell.start-option{box-shadow:inset 0 0 0 3px rgba(60,120,220,0.85);}
+.gcell.next-option{box-shadow:inset 0 0 0 3px rgba(60,120,220,0.85);}
 .gcell.accepted{animation:acceptPop 0.3s ease;}
 .gcell.rejected{animation:shake 0.35s ease;}
 
@@ -175,11 +175,11 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
   box-shadow:0 1px 3px rgba(0,0,0,0.3),inset 0 0 0 1.5px rgba(245,166,35,0.5);}
 .gcell.double::after{content:'◆';position:absolute;top:1px;right:3px;
   font-size:8px;font-family:var(--font-sans);font-weight:700;color:#c87f0a;line-height:1;}
-.gcell.double.start-option{outline:3.5px solid rgba(60,120,220,0.85);outline-offset:-3px;}
+.gcell.double.start-option{box-shadow:inset 0 0 0 3px rgba(60,120,220,0.85);}
 .gcell.double.used{background:var(--cell-used);box-shadow:none;}
 .gcell.double.used.restartable{background:#2d4d2a;
-  outline:3.5px solid rgba(60,120,220,0.85);outline-offset:-3px;}
-.gcell.double.next-option{outline:3.5px solid rgba(60,120,220,0.85);outline-offset:-3px;}
+  box-shadow:inset 0 0 0 3px rgba(60,120,220,0.85);}
+.gcell.double.next-option{box-shadow:inset 0 0 0 3px rgba(60,120,220,0.85);}
 .gcell.double.used::after{color:rgba(255,255,255,0.1);}
 .gcell.double.used.restartable::after{color:rgba(200,127,10,0.4);}
 
@@ -1486,5 +1486,6 @@ window.addEventListener('beforeunload',e=>{
   });
 })();
 </script>
+<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:1;pointer-events:none;">v1.12</div>
 </body>
 </html>
