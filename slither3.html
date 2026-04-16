@@ -384,6 +384,7 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
     <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
       <button class="undo-btn" id="game-help-btn" title="How to play" style="font-size:14px;padding:6px 10px;">?</button>
       <button class="undo-btn rotate-btn" id="rotate-btn" title="Rotate view"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="6" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.6"/><rect x="10" y="6" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.6"/><rect x="6" y="10" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.6"/><rect x="10" y="10" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.6"/><path d="M16 4 A8 8 0 0 1 16 16" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M16 16 L14 14 M16 16 L18 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M4 16 A8 8 0 0 1 4 4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M4 4 L6 6 M4 4 L2 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+      <button class="undo-btn" id="size-btn" title="Toggle grid size">8x8</button>
       <button class="undo-btn" id="refresh-btn">New Grid</button>
       <button class="end-btn" id="end-btn">End</button>
     </div>
@@ -487,9 +488,23 @@ async function loadDictionary(){
 }
 
 // === Grid Generation ===
-const N=8;
-// Word-friendly letter distribution (64 tiles): ~42% vowels, common consonants heavy
-const LETTERS='EEEEEEEEAAAAAAIIIIIOOOOOTTTTNNNNRRRRSSSSLLLUUUDDDHHHCCMMPPGBFYWK';
+let N=8;
+// Base letter distribution (percentages). Scaled to N*N tiles dynamically.
+const LETTER_RATIOS={E:12,A:9,I:8,O:8,T:7,N:7,R:6,S:6,L:5,U:4,D:4,H:4,C:3,M:3,P:3,G:2,B:2,F:2,Y:2,W:2,K:1};
+function buildLetterPool(total){
+  const entries=Object.entries(LETTER_RATIOS);
+  const sum=entries.reduce((s,[,v])=>s+v,0);
+  let pool=[];
+  for(const[ch,v] of entries){
+    const n=Math.max(1,Math.round(v*total/sum));
+    for(let i=0;i<n;i++)pool.push(ch);
+  }
+  // Adjust to exact length
+  while(pool.length>total)pool.pop();
+  while(pool.length<total)pool.push('E');
+  return pool.join('');
+}
+let LETTERS=buildLetterPool(N*N);
 const GOOD_STARTERS='ETAOINSRHLDCUMBFPGWY';
 const GOOD_SECONDS='ETAOINSRHLDCUMAEIOU';
 function generateGridRaw(rng){
@@ -579,8 +594,8 @@ function generateGrid(dateStr){
 function generateDoublePoints(dateStr){
   const rng=mulberry32(dateSeed(dateStr+'dbl'));
   const dp=Array.from({length:N},()=>Array(N).fill(false));
-  // Place 7-9 double-point cells randomly
-  const count=7+Math.floor(rng()*3);
+  // Place diamond cells proportional to grid size (~11% of cells)
+  const count=Math.max(5,Math.round(N*N*0.11)+Math.floor(rng()*3)-1);
   let placed=0;
   while(placed<count){
     const r=Math.floor(rng()*N),c=1+Math.floor(rng()*(N-1));
@@ -899,7 +914,7 @@ function updateUI(){
   $('f-diamond').textContent=diamondMultiplier.toFixed(1);
   $('f-bonus').textContent=bonusMultiplier.toFixed(1);
   $('f-total').textContent=score;
-  $('words-count').textContent=cellsUsed+'/64 cells \u00b7 '+wordsFound.length+' word'+(wordsFound.length!==1?'s':'');
+  $('words-count').textContent=cellsUsed+'/'+(N*N)+' cells \u00b7 '+wordsFound.length+' word'+(wordsFound.length!==1?'s':'');
   // Stars
   $('star1').className='star '+(score>=STAR1?'filled':'empty');
   $('star2').className='star '+(score>=STAR2?'filled':'empty');
@@ -1252,7 +1267,7 @@ function endGame(manual){
   $('end-title').textContent=stars===3?starStr+' Incredible!':stars===2?starStr+' Great game!':stars===1?starStr+' Solid!':manual?'Game Over':'No more moves!';
   $('end-score').textContent=rawWordPoints+' \u00d7 '+multiplier.toFixed(2)+' \u00d7 '+diamondMultiplier.toFixed(1)+' \u00d7 '+bonusMultiplier.toFixed(1)+' = '+score;
   $('end-words-count').textContent=wordsFound.length;
-  $('end-cells').textContent=cellsUsed+'/64';
+  $('end-cells').textContent=cellsUsed+'/'+(N*N);
   $('end-best').textContent=best.word.toUpperCase()+' ('+best.len+' letters, +'+best.pts+')';
   $('end-bonus').textContent=bonusFound.size+'/'+bonusWords.length;
   // Show all bonus words revealed on end screen
@@ -1278,7 +1293,7 @@ function startCountdown(){
 // === Share ===
 function shareResult(){
   const pNum=puzzleNumber();
-  const text='Slither #'+pNum+'\nScore: '+score+' | '+wordsFound.length+' words | '+cellsUsed+'/64 cells';
+  const text='Slither #'+pNum+'\nScore: '+score+' | '+wordsFound.length+' words | '+cellsUsed+'/'+(N*N)+' cells';
   if(navigator.share)navigator.share({text}).catch(()=>{});
   else if(navigator.clipboard)navigator.clipboard.writeText(text).then(()=>{$('copied-msg').textContent='Copied!';});
 }
@@ -1304,6 +1319,14 @@ function startGame(){
   updateUI();
   $('word-hint').textContent='Tap any edge cell to start';
   showScreen('game');
+}
+function toggleSize(){
+  if(!gameActive)return;
+  N=N===8?9:N===9?10:8;
+  LETTERS=buildLetterPool(N*N);
+  $('size-btn').textContent=N+'x'+N;
+  refreshCount++;
+  startGame();
 }
 function refreshGrid(){
   if(!gameActive)return;
@@ -1485,6 +1508,7 @@ $('show-btn').addEventListener('touchend',e=>{e.stopPropagation();clearShowOverl
 $('play-btn').addEventListener('click',startGame);
 $('end-btn').addEventListener('click',()=>endGame(true));
 $('refresh-btn').addEventListener('click',refreshGrid);
+$('size-btn').addEventListener('click',toggleSize);
 $('rotate-btn').addEventListener('click',rotateGrid);
 $('share-btn').addEventListener('click',shareResult);
 $('home-btn').addEventListener('click',()=>location.href='index.html');
@@ -1512,6 +1536,6 @@ window.addEventListener('beforeunload',e=>{
   });
 })();
 </script>
-<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:1;pointer-events:none;">v1.16</div>
+<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:1;pointer-events:none;">v1.17</div>
 </body>
 </html>
