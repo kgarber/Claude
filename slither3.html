@@ -151,6 +151,8 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
 .gcell.head{box-shadow:0 0 0 3px var(--lime),0 0 15px var(--lime-glow);}
 .gcell.tracing,.gcell.double.tracing,.gcell.double.used.tracing{background:var(--cell-active);color:var(--text-dark);
   box-shadow:0 0 0 2px var(--lime),0 0 12px var(--lime-glow) !important;}
+.gcell.stranded{background:rgba(245,238,220,0.15);color:rgba(26,26,26,0.2);
+  cursor:default;box-shadow:none;}
 .gcell.start-option{box-shadow:inset 0 0 0 3px rgba(60,120,220,0.85);}
 .gcell.next-option{box-shadow:inset 0 0 0 3px rgba(60,120,220,0.85);}
 .gcell.accepted{animation:acceptPop 0.3s ease;}
@@ -839,8 +841,17 @@ function updateGridDisplay(){
         }
       }
       // No head highlight — player can start from any used cell or edge
-      // Edge cells always a start option (when no active trace)
-      if(!used[r][c]&&isEdge(r,c)&&tracePath.length===0)el.classList.add('start-option');
+      // Check if unused cell is stranded (all neighbors used)
+      if(!used[r][c]){
+        let hasUnusedNeighbor=false;
+        for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){
+          if(dr===0&&dc===0)continue;
+          const nr=r+dr,nc=c+dc;
+          if(nr>=0&&nr<N&&nc>=0&&nc<N&&!used[nr][nc]){hasUnusedNeighbor=true;break;}
+        }
+        if(!hasUnusedNeighbor)el.classList.add('stranded');
+        else if(isEdge(r,c)&&tracePath.length===0)el.classList.add('start-option');
+      }
     }
   }
   for(const[r,c] of tracePath){getEl(r,c).classList.add('tracing');}
@@ -944,6 +955,16 @@ function analyzeConnectivity(){
 let isTracing=false;
 function startTrace(r,c){
   if(!gameActive||!dictionary||processing)return;
+  // Block stranded unused cells (no unused neighbors)
+  if(!used[r][c]){
+    let hasUnusedNeighbor=false;
+    for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){
+      if(dr===0&&dc===0)continue;
+      const nr=r+dr,nc=c+dc;
+      if(nr>=0&&nr<N&&nc>=0&&nc<N&&!used[nr][nc]){hasUnusedNeighbor=true;break;}
+    }
+    if(!hasUnusedNeighbor)return;
+  }
 
   // If there's an existing trace...
   if(tracePath.length>=1){
@@ -1502,6 +1523,6 @@ window.addEventListener('beforeunload',e=>{
   });
 })();
 </script>
-<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:1;pointer-events:none;">v1.14</div>
+<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:1;pointer-events:none;">v1.15</div>
 </body>
 </html>
