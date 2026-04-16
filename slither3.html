@@ -112,7 +112,7 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
   100%{opacity:0;transform:translate(-50%,-60%) scale(1);}}
 
 .current-word{font-family:var(--font-display);font-size:20px;font-weight:700;
-  min-height:24px;color:var(--lime);text-align:center;letter-spacing:2px;
+  height:24px;color:var(--lime);text-align:center;letter-spacing:2px;overflow:hidden;
   transition:color 0.15s;}
 .current-word.invalid{color:var(--red);}
 .current-word.valid-word{color:#7dff3e;text-shadow:0 0 10px rgba(125,255,62,0.4);}
@@ -134,11 +134,11 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
 .path-overlay line{stroke-linecap:round;}
 .gcell.path-start{box-shadow:0 0 0 3px #f5a623,0 0 12px rgba(245,166,35,0.5) !important;z-index:11;}
 .gcell.path-cell{box-shadow:0 0 0 2px #a8ff3e,0 0 10px var(--lime-glow) !important;z-index:11;}
-.word-hint{font-size:10px;color:var(--text-dim);min-height:0;text-align:center;}
+.word-hint{font-size:10px;color:var(--text-dim);height:14px;text-align:center;overflow:hidden;}
 
 /* Grid */
-.grid-wrap{position:relative;margin:1px auto;touch-action:none;}
-.grid{display:grid;gap:3px;position:relative;z-index:1;}
+.grid-wrap{position:relative;margin:1px auto;touch-action:none;-webkit-touch-callout:none;}
+.grid{display:grid;gap:3px;position:relative;z-index:1;touch-action:none;}
 .gcell{display:flex;align-items:center;justify-content:center;
   border-radius:5px;background:var(--cell);font-family:var(--font-display);
   font-weight:700;color:var(--text-dark);cursor:pointer;
@@ -1335,40 +1335,6 @@ gw.addEventListener('pointerup',e=>{
   isTracing=false;
 });
 gw.addEventListener('pointercancel',e=>{e.preventDefault();isTracing=false;});
-// Touch fallbacks
-gw.addEventListener('touchstart',e=>{
-  e.preventDefault();
-  const touch=e.touches[0];
-  pointerStartPos={x:touch.clientX,y:touch.clientY};
-  dragDist=0;
-  const pos=cellFromEvent(e);
-  if(pos)startTrace(pos[0],pos[1]);
-},{passive:false});
-gw.addEventListener('touchmove',e=>{
-  e.preventDefault();
-  const touch=e.touches[0];
-  dragDist=Math.hypot(touch.clientX-pointerStartPos.x,touch.clientY-pointerStartPos.y);
-  if(!isTracing||dragDist<DRAG_THRESHOLD)return;
-  const pos=cellFromEvent(e);
-  if(pos){
-    if(tracePath.length>0){
-      const[lr,lc]=tracePath[tracePath.length-1];
-      if(isAdj(lr,lc,pos[0],pos[1])||tracePath.some(([pr,pc])=>pr===pos[0]&&pc===pos[1])){
-        continueTrace(pos[0],pos[1]);
-        return;
-      }
-    }
-    const snapped=snapToNearest(touch.clientX,touch.clientY);
-    if(snapped)continueTrace(snapped[0],snapped[1]);
-  }else{
-    const snapped=snapToNearest(touch.clientX,touch.clientY);
-    if(snapped)continueTrace(snapped[0],snapped[1]);
-  }
-},{passive:false});
-gw.addEventListener('touchend',e=>{
-  e.preventDefault();
-  isTracing=false;
-},{passive:false});
 
 // Bottom bar actions
 function submitTracedWord(){
@@ -1486,6 +1452,6 @@ window.addEventListener('beforeunload',e=>{
   });
 })();
 </script>
-<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:1;pointer-events:none;">v1.12</div>
+<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:1;pointer-events:none;">v1.13</div>
 </body>
 </html>
