@@ -149,8 +149,8 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
 .gcell.used.restartable{color:rgba(255,255,255,0.4);cursor:pointer;
   outline:3.5px solid rgba(60,120,220,0.85);outline-offset:-3px;background:#2d4d2a;}
 .gcell.head{box-shadow:0 0 0 3px var(--lime),0 0 15px var(--lime-glow);}
-.gcell.tracing,.gcell.double.tracing{background:var(--cell-active);color:var(--text-dark);
-  box-shadow:0 0 0 2px var(--lime),0 0 12px var(--lime-glow);}
+.gcell.tracing,.gcell.double.tracing,.gcell.double.used.tracing{background:var(--cell-active);color:var(--text-dark);
+  box-shadow:0 0 0 2px var(--lime),0 0 12px var(--lime-glow) !important;}
 .gcell.start-option{outline:3.5px solid rgba(60,120,220,0.85);outline-offset:-3px;}
 .gcell.next-option{outline:3.5px solid rgba(60,120,220,0.85);outline-offset:-3px;}
 .gcell.accepted{animation:acceptPop 0.3s ease;}
@@ -900,7 +900,12 @@ function startTrace(r,c){
     // Backtrack: tapping a cell already in the path
     const idx=tracePath.findIndex(([pr,pc])=>pr===r&&pc===c);
     if(idx>=0){
-      tracePath=tracePath.slice(0,idx+1);
+      if(idx===0&&tracePath.length===1){
+        // Tapping the only selected cell — deselect entirely
+        tracePath=[];
+      }else{
+        tracePath=tracePath.slice(0,idx);
+      }
       updateGridDisplay();
       return;
     }
