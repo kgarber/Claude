@@ -894,21 +894,28 @@ function analyzeConnectivity(){
 let isTracing=false;
 function startTrace(r,c){
   if(!gameActive||!dictionary||processing)return;
-  // Tap-to-extend: if there's an existing traced path, tapping adjacent extends it
+
+  // If there's an existing trace...
   if(tracePath.length>=1){
     const[lr,lc]=tracePath[tracePath.length-1];
-    // Backtrack: tapping a cell already in the path
-    const idx=tracePath.findIndex(([pr,pc])=>pr===r&&pc===c);
-    if(idx>=0){
-      if(idx===0&&tracePath.length===1){
-        // Tapping the only selected cell — deselect entirely
-        tracePath=[];
-      }else{
-        tracePath=tracePath.slice(0,idx);
-      }
+
+    // Tapping the only selected cell — deselect entirely
+    if(tracePath.length===1&&tracePath[0][0]===r&&tracePath[0][1]===c){
+      tracePath=[];
+      isTracing=false;
       updateGridDisplay();
       return;
     }
+
+    // Tapping an earlier cell in the path — backtrack to before it
+    const idx=tracePath.findIndex(([pr,pc])=>pr===r&&pc===c);
+    if(idx>=0){
+      tracePath=tracePath.slice(0,idx);
+      if(tracePath.length===0)isTracing=false;
+      updateGridDisplay();
+      return;
+    }
+
     // Extend: tapping an adjacent unused cell
     if(!used[r][c]&&isAdj(lr,lc,r,c)){
       tracePath.push([r,c]);
@@ -916,11 +923,12 @@ function startTrace(r,c){
       updateGridDisplay();
       return;
     }
-    // Tapping a non-adjacent cell: clear old trace, fall through to start a new one
+
+    // Tapping something else — clear old trace and fall through to start fresh
     tracePath=[];
     isTracing=false;
-    $('submit-btn').classList.remove('visible');
   }
+
   // Start from any used cell — word begins with that letter
   if(used[r][c]){
     // Must have at least one unused neighbor to trace into
@@ -952,6 +960,8 @@ function startTrace(r,c){
     $('word-hint').textContent='';
     return;
   }
+  // Nothing valid tapped — make sure display is clean
+  updateGridDisplay();
 }
 function continueTrace(r,c){
   if(!isTracing)return;
