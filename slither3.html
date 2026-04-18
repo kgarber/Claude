@@ -71,6 +71,12 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
 .formula-diamond{color:#e5a820;}
 .formula-bonus{color:#f5a623;}
 .formula-total{color:var(--lime);font-size:20px;text-shadow:0 0 10px var(--lime-glow);}
+.formula-value.pulse{animation:formulaPulse 0.5s ease;}
+@keyframes formulaPulse{0%{transform:scale(1)}30%{transform:scale(1.25)}100%{transform:scale(1)}}
+.gcell.tap-pop{animation:tapPop 0.1s ease;}
+@keyframes tapPop{0%{transform:scale(1)}50%{transform:scale(1.08)}100%{transform:scale(1)}}
+.bonus-slot.found-anim{animation:bonusCheck 0.6s ease;}
+@keyframes bonusCheck{0%{transform:scale(1)}30%{transform:scale(1.1);border-color:#f5a623;}100%{transform:scale(1);}}
 
 /* Score popup */
 .score-popup{position:absolute;pointer-events:none;z-index:50;
@@ -439,6 +445,7 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
     <div class="end-row"><span class="end-label">Cells used</span><span class="end-val" id="end-cells"></span></div>
     <div class="end-row"><span class="end-label">Best word</span><span class="end-val" id="end-best"></span></div>
     <div class="end-row"><span class="end-label">Bonus words</span><span class="end-val" id="end-bonus"></span></div>
+    <div class="end-row"><span class="end-label">Streak</span><span class="end-val" id="end-streak"></span></div>
   </div>
   <div class="bonus-words" id="end-bonus-words" style="margin:4px 0;"></div>
   <div class="end-words" id="end-words"></div>
@@ -770,7 +777,7 @@ function renderBonusSlots(container,bonusWords,foundSet){
   container.innerHTML='';
   for(const bw of bonusWords){
     const slot=document.createElement('div');
-    slot.className='bonus-slot'+(foundSet.has(bw.word)?' found':'');
+    slot.className='bonus-slot'+(foundSet.has(bw.word)?' found found-anim':'');
     for(let i=0;i<bw.word.length;i++){
       const el=document.createElement('div');
       el.className='bonus-letter revealed';
@@ -969,6 +976,10 @@ function analyzeConnectivity(){
 let isTracing=false;
 function startTrace(r,c){
   if(!gameActive||!dictionary||processing)return;
+  // Haptic + pop on tap
+  if(navigator.vibrate)navigator.vibrate(8);
+  const tapEl=getEl(r,c);
+  if(tapEl){tapEl.classList.remove('tap-pop');void tapEl.offsetHeight;tapEl.classList.add('tap-pop');}
 
   // If there's an existing trace...
   if(tracePath.length>=1){
@@ -1115,13 +1126,25 @@ function acceptWord(word){
   }
 
   // Recalc total score
+  const prevScore=score;
   recalcScore();
+
+  // Haptic on accept
+  if(navigator.vibrate)navigator.vibrate([15,8,15]);
 
   // Animate
   for(const[r,c] of tracePath)getEl(r,c).classList.add('accepted');
 
+  // Pulse formula factors that changed
+  function pulseEl(id){const el=$(id);el.classList.remove('pulse');void el.offsetHeight;el.classList.add('pulse');}
+  pulseEl('f-words');
+  if(multiplier!==(1.0+((cellsUsed-tracePath.length)*0.01)))pulseEl('f-mult');
+  if(isBonusWord)pulseEl('f-bonus');
+  pulseEl('f-total');
+
   // Bonus word celebration
   if(isBonusWord){
+    if(navigator.vibrate)navigator.vibrate([30,15,30,15,30]);
     const bpop=document.createElement('div');
     bpop.className='bonus-found-popup';
     bpop.textContent='BONUS! '+word.toUpperCase();
@@ -1274,10 +1297,21 @@ function endGame(manual){
   renderBonusSlots($('end-bonus-words'),bonusWords,new Set(bonusWords.map(b=>b.word)));
   $('end-words').textContent=wordsFound.map(w=>w.word.toUpperCase()).join(', ');
   $('copied-msg').textContent='';
-  // Save
+  // Save + streak
   const data=JSON.parse(localStorage.getItem('slither3')||'{}');
-  data[todayUTC()]={score,words:wordsFound.length,cells:cellsUsed,best:best.word};
+  if(!data.history)data.history={};
+  data.history[todayUTC()]={score,words:wordsFound.length,cells:cellsUsed,best:best.word};
+  // Calculate streak
+  const today=new Date();
+  let streak=1;
+  for(let d=1;d<365;d++){
+    const prev=new Date(today);prev.setUTCDate(prev.getUTCDate()-d);
+    const key=prev.getUTCFullYear()+'-'+String(prev.getUTCMonth()+1).padStart(2,'0')+'-'+String(prev.getUTCDate()).padStart(2,'0');
+    if(data.history[key])streak++;else break;
+  }
+  data.streak=streak;
   localStorage.setItem('slither3',JSON.stringify(data));
+  $('end-streak').textContent=streak+' day'+(streak!==1?'s':'');
   showScreen('end');
   startCountdown();
 }
@@ -1325,6 +1359,7 @@ function toggleSize(){
   N=N===8?9:N===9?10:8;
   LETTERS=buildLetterPool(N*N);
   $('size-btn').textContent=N+'x'+N;
+  localStorage.setItem('slither3_size',String(N));
   refreshCount++;
   startGame();
 }
@@ -1382,13 +1417,24 @@ function snapToNearest(touchX,touchY){
   if(best&&bestDist<cs*0.7)return best;
   return null;
 }
-let pointerStartPos={x:0,y:0},dragDist=0;
-const DRAG_THRESHOLD=12; // px — below this = tap
+let pointerStartPos={x:0,y:0},dragDist=0,lastTapTime=0;
+const DRAG_THRESHOLD=12;
+const DOUBLE_TAP_MS=350;
 const gw=$('grid');
 gw.addEventListener('pointerdown',e=>{
   e.preventDefault();
   pointerStartPos={x:e.clientX,y:e.clientY};
   dragDist=0;
+  // Double-tap to submit
+  const now=Date.now();
+  if(now-lastTapTime<DOUBLE_TAP_MS&&tracePath.length>=2){
+    const pos=cellFromEvent(e);
+    if(pos&&tracePath.length>=1){
+      const[lr,lc]=tracePath[tracePath.length-1];
+      if(pos[0]===lr&&pos[1]===lc){submitTracedWord();lastTapTime=0;return;}
+    }
+  }
+  lastTapTime=now;
   const pos=cellFromEvent(e);
   if(pos)startTrace(pos[0],pos[1]);
 });
@@ -1526,6 +1572,9 @@ window.addEventListener('beforeunload',e=>{
 
 // === Init ===
 (function(){
+  // Restore saved grid size
+  const savedSize=parseInt(localStorage.getItem('slither3_size'));
+  if(savedSize>=8&&savedSize<=10){N=savedSize;LETTERS=buildLetterPool(N*N);}
   const pNum=puzzleNumber();
   const today=todayUTC();
   const parts=today.split('-');
@@ -1536,6 +1585,6 @@ window.addEventListener('beforeunload',e=>{
   });
 })();
 </script>
-<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:1;pointer-events:none;">v1.17</div>
+<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:1;pointer-events:none;">v1.18</div>
 </body>
 </html>
