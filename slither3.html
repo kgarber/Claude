@@ -75,23 +75,25 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
 @keyframes bonusCheck{0%{transform:scale(1)}30%{transform:scale(1.1);border-color:#f5a623;}100%{transform:scale(1);}}
 
 /* Score popup */
-.score-popup{position:absolute;pointer-events:none;z-index:50;
-  font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;
+.score-popup{position:fixed;top:40%;left:50%;transform:translate(-50%,-50%);
+  pointer-events:none;z-index:60;
+  font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;
   color:var(--text);text-align:center;white-space:nowrap;
-  background:rgba(14,26,19,0.85);padding:4px 10px;border-radius:8px;
-  border:1px solid rgba(168,255,62,0.2);
-  animation:popupFloat 2s ease-out forwards;}
-.score-popup .formula{color:var(--text-dim);font-size:11px;display:block;}
+  background:rgba(14,26,19,0.95);padding:12px 20px;border-radius:12px;
+  border:1px solid rgba(168,255,62,0.3);
+  box-shadow:0 4px 20px rgba(0,0,0,0.5);
+  animation:popupFade 2.5s ease-out forwards;}
+.score-popup .formula{color:var(--text-dim);font-size:12px;display:block;margin-top:2px;}
 .score-popup .formula .factor{color:var(--text);font-weight:700;}
 .score-popup .formula .mult{color:#fbbf24;}
 .score-popup .formula .bonus-tag{color:#f5a623;font-weight:700;}
-.score-popup .result{font-family:var(--font-display);font-size:24px;
+.score-popup .result{font-family:var(--font-display);font-size:28px;
   font-weight:700;color:var(--lime);text-shadow:0 0 12px var(--lime-glow);display:block;}
-@keyframes popupFloat{
-  0%{opacity:0;transform:translate(-50%,0) scale(0.8);}
-  10%{opacity:1;transform:translate(-50%,-6px) scale(1);}
-  70%{opacity:1;transform:translate(-50%,-20px) scale(1);}
-  100%{opacity:0;transform:translate(-50%,-35px) scale(1);}
+@keyframes popupFade{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(0.8);}
+  10%{opacity:1;transform:translate(-50%,-50%) scale(1);}
+  75%{opacity:1;transform:translate(-50%,-50%) scale(1);}
+  100%{opacity:0;transform:translate(-50%,-55%) scale(1);}
 }
 /* Bonus words */
 .bonus-words{display:flex;gap:6px;justify-content:center;width:100%;flex-wrap:wrap;}
@@ -1126,18 +1128,16 @@ function acceptWord(word){
     renderBonusSlots($('bonus-words'),bonusWords,bonusFound);
   }
 
-  // Small popup showing word value
-  const lastC=tracePath[tracePath.length-1];
+  // Popup showing word and score breakdown
   const popup=document.createElement('div');
   popup.className='score-popup';
-  popup.innerHTML='<span class="result">'+word.toUpperCase()+' +'+basePts+'</span>';
-  const cellEl=getEl(lastC[0],lastC[1]);
-  const gridRect=$('grid').getBoundingClientRect();
-  const cellRect=cellEl.getBoundingClientRect();
-  popup.style.left=(cellRect.left-gridRect.left+cellRect.width/2)+'px';
-  popup.style.top=(cellRect.top-gridRect.top-10)+'px';
-  $('grid-wrap').appendChild(popup);
-  setTimeout(()=>popup.remove(),1500);
+  let formulaHtml='<span class="factor">'+len+'&sup2;='+basePts+'</span>';
+  if(multiplier>1.005)formulaHtml+=' <span class="mult">&times;'+multiplier.toFixed(2)+'</span>';
+  if(diamondMultiplier>1.05)formulaHtml+=' <span class="mult">&times;'+diamondMultiplier.toFixed(1)+'◆</span>';
+  if(isBonusWord)formulaHtml+=' <span class="bonus-tag">&times;BONUS</span>';
+  popup.innerHTML='<span class="result">'+word.toUpperCase()+' +'+Math.round(basePts*multiplier*diamondMultiplier*(isBonusWord?bonusMultiplier:1))+'</span><span class="formula">'+formulaHtml+'</span>';
+  document.body.appendChild(popup);
+  setTimeout(()=>popup.remove(),2500);
 
   wordsFound.push({word,pts:basePts,len,path:tracePath.map(([r,c])=>[r,c])});
 
@@ -1543,6 +1543,6 @@ window.addEventListener('beforeunload',e=>{
   });
 })();
 </script>
-<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:1;pointer-events:none;">v1.22</div>
+<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:1;pointer-events:none;">v1.23</div>
 </body>
 </html>
