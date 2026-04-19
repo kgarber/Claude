@@ -1120,18 +1120,17 @@ function acceptWord(word){
   // Bonus word celebration
   if(isBonusWord){
     if(navigator.vibrate)navigator.vibrate([30,15,30,15,30]);
-    const bpop=document.createElement('div');
-    bpop.className='bonus-found-popup';
-    bpop.textContent='BONUS! '+word.toUpperCase();
-    document.body.appendChild(bpop);
-    setTimeout(()=>bpop.remove(),1500);
     renderBonusSlots($('bonus-words'),bonusWords,bonusFound);
   }
 
   // Popup showing word and points
   const popup=document.createElement('div');
   popup.className='score-popup';
-  popup.innerHTML='<span class="result">'+word.toUpperCase()+' +'+basePts+'</span>';
+  if(isBonusWord){
+    popup.innerHTML='<span style="font-size:13px;color:#f5a623;display:block;letter-spacing:2px;">BONUS</span><span class="result" style="color:#f5a623;text-shadow:0 0 12px rgba(245,166,35,0.5);">'+word.toUpperCase()+' +'+basePts+'</span>';
+  }else{
+    popup.innerHTML='<span class="result">'+word.toUpperCase()+' +'+basePts+'</span>';
+  }
   document.body.appendChild(popup);
   setTimeout(()=>popup.remove(),2000);
 
@@ -1539,6 +1538,6 @@ window.addEventListener('beforeunload',e=>{
   });
 })();
 </script>
-<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:1;pointer-events:none;">v1.24</div>
+<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:1;pointer-events:none;">v1.25</div>
 </body>
 </html>
