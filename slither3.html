@@ -267,36 +267,48 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
     <p style="text-align:center;font-size:12px;color:var(--text-dim);"><b style="color:rgb(60,120,220);">Blue border</b> = you can start here</p>
 
     <h3>2. Spell a Word</h3>
-    <p>Tap adjacent letters to spell a word. Go any direction, even diagonally. When it turns <b style="color:#7dff3e;">green</b>, hit <b>Submit</b>.</p>
-    <div style="display:flex;gap:4px;justify-content:center;margin:8px 0;">
-      <div style="width:32px;height:32px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">S</div>
-      <div style="width:32px;height:32px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">T</div>
-      <div style="width:32px;height:32px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">A</div>
-      <div style="width:32px;height:32px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">R</div>
-      <span style="color:#7dff3e;font-size:16px;font-weight:700;display:flex;align-items:center;margin-left:6px;">&#10003;</span>
-    </div>
-
-    <h3>3. Work Your Way In</h3>
-    <p>Used letters fade. Tap any <b>faded letter</b> to start your next word. Build inward to cover the grid!</p>
+    <p>Tap letters next to each other to spell a word. Go any direction, even diagonally. When the word turns <b style="color:#7dff3e;">green</b>, hit <b>Submit</b>.</p>
     <div style="display:grid;grid-template-columns:repeat(4,32px);gap:2px;margin:10px auto;width:fit-content;">
-      <div style="width:32px;height:32px;border-radius:4px;background:#2d3d2a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:rgba(255,255,255,0.2);">S</div>
-      <div style="width:32px;height:32px;border-radius:4px;background:#2d3d2a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:rgba(255,255,255,0.2);">T</div>
-      <div style="width:32px;height:32px;border-radius:4px;background:#2d3d2a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:rgba(255,255,255,0.2);">A</div>
-      <div style="width:32px;height:32px;border-radius:4px;background:#2d3d2a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:rgba(255,255,255,0.2);">R</div>
-      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">I</div>
-      <div style="width:32px;height:32px;border-radius:4px;background:#2d3d2a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:rgba(255,255,255,0.4);box-shadow:inset 0 0 0 3px rgba(60,120,220,0.85);">R</div>
-      <div style="width:32px;height:32px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">A</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">S</div>
       <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">N</div>
       <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">E</div>
-      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">H</div>
-      <div style="width:32px;height:32px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">N</div>
-      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">D</div>
-      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">T</div>
-      <div style="width:32px;height:32px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">K</div>
       <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">L</div>
       <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">O</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">T</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">I</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">D</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">R</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">A</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">A</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">R</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">P</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">H</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">E</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">N</div>
     </div>
-    <p style="text-align:center;font-size:12px;color:var(--text-dim);line-height:1.5;">"STAR" was played (faded). Starting from faded <b style="color:rgb(60,120,220);">R</b> to spell <b style="color:#a8ff3e;">RANK</b> going inward.</p>
+    <p style="text-align:center;font-size:12px;color:var(--text-dim);line-height:1.4;"><b style="color:#a8ff3e;">STAR</b>: S(edge) &rarr; T(diagonal) &rarr; A(diagonal) &rarr; R(right)<br>Words can zig-zag in any direction!</p>
+
+    <h3>3. Work Your Way In</h3>
+    <p>Used letters fade. Tap any <b>faded letter</b> to start your next word &mdash; the word begins with that letter. Build inward!</p>
+    <div style="display:grid;grid-template-columns:repeat(4,32px);gap:2px;margin:10px auto;width:fit-content;">
+      <div style="width:32px;height:32px;border-radius:4px;background:#2d3d2a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:rgba(255,255,255,0.2);">S</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">N</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">E</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">L</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">O</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:#2d3d2a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:rgba(255,255,255,0.4);box-shadow:inset 0 0 0 3px rgba(60,120,220,0.85);">T</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">I</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">D</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">R</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">A</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:#2d3d2a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:rgba(255,255,255,0.2);">A</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:#2d3d2a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:rgba(255,255,255,0.2);">R</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">P</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">H</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">E</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">N</div>
+    </div>
+    <p style="text-align:center;font-size:12px;color:var(--text-dim);line-height:1.4;">STAR is faded. Tap the faded <b style="color:rgb(60,120,220);">T</b> to start. Spell <b style="color:#a8ff3e;">TIE</b> going into unused cells.<br>The word starts with T (the faded letter you tapped).</p>
 
     <h3>4. Score More</h3>
     <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:10px;margin:8px 0;font-size:13px;line-height:1.8;">
@@ -1531,6 +1543,6 @@ window.addEventListener('beforeunload',e=>{
   });
 })();
 </script>
-<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:1;pointer-events:none;">v1.19</div>
+<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:1;pointer-events:none;">v1.20</div>
 </body>
 </html>
