@@ -1128,16 +1128,12 @@ function acceptWord(word){
     renderBonusSlots($('bonus-words'),bonusWords,bonusFound);
   }
 
-  // Popup showing word and score breakdown
+  // Popup showing word and points
   const popup=document.createElement('div');
   popup.className='score-popup';
-  let formulaHtml='<span class="factor">'+len+'&sup2;='+basePts+'</span>';
-  if(multiplier>1.005)formulaHtml+=' <span class="mult">&times;'+multiplier.toFixed(2)+'</span>';
-  if(diamondMultiplier>1.05)formulaHtml+=' <span class="mult">&times;'+diamondMultiplier.toFixed(1)+'◆</span>';
-  if(isBonusWord)formulaHtml+=' <span class="bonus-tag">&times;BONUS</span>';
-  popup.innerHTML='<span class="result">'+word.toUpperCase()+' +'+Math.round(basePts*multiplier*diamondMultiplier*(isBonusWord?bonusMultiplier:1))+'</span><span class="formula">'+formulaHtml+'</span>';
+  popup.innerHTML='<span class="result">'+word.toUpperCase()+' +'+basePts+'</span>';
   document.body.appendChild(popup);
-  setTimeout(()=>popup.remove(),2500);
+  setTimeout(()=>popup.remove(),2000);
 
   wordsFound.push({word,pts:basePts,len,path:tracePath.map(([r,c])=>[r,c])});
 
@@ -1543,6 +1539,6 @@ window.addEventListener('beforeunload',e=>{
   });
 })();
 </script>
-<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:1;pointer-events:none;">v1.23</div>
+<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:1;pointer-events:none;">v1.24</div>
 </body>
 </html>
