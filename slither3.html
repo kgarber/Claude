@@ -50,10 +50,6 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
 .game-header{display:flex;justify-content:space-between;align-items:center;width:100%;font-size:12px;}
 .game-header .left{display:flex;flex-direction:column;gap:2px;}
 .words-count{font-size:11px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;}
-.star-bar{display:flex;gap:2px;}
-.star{font-size:18px;transition:color 0.3s,text-shadow 0.3s;}
-.star.empty{color:rgba(255,255,255,0.12);}
-.star.filled{color:#fbbf24;text-shadow:0 0 8px rgba(251,191,36,0.5);}
 
 /* Formula bar */
 .formula-bar{display:flex;align-items:center;justify-content:center;
@@ -239,11 +235,6 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
   <div class="logo">Slither v3</div>
   <div class="tagline">8&times;8 grid. Bigger letters. Same scoring.</div>
   <div class="puzzle-date" id="puzzle-date"></div>
-  <div class="par-line">
-    <span class="tier-par">&#9733; 100</span>
-    <span class="tier-great">&#9733;&#9733; 200</span>
-    <span class="tier-genius">&#9733;&#9733;&#9733; 350</span>
-  </div>
   <button class="play-btn" id="play-btn">Play Today's Puzzle</button>
   <button class="help-btn" id="help-btn">How to Play</button>
   <div class="loading-msg" id="loading-msg"></div>
@@ -254,77 +245,58 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
     <h2>How to Play</h2>
 
     <h3>1. Start from the Edge</h3>
-    <p>Your first word must start from a letter on the edge of the grid (any side).</p>
-    <div style="display:grid;grid-template-columns:repeat(5,30px);gap:2px;margin:10px auto;width:fit-content;">
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">E</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">T</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">A</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">R</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">S</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">N</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:var(--text-dim);">O</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:var(--text-dim);">I</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:var(--text-dim);">L</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">E</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">T</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:var(--text-dim);">H</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:var(--text-dim);">A</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:var(--text-dim);">N</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">D</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">P</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:var(--text-dim);">E</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:var(--text-dim);">R</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:var(--text-dim);">S</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">T</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">O</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">N</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">E</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">S</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px rgba(168,255,62,0.4);">I</div>
+    <p>Tap any letter with a <b style="color:rgb(60,120,220);">blue border</b> to begin. These are on the edges of the 9&times;9 grid.</p>
+    <div style="display:grid;grid-template-columns:repeat(4,32px);gap:2px;margin:10px auto;width:fit-content;">
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:inset 0 0 0 3px rgba(60,120,220,0.85);">S</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:inset 0 0 0 3px rgba(60,120,220,0.85);">T</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:inset 0 0 0 3px rgba(60,120,220,0.85);">A</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:inset 0 0 0 3px rgba(60,120,220,0.85);">R</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:inset 0 0 0 3px rgba(60,120,220,0.85);">N</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">O</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">I</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:inset 0 0 0 3px rgba(60,120,220,0.85);">E</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:inset 0 0 0 3px rgba(60,120,220,0.85);">T</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">H</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">A</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:inset 0 0 0 3px rgba(60,120,220,0.85);">P</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:inset 0 0 0 3px rgba(60,120,220,0.85);">L</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">E</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">R</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:inset 0 0 0 3px rgba(60,120,220,0.85);">S</div>
     </div>
-    <p style="text-align:center;font-size:12px;color:var(--text-dim);">Glowing cells = edges you can start from</p>
+    <p style="text-align:center;font-size:12px;color:var(--text-dim);"><b style="color:rgb(60,120,220);">Blue border</b> = you can start here</p>
 
     <h3>2. Spell a Word</h3>
-    <p>Tap letters next to each other to spell a word. You can go any direction, even diagonally. When it turns <b style="color:#7dff3e;">green</b>, hit <b>Submit</b>.</p>
+    <p>Tap adjacent letters to spell a word. Go any direction, even diagonally. When it turns <b style="color:#7dff3e;">green</b>, hit <b>Submit</b>.</p>
     <div style="display:flex;gap:4px;justify-content:center;margin:8px 0;">
-      <div style="width:30px;height:30px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">S</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">T</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">O</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">N</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">E</div>
-      <span style="color:#7dff3e;font-size:14px;font-weight:700;display:flex;align-items:center;margin-left:8px;">&#10003;</span>
+      <div style="width:32px;height:32px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">S</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">T</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">A</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">R</div>
+      <span style="color:#7dff3e;font-size:16px;font-weight:700;display:flex;align-items:center;margin-left:6px;">&#10003;</span>
     </div>
 
     <h3>3. Work Your Way In</h3>
-    <p>Used letters fade out. Tap any <b>faded letter</b> to start your next word from it. Words can twist and turn!</p>
-    <div style="display:grid;grid-template-columns:repeat(5,30px);gap:2px;margin:10px auto;width:fit-content;">
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;">E</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:#2d3d2a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:rgba(255,255,255,0.2);">T</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;">S</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;">N</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;">O</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;">I</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:#2d3d2a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:rgba(255,255,255,0.2);">R</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:#2d3d2a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:rgba(255,255,255,0.2);">A</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;">D</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;">G</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;">H</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:#2d3d2a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:rgba(255,255,255,0.3);box-shadow:0 0 0 2px rgba(168,255,62,0.4);">P</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">U</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;">M</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;">C</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;">F</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;">B</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">L</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;">R</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;">T</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;">A</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;">N</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">L</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;">E</div>
-      <div style="width:30px;height:30px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:serif;color:#1a1a1a;">S</div>
+    <p>Used letters fade. Tap any <b>faded letter</b> to start your next word. Build inward to cover the grid!</p>
+    <div style="display:grid;grid-template-columns:repeat(4,32px);gap:2px;margin:10px auto;width:fit-content;">
+      <div style="width:32px;height:32px;border-radius:4px;background:#2d3d2a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:rgba(255,255,255,0.2);">S</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:#2d3d2a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:rgba(255,255,255,0.2);">T</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:#2d3d2a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:rgba(255,255,255,0.2);">A</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:#2d3d2a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:rgba(255,255,255,0.2);">R</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">I</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:#2d3d2a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:rgba(255,255,255,0.4);box-shadow:inset 0 0 0 3px rgba(60,120,220,0.85);">R</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">A</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">N</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">E</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">H</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">N</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">D</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">T</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:rgba(168,255,62,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #a8ff3e;">K</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">L</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">O</div>
     </div>
-    <p style="text-align:center;font-size:12px;color:var(--text-dim);line-height:1.5;"><b style="color:rgba(255,255,255,0.3);">TRAP</b> was the first word (faded). Now starting from the faded <b style="color:#a8ff3e;">P</b> to spell <b style="color:#a8ff3e;">PULL</b> going deeper into the grid.</p>
+    <p style="text-align:center;font-size:12px;color:var(--text-dim);line-height:1.5;">"STAR" was played (faded). Starting from faded <b style="color:rgb(60,120,220);">R</b> to spell <b style="color:#a8ff3e;">RANK</b> going inward.</p>
 
     <h3>4. Score More</h3>
     <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:10px;margin:8px 0;font-size:13px;line-height:1.8;">
@@ -335,19 +307,19 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
       <div style="margin-top:6px;"><b style="color:#e5a820;">◆ Diamond cells = big boost</b></div>
       <div style="color:var(--text-dim);">Each diamond adds +0.5x to your multiplier</div>
       <div style="margin-top:6px;"><b style="color:#f5a623;">Bonus words = extra multiplier</b></div>
-      <div style="color:var(--text-dim);">3 words shown above the grid. Find one = +0.5x</div>
+      <div style="color:var(--text-dim);">4 words shown above the grid. Find one = +0.5x</div>
     </div>
 
     <h3>Example</h3>
     <p style="font-size:13px;color:#c0c8c0;">Say you played these words:</p>
     <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:10px;margin:8px 0;font-size:12px;font-family:'IBM Plex Mono',monospace;line-height:2;">
-      <div>STONE (5 letters) = 5&times;5 = <b>25</b></div>
-      <div>TRAP (4 letters) = 4&times;4 = <b>16</b></div>
-      <div>PULL (4 letters) = 4&times;4 = <b>16</b></div>
-      <div>HER (3 letters) = 3&times;3 = <b>9</b></div>
+      <div>STONE (5) = 5&times;5 = <b>25</b></div>
+      <div>TRAP (4) = 4&times;4 = <b>16</b></div>
+      <div>RANK (4) = 4&times;4 = <b>16</b></div>
+      <div>HER (3) = 3&times;3 = <b>9</b></div>
       <div style="border-top:1px solid rgba(255,255,255,0.1);margin-top:4px;padding-top:4px;"><b>Word pts = 66</b></div>
     </div>
-    <p style="font-size:13px;color:#c0c8c0;margin-top:6px;">That used <b>16 cells</b> and <b>2 ◆ diamonds</b>, and you found <b>1 bonus word</b>:</p>
+    <p style="font-size:13px;color:#c0c8c0;margin-top:6px;">16 cells used, 2 ◆ diamonds, 1 bonus word found:</p>
     <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:10px;margin:8px 0;font-family:'IBM Plex Mono',monospace;text-align:center;line-height:1.8;">
       <div style="font-size:14px;">
         <span>66</span>
@@ -365,9 +337,6 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
       </div>
     </div>
 
-    <h3>5. Get Stars</h3>
-    <p>&#9733; 100 pts &middot; &#9733;&#9733; 200 pts &middot; &#9733;&#9733;&#9733; 350 pts</p>
-
     <h3>Buttons</h3>
     <div style="font-size:13px;line-height:1.8;color:#c0c8c0;">
       <b>⌫</b> Remove last letter &middot; <b>Undo Word</b> Take back a word<br>
@@ -381,16 +350,10 @@ body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;
 
 <div id="game-screen" class="screen">
   <div class="game-header">
-    <div class="star-bar" id="star-bar">
-      <span class="star empty" id="star1">&#9733;</span>
-      <span class="star empty" id="star2">&#9733;</span>
-      <span class="star empty" id="star3">&#9733;</span>
-    </div>
     <div class="words-count" id="words-count">0 cells</div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
       <button class="undo-btn" id="game-help-btn" title="How to play" style="font-size:14px;padding:6px 10px;">?</button>
       <button class="undo-btn rotate-btn" id="rotate-btn" title="Rotate view"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="6" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.6"/><rect x="10" y="6" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.6"/><rect x="6" y="10" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.6"/><rect x="10" y="10" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.6"/><path d="M16 4 A8 8 0 0 1 16 16" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M16 16 L14 14 M16 16 L18 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M4 16 A8 8 0 0 1 4 4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M4 4 L6 6 M4 4 L2 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
-      <button class="undo-btn" id="size-btn" title="Toggle grid size">8x8</button>
       <button class="undo-btn" id="refresh-btn">New Grid</button>
       <button class="end-btn" id="end-btn">End</button>
     </div>
@@ -495,7 +458,7 @@ async function loadDictionary(){
 }
 
 // === Grid Generation ===
-let N=8;
+const N=9;
 // Base letter distribution (percentages). Scaled to N*N tiles dynamically.
 const LETTER_RATIOS={E:12,A:9,I:8,O:8,T:7,N:7,R:6,S:6,L:5,U:4,D:4,H:4,C:3,M:3,P:3,G:2,B:2,F:2,Y:2,W:2,K:1};
 function buildLetterPool(total){
@@ -646,10 +609,11 @@ function dfsWords(grid,r,c,path,word,found,seen,minLen,maxLen,limit){
 }
 function generateBonusWords(grid,dateStr){
   const rng=mulberry32(dateSeed(dateStr+'bonus'));
-  const short=findGridWords(grid,3,4,40);
-  const medium=findGridWords(grid,5,5,30);
-  const long=findGridWords(grid,6,7,20);
-  const buckets=[long,medium,short];
+  const short=findGridWords(grid,3,4,50);
+  const medium=findGridWords(grid,5,5,40);
+  const long=findGridWords(grid,6,7,25);
+  const vlong=findGridWords(grid,7,9,15);
+  const buckets=[vlong,long,medium,short];
   const bonus=[];
   const usedCells=new Set();
   for(const bucket of buckets){
@@ -791,7 +755,7 @@ function renderBonusSlots(container,bonusWords,foundSet){
 
 // === Scoring ===
 function wordScore(len){return len*len;}
-const STAR1=100,STAR2=200,STAR3=350;
+
 
 // === Game State ===
 let grid,used,doublePoints,headCell=null,tracePath=[],score=0,wordsFound=[],cellsUsed=0;
@@ -923,9 +887,6 @@ function updateUI(){
   $('f-total').textContent=score;
   $('words-count').textContent=cellsUsed+'/'+(N*N)+' cells \u00b7 '+wordsFound.length+' word'+(wordsFound.length!==1?'s':'');
   // Stars
-  $('star1').className='star '+(score>=STAR1?'filled':'empty');
-  $('star2').className='star '+(score>=STAR2?'filled':'empty');
-  $('star3').className='star '+(score>=STAR3?'filled':'empty');
   if(!pickingStart&&tracePath.length===0){
     $('word-hint').textContent='Tap a cell to start tracing a word';
   }
@@ -1285,9 +1246,7 @@ function hasValidMoves(){
 function endGame(manual){
   gameActive=false;
   const best=wordsFound.reduce((b,w)=>w.len>b.len?w:b,{word:'-',len:0});
-  const stars=score>=STAR3?3:score>=STAR2?2:score>=STAR1?1:0;
-  const starStr='\u2605'.repeat(stars)+'\u2606'.repeat(3-stars);
-  $('end-title').textContent=stars===3?starStr+' Incredible!':stars===2?starStr+' Great game!':stars===1?starStr+' Solid!':manual?'Game Over':'No more moves!';
+  $('end-title').textContent=manual?'Game Over':'No more moves!';
   $('end-score').textContent=rawWordPoints+' \u00d7 '+multiplier.toFixed(2)+' \u00d7 '+diamondMultiplier.toFixed(1)+' \u00d7 '+bonusMultiplier.toFixed(1)+' = '+score;
   $('end-words-count').textContent=wordsFound.length;
   $('end-cells').textContent=cellsUsed+'/'+(N*N);
@@ -1353,15 +1312,6 @@ function startGame(){
   updateUI();
   $('word-hint').textContent='Tap any edge cell to start';
   showScreen('game');
-}
-function toggleSize(){
-  if(!gameActive)return;
-  N=N===8?9:N===9?10:8;
-  LETTERS=buildLetterPool(N*N);
-  $('size-btn').textContent=N+'x'+N;
-  localStorage.setItem('slither3_size',String(N));
-  refreshCount++;
-  startGame();
 }
 function refreshGrid(){
   if(!gameActive)return;
@@ -1554,7 +1504,6 @@ $('show-btn').addEventListener('touchend',e=>{e.stopPropagation();clearShowOverl
 $('play-btn').addEventListener('click',startGame);
 $('end-btn').addEventListener('click',()=>endGame(true));
 $('refresh-btn').addEventListener('click',refreshGrid);
-$('size-btn').addEventListener('click',toggleSize);
 $('rotate-btn').addEventListener('click',rotateGrid);
 $('share-btn').addEventListener('click',shareResult);
 $('home-btn').addEventListener('click',()=>location.href='index.html');
@@ -1572,9 +1521,6 @@ window.addEventListener('beforeunload',e=>{
 
 // === Init ===
 (function(){
-  // Restore saved grid size
-  const savedSize=parseInt(localStorage.getItem('slither3_size'));
-  if(savedSize>=8&&savedSize<=10){N=savedSize;LETTERS=buildLetterPool(N*N);}
   const pNum=puzzleNumber();
   const today=todayUTC();
   const parts=today.split('-');
@@ -1585,6 +1531,6 @@ window.addEventListener('beforeunload',e=>{
   });
 })();
 </script>
-<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:1;pointer-events:none;">v1.18</div>
+<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:1;pointer-events:none;">v1.19</div>
 </body>
 </html>
