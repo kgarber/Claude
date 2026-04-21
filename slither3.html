@@ -1580,9 +1580,14 @@ $('submit-btn').addEventListener('click',e=>{e.stopPropagation();submitTracedWor
 $('back-btn').addEventListener('click',e=>{e.stopPropagation();backOneLetter();});
 $('undo-btn').addEventListener('click',e=>{e.stopPropagation();undoLastWord();});
 // Show button: hold to cycle through words
-$('show-btn').addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();showAllWordPaths();});
-$('show-btn').addEventListener('pointerup',e=>{e.stopPropagation();clearShowOverlay();});
-$('show-btn').addEventListener('pointerleave',e=>{clearShowOverlay();});
+let showLongPress=null;
+$('show-btn').addEventListener('pointerdown',e=>{
+  e.stopPropagation();e.preventDefault();
+  showAllWordPaths();
+  showLongPress=setTimeout(()=>{clearShowOverlay();showSolutions();},3000);
+});
+$('show-btn').addEventListener('pointerup',e=>{e.stopPropagation();clearShowOverlay();if(showLongPress)clearTimeout(showLongPress);showLongPress=null;});
+$('show-btn').addEventListener('pointerleave',e=>{clearShowOverlay();if(showLongPress)clearTimeout(showLongPress);showLongPress=null;});
 $('show-btn').addEventListener('touchstart',e=>{e.stopPropagation();e.preventDefault();showAllWordPaths();},{passive:false});
 $('show-btn').addEventListener('touchend',e=>{e.stopPropagation();clearShowOverlay();},{passive:false});
 
@@ -1603,15 +1608,6 @@ window.addEventListener('resize',()=>{
 window.addEventListener('beforeunload',e=>{
   if(gameActive&&wordsFound.length>0){e.preventDefault();e.returnValue='';}
 });
-// Debug: triple-tap the ? help button during game to show solutions
-let helpTapCount=0,helpTapTime=0;
-$('game-help-btn').addEventListener('click',e=>{
-  const now=Date.now();
-  if(now-helpTapTime<800)helpTapCount++;
-  else helpTapCount=1;
-  helpTapTime=now;
-  if(helpTapCount>=3){helpTapCount=0;e.stopPropagation();showSolutions();}
-});
 
 // === Init ===
 (function(){
@@ -1625,6 +1621,6 @@ $('game-help-btn').addEventListener('click',e=>{
   });
 })();
 </script>
-<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:1;pointer-events:none;">v1.28</div>
+<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:1;pointer-events:none;">v1.29</div>
 </body>
 </html>
