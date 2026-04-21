@@ -702,32 +702,31 @@ function canSolveAllBonus(grid,bonusWords){
   return true;
 }
 
-function findBridgeWord(grid,tr,tc,forbidden){
-  if(!dictionary)return true;
-  // Strategy 1: Direct — edge cell adjacent to target, word goes through target
+function findBridgeWord(grid,tr,tc,forbidden,returnPath){
+  if(!dictionary)return returnPath?null:true;
   for(let r=0;r<N;r++){
     for(let c=0;c<N;c++){
       if(!(r===0||r===N-1||c===0||c===N-1))continue;
       if(forbidden.has(r+','+c))continue;
       if(!isAdj(r,c,tr,tc))continue;
-      if(bridgeWordDFS(grid,r,c,[{r,c}],grid[r][c].toLowerCase(),tr,tc,forbidden))return true;
+      const result=bridgeWordDFS(grid,r,c,[{r,c}],grid[r][c].toLowerCase(),tr,tc,forbidden,returnPath);
+      if(result)return result;
     }
   }
-  // Strategy 2: Two-hop — edge word ending adjacent to target (not through
-  // forbidden), then from that endpoint a word through target
   for(let r=0;r<N;r++){
     for(let c=0;c<N;c++){
       if(!(r===0||r===N-1||c===0||c===N-1))continue;
       if(forbidden.has(r+','+c))continue;
-      if(twoHopBridgeDFS(grid,r,c,[{r,c}],grid[r][c].toLowerCase(),tr,tc,forbidden))return true;
+      const result=twoHopBridgeDFS(grid,r,c,[{r,c}],grid[r][c].toLowerCase(),tr,tc,forbidden,returnPath);
+      if(result)return result;
     }
   }
-  return false;
+  return returnPath?null:false;
 }
 
-function bridgeWordDFS(grid,r,c,path,word,tr,tc,forbidden){
+function bridgeWordDFS(grid,r,c,path,word,tr,tc,forbidden,returnPath){
   const passedTarget=path.some(p=>p.r===tr&&p.c===tc);
-  if(word.length>=2&&passedTarget&&dictionary.isWord(word))return true;
+  if(word.length>=2&&passedTarget&&dictionary.isWord(word))return returnPath?{word,path:path.map(p=>[p.r,p.c])}:true;
   if(word.length>=6)return false;
   for(let dr=-1;dr<=1;dr++){
     for(let dc=-1;dc<=1;dc++){
@@ -739,10 +738,11 @@ function bridgeWordDFS(grid,r,c,path,word,tr,tc,forbidden){
       if(forbidden.has(nr+','+nc)&&!(nr===tr&&nc===tc))continue;
       const nw=word+grid[nr][nc].toLowerCase();
       if(!dictionary.isPrefix(nw))continue;
-      if(bridgeWordDFS(grid,nr,nc,[...path,{r:nr,c:nc}],nw,tr,tc,forbidden))return true;
+      const res=bridgeWordDFS(grid,nr,nc,[...path,{r:nr,c:nc}],nw,tr,tc,forbidden,returnPath);
+      if(res)return res;
     }
   }
-  return false;
+  return returnPath?null:false;
 }
 
 function twoHopBridgeDFS(grid,r,c,path,word,tr,tc,forbidden){
@@ -806,7 +806,7 @@ let grid,used,doublePoints,headCell=null,tracePath=[],score=0,wordsFound=[],cell
 let rawWordPoints=0,multiplier=1.0,diamondMultiplier=1.0,bonusMultiplier=1.0;
 let gameActive=false,pickingStart=true,processing=false;
 let undoStack=[],refreshCount=0,lastStepDir=null,rotationCount=0;
-let bonusWords=[],bonusFound=new Set();
+let bonusWords=[],bonusFound=new Set(),bonusSolutions={};
 const $=id=>document.getElementById(id);
 const screens={title:$('title-screen'),game:$('game-screen'),end:$('end-screen')};
 function showScreen(n){Object.values(screens).forEach(s=>s.classList.remove('active'));screens[n].classList.add('active');$('bottom-bar').classList.toggle('visible',n==='game');}
@@ -978,9 +978,43 @@ function analyzeConnectivity(){
 }
 
 // === Tracing Logic ===
-let isTracing=false;
+let isTracing=false,cheatTapCount=0,cheatLastTime=0;
+function showSolutions(){
+  let html='<div style="position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:300;overflow-y:auto;padding:20px;color:#e0e0e0;font-family:monospace;font-size:13px;line-height:1.8;" id="cheat-overlay">';
+  html+='<div style="font-size:18px;color:#a8ff3e;margin-bottom:12px;">Bonus Word Solutions</div>';
+  for(const bw of bonusWords){
+    const sol=bonusSolutions[bw.word];
+    html+='<div style="margin-bottom:16px;padding:10px;background:rgba(255,255,255,0.05);border-radius:8px;">';
+    html+='<div style="color:#f5a623;font-size:15px;font-weight:700;">'+bw.word.toUpperCase()+'</div>';
+    html+='<div style="color:#888;">Path: '+bw.path.map(([r,c])=>grid[r][c]+'('+r+','+c+')').join(' → ')+'</div>';
+    if(sol.bridge==='Edge start'){
+      html+='<div style="color:#a8ff3e;">Starts on edge — no bridge needed</div>';
+    }else if(sol.bridge){
+      if(sol.bridge.hop1){
+        html+='<div style="color:#fbbf24;">Bridge 1: "'+sol.bridge.hop1.word+'" → '+sol.bridge.hop1.path.map(([r,c])=>grid[r][c]+'('+r+','+c+')').join(' → ')+'</div>';
+        html+='<div style="color:#fbbf24;">Bridge 2: "'+sol.bridge.hop2.word+'" → '+sol.bridge.hop2.path.map(([r,c])=>grid[r][c]+'('+r+','+c+')').join(' → ')+'</div>';
+      }else{
+        html+='<div style="color:#fbbf24;">Bridge: "'+sol.bridge.word+'" → '+sol.bridge.path.map(([r,c])=>grid[r][c]+'('+r+','+c+')').join(' → ')+'</div>';
+      }
+    }else{
+      html+='<div style="color:#e74c3c;">No bridge found!</div>';
+    }
+    html+='</div>';
+  }
+  html+='<button onclick="this.parentElement.remove()" style="background:#a8ff3e;color:#0e1a13;border:none;padding:12px 30px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;width:100%;margin-top:8px;">Close</button>';
+  html+='</div>';
+  document.body.insertAdjacentHTML('beforeend',html);
+}
 function startTrace(r,c){
   if(!gameActive||!dictionary||processing)return;
+  // Cheat code: tap top-right cell (0,N-1) 8 times
+  const now=Date.now();
+  if(r===0&&c===N-1){
+    if(now-cheatLastTime<600)cheatTapCount++;
+    else cheatTapCount=1;
+    cheatLastTime=now;
+    if(cheatTapCount>=8){cheatTapCount=0;showSolutions();return;}
+  }else{cheatTapCount=0;}
   // Haptic + pop on tap
   if(navigator.vibrate)navigator.vibrate(8);
   const tapEl=getEl(r,c);
@@ -1342,6 +1376,20 @@ function startGame(){
   undoStack=[];lastStepDir=null;rotationCount=0;
   bonusWords=generateBonusWords(grid,seed);
   bonusFound=new Set();
+  // Compute solutions for debug
+  bonusSolutions={};
+  const allBC=new Set();
+  for(const bw of bonusWords)for(const[r,c] of bw.path)allBC.add(r+','+c);
+  for(const bw of bonusWords){
+    const[sr,sc]=bw.path[0];
+    if(sr===0||sr===N-1||sc===0||sc===N-1){
+      bonusSolutions[bw.word]={bridge:'Edge start',bonusPath:bw.path};
+    }else{
+      const except=new Set(allBC);except.delete(sr+','+sc);
+      const bridge=findBridgeWord(grid,sr,sc,except,true);
+      bonusSolutions[bw.word]={bridge,bonusPath:bw.path};
+    }
+  }
   $('undo-btn').disabled=true;
   buildGrid();
   renderBonusSlots($('bonus-words'),bonusWords,bonusFound);
@@ -1568,6 +1616,6 @@ window.addEventListener('beforeunload',e=>{
   });
 })();
 </script>
-<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:1;pointer-events:none;">v1.26</div>
+<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:1;pointer-events:none;">v1.27</div>
 </body>
 </html>
