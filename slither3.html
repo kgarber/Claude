@@ -980,30 +980,34 @@ function analyzeConnectivity(){
 // === Tracing Logic ===
 let isTracing=false,cheatTapCount=0,cheatLastTime=0;
 function showSolutions(){
-  let html='<div style="position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:300;overflow-y:auto;padding:20px;color:#e0e0e0;font-family:monospace;font-size:13px;line-height:1.8;" id="cheat-overlay">';
+  let html='<div style="position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:300;overflow-y:auto;padding:20px;color:#e0e0e0;font-family:monospace;font-size:13px;line-height:1.8;" id="cheat-overlay">';
   html+='<div style="font-size:18px;color:#a8ff3e;margin-bottom:12px;">Bonus Word Solutions</div>';
+  if(!bonusWords||bonusWords.length===0){
+    html+='<div style="color:#888;">No bonus words generated yet.</div>';
+  }
   for(const bw of bonusWords){
-    const sol=bonusSolutions[bw.word];
+    const sol=bonusSolutions?bonusSolutions[bw.word]:null;
     html+='<div style="margin-bottom:16px;padding:10px;background:rgba(255,255,255,0.05);border-radius:8px;">';
     html+='<div style="color:#f5a623;font-size:15px;font-weight:700;">'+bw.word.toUpperCase()+'</div>';
-    html+='<div style="color:#888;">Path: '+bw.path.map(([r,c])=>grid[r][c]+'('+r+','+c+')').join(' → ')+'</div>';
-    if(sol.bridge==='Edge start'){
+    html+='<div style="color:#888;">Path: '+bw.path.map(([r,c])=>(grid?grid[r][c]:'?')+'('+r+','+c+')').join(' → ')+'</div>';
+    if(!sol){
+      html+='<div style="color:#e74c3c;">No solution data</div>';
+    }else if(sol.bridge==='Edge start'){
       html+='<div style="color:#a8ff3e;">Starts on edge — no bridge needed</div>';
-    }else if(sol.bridge){
-      if(sol.bridge.hop1){
-        html+='<div style="color:#fbbf24;">Bridge 1: "'+sol.bridge.hop1.word+'" → '+sol.bridge.hop1.path.map(([r,c])=>grid[r][c]+'('+r+','+c+')').join(' → ')+'</div>';
-        html+='<div style="color:#fbbf24;">Bridge 2: "'+sol.bridge.hop2.word+'" → '+sol.bridge.hop2.path.map(([r,c])=>grid[r][c]+'('+r+','+c+')').join(' → ')+'</div>';
-      }else{
-        html+='<div style="color:#fbbf24;">Bridge: "'+sol.bridge.word+'" → '+sol.bridge.path.map(([r,c])=>grid[r][c]+'('+r+','+c+')').join(' → ')+'</div>';
-      }
+    }else if(sol.bridge&&sol.bridge.hop1){
+      html+='<div style="color:#fbbf24;">Bridge 1: "'+sol.bridge.hop1.word+'" → '+sol.bridge.hop1.path.map(([r,c])=>(grid?grid[r][c]:'?')+'('+r+','+c+')').join(' → ')+'</div>';
+      html+='<div style="color:#fbbf24;">Bridge 2: "'+sol.bridge.hop2.word+'" → '+sol.bridge.hop2.path.map(([r,c])=>(grid?grid[r][c]:'?')+'('+r+','+c+')').join(' → ')+'</div>';
+    }else if(sol.bridge&&sol.bridge.word){
+      html+='<div style="color:#fbbf24;">Bridge: "'+sol.bridge.word+'" → '+sol.bridge.path.map(([r,c])=>(grid?grid[r][c]:'?')+'('+r+','+c+')').join(' → ')+'</div>';
     }else{
       html+='<div style="color:#e74c3c;">No bridge found!</div>';
     }
     html+='</div>';
   }
-  html+='<button onclick="this.parentElement.remove()" style="background:#a8ff3e;color:#0e1a13;border:none;padding:12px 30px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;width:100%;margin-top:8px;">Close</button>';
+  html+='<button style="background:#a8ff3e;color:#0e1a13;border:none;padding:12px 30px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;width:100%;margin-top:8px;" id="close-cheat">Close</button>';
   html+='</div>';
   document.body.insertAdjacentHTML('beforeend',html);
+  document.getElementById('close-cheat').addEventListener('click',()=>document.getElementById('cheat-overlay').remove());
 }
 function startTrace(r,c){
   if(!gameActive||!dictionary||processing)return;
@@ -1621,6 +1625,15 @@ window.addEventListener('beforeunload',e=>{
   });
 })();
 </script>
-<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:1;pointer-events:none;">v1.29</div>
+<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:1;cursor:pointer;" id="version-btn">v1.30</div>
+<script>
+let vTaps=0,vTime=0;
+document.getElementById('version-btn').addEventListener('click',()=>{
+  const n=Date.now();
+  if(n-vTime<1000)vTaps++;else vTaps=1;
+  vTime=n;
+  if(vTaps>=3){vTaps=0;showSolutions();}
+});
+</script>
 </body>
 </html>
