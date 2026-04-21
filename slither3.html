@@ -1007,13 +1007,13 @@ function showSolutions(){
 }
 function startTrace(r,c){
   if(!gameActive||!dictionary||processing)return;
-  // Cheat code: tap top-right cell (0,N-1) 8 times
+  // Cheat code: tap top-right cell (0,N-1) 5 times
   const now=Date.now();
   if(r===0&&c===N-1){
-    if(now-cheatLastTime<600)cheatTapCount++;
+    if(now-cheatLastTime<1000)cheatTapCount++;
     else cheatTapCount=1;
     cheatLastTime=now;
-    if(cheatTapCount>=8){cheatTapCount=0;showSolutions();return;}
+    if(cheatTapCount>=5){cheatTapCount=0;showSolutions();return;}
   }else{cheatTapCount=0;}
   // Haptic + pop on tap
   if(navigator.vibrate)navigator.vibrate(8);
@@ -1603,6 +1603,15 @@ window.addEventListener('resize',()=>{
 window.addEventListener('beforeunload',e=>{
   if(gameActive&&wordsFound.length>0){e.preventDefault();e.returnValue='';}
 });
+// Debug: triple-tap the ? help button during game to show solutions
+let helpTapCount=0,helpTapTime=0;
+$('game-help-btn').addEventListener('click',e=>{
+  const now=Date.now();
+  if(now-helpTapTime<800)helpTapCount++;
+  else helpTapCount=1;
+  helpTapTime=now;
+  if(helpTapCount>=3){helpTapCount=0;e.stopPropagation();showSolutions();}
+});
 
 // === Init ===
 (function(){
@@ -1616,6 +1625,6 @@ window.addEventListener('beforeunload',e=>{
   });
 })();
 </script>
-<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:1;pointer-events:none;">v1.27</div>
+<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:1;pointer-events:none;">v1.28</div>
 </body>
 </html>
