@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Crossle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0f0f18;--surface:#1a1a2e;--text:#e8e8ef;--text-dim:#888;
+  --border:rgba(255,255,255,0.08);--accent:#c084fc;
+  --green:#4ade80;--yellow:#fbbf24;--gray:#3a3a4a;--locked:#16a34a;}
+html,body{width:100%;min-height:100vh;background:var(--bg);color:var(--text);
+  font-family:'DM Sans',sans-serif;-webkit-user-select:none;user-select:none;}
+body{display:flex;flex-direction:column;align-items:center;padding:16px;padding-bottom:40px;}
+
+.header{text-align:center;margin-bottom:8px;width:100%;}
+.title{font-family:'IBM Plex Mono',monospace;font-size:28px;font-weight:700;color:var(--accent);letter-spacing:-1px;}
+.subtitle{font-size:12px;color:var(--text-dim);margin-top:2px;}
+.theme-par{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--text);margin-top:6px;}
+.theme-par b{color:var(--accent);}
+
+.clue-banner{min-height:48px;width:100%;max-width:400px;padding:12px 16px;
+  background:var(--surface);border-radius:10px;margin:10px 0 8px;text-align:center;font-size:14px;
+  display:flex;align-items:center;justify-content:center;border:1px solid var(--border);}
+.clue-banner.empty{color:var(--text-dim);font-style:italic;}
+.clue-banner b{color:var(--accent);margin-right:8px;}
+
+.grid-wrap{width:100%;max-width:340px;aspect-ratio:1;margin:4px 0;}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(5,1fr);
+  gap:4px;width:100%;height:100%;}
+.cell{background:var(--surface);border:1px solid var(--border);border-radius:6px;
+  display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;
+  font-size:22px;font-weight:700;position:relative;transition:all 0.2s;cursor:default;}
+.cell.blocked{background:transparent;border:none;}
+.cell.active-entry{background:rgba(192,132,252,0.12);border-color:var(--accent);}
+.cell.locked{background:var(--locked);color:#fff;}
+.cell .corner-num{position:absolute;top:2px;left:4px;font-size:9px;color:var(--text-dim);font-weight:400;}
+
+.entries-list{width:100%;max-width:400px;margin-top:12px;}
+.entries-section{margin-bottom:10px;}
+.entries-section h3{font-size:11px;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;
+  margin-bottom:6px;padding-left:4px;}
+.entry-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface);
+  border:1px solid var(--border);border-radius:8px;margin-bottom:4px;cursor:pointer;
+  transition:all 0.15s;}
+.entry-row.active{border-color:var(--accent);background:rgba(192,132,252,0.08);}
+.entry-row.solved{background:rgba(22,163,74,0.1);border-color:var(--locked);}
+.entry-row .e-num{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:var(--accent);min-width:22px;}
+.entry-row.solved .e-num{color:var(--locked);}
+.entry-row .e-clue{flex:1;font-size:13px;}
+.entry-row .e-badge{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-dim);background:rgba(255,255,255,0.05);
+  padding:3px 8px;border-radius:10px;}
+.entry-row.solved .e-badge{color:var(--locked);}
+
+.input-area{width:100%;max-width:400px;margin-top:12px;display:none;}
+.input-area.visible{display:block;}
+.guess-boxes{display:flex;gap:6px;justify-content:center;margin-bottom:10px;}
+.gbox{width:48px;height:48px;border:2px solid var(--border);border-radius:8px;
+  display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;
+  font-size:22px;font-weight:700;background:var(--surface);text-transform:uppercase;}
+.gbox.filled{border-color:var(--text-dim);}
+.gbox.locked-pre{background:var(--locked);color:#fff;border-color:var(--locked);}
+
+.past-guesses{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;}
+.past-row{display:flex;gap:4px;justify-content:center;}
+.past-cell{width:34px;height:34px;border-radius:6px;display:flex;align-items:center;justify-content:center;
+  font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:700;color:#fff;text-transform:uppercase;}
+.past-cell.green{background:var(--green);color:#0f0f18;}
+.past-cell.yellow{background:var(--yellow);color:#0f0f18;}
+.past-cell.gray{background:var(--gray);}
+
+.input-ctrls{display:flex;gap:8px;}
+.guess-input{flex:1;padding:12px 14px;background:var(--surface);border:2px solid var(--border);
+  border-radius:10px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:700;
+  outline:none;text-transform:uppercase;letter-spacing:4px;}
+.guess-input:focus{border-color:var(--accent);}
+.submit-btn{padding:12px 20px;background:var(--accent);color:#0f0f18;border:none;border-radius:10px;
+  font-weight:700;font-size:14px;cursor:pointer;}
+.submit-btn:disabled{opacity:0.3;pointer-events:none;}
+.submit-btn:active{transform:scale(0.96);}
+
+.hint{text-align:center;font-size:11px;color:var(--text-dim);margin-top:6px;min-height:16px;}
+.hint.error{color:var(--yellow);}
+
+.result-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);
+  z-index:100;align-items:center;justify-content:center;padding:20px;}
+.result-modal.visible{display:flex;}
+.result-card{background:var(--surface);border-radius:20px;padding:28px;max-width:340px;width:100%;text-align:center;}
+.result-title{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:700;color:var(--accent);margin-bottom:8px;}
+.result-stats{display:flex;justify-content:space-around;margin:20px 0;padding:16px 0;
+  border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+.stat-val{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700;color:var(--accent);}
+.stat-lbl{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-top:2px;}
+.share-btn{width:100%;padding:14px;background:var(--accent);color:#0f0f18;border:none;border-radius:10px;
+  font-weight:700;font-size:15px;cursor:pointer;margin-top:8px;}
+.copied-msg{font-size:12px;color:var(--green);min-height:16px;margin-top:6px;}
+
+.back-link{position:absolute;top:12px;left:12px;color:var(--text-dim);font-size:13px;text-decoration:none;}
+</style>
+</head>
+<body>
+<a href="index.html" class="back-link">&larr; Games</a>
+
+<div class="header">
+  <div class="title">Crossle</div>
+  <div class="subtitle" id="puzzle-date">Puzzle #1</div>
+  <div class="theme-par">Theme: <b id="theme-name">In the Kitchen</b> &middot; Par <b id="par-val">10</b></div>
+</div>
+
+<div class="clue-banner empty" id="clue-banner">Tap an entry to begin</div>
+
+<div class="grid-wrap">
+  <div class="grid" id="grid"></div>
+</div>
+
+<div class="entries-list" id="entries-list"></div>
+
+<div class="input-area" id="input-area">
+  <div class="guess-boxes" id="guess-boxes"></div>
+  <div class="past-guesses" id="past-guesses"></div>
+  <div class="input-ctrls">
+    <input type="text" class="guess-input" id="guess-input" maxlength="5" autocomplete="off" spellcheck="false">
+    <button class="submit-btn" id="submit-btn" disabled>Go</button>
+  </div>
+  <div class="hint" id="hint">3 guesses remaining</div>
+</div>
+
+<div class="result-modal" id="result-modal">
+  <div class="result-card">
+    <div class="result-title" id="result-title">Solved!</div>
+    <div class="result-stats">
+      <div><div class="stat-val" id="stat-guesses">0</div><div class="stat-lbl">Guesses</div></div>
+      <div><div class="stat-val" id="stat-par">10</div><div class="stat-lbl">Par</div></div>
+    </div>
+    <button class="share-btn" id="share-btn">Share</button>
+    <div class="copied-msg" id="copied-msg"></div>
+  </div>
+</div>
+
+<script>
+// === PUZZLE (hardcoded for Pass 1) ===
+const PUZZLE={
+  theme:"In the Kitchen",par:10,gridSize:5,
+  entries:[
+    {id:'1a',dir:'across',row:0,col:0,len:5,answer:'BLEND',clue:'Mix using a machine',num:1},
+    {id:'2a',dir:'across',row:4,col:0,len:5,answer:'SLICE',clue:'Cut into thin pieces',num:2},
+    {id:'1d',dir:'down',row:0,col:0,len:5,answer:'BOWLS',clue:'Cereal vessels',num:1},
+    {id:'3d',dir:'down',row:0,col:4,len:5,answer:'DRIVE',clue:'Motivation, passion',num:3}
+  ]
+};
+
+function puzzleNumber(){return Math.floor((new Date()-new Date('2026-01-01T00:00:00Z'))/86400000)+1;}
+document.getElementById('puzzle-date').textContent='Puzzle #'+puzzleNumber();
+document.getElementById('theme-name').textContent=PUZZLE.theme;
+document.getElementById('par-val').textContent=PUZZLE.par;
+
+// === Game State ===
+const N=PUZZLE.gridSize;
+const grid=Array.from({length:N},()=>Array.from({length:N},()=>({blocked:true,letter:'',locked:false,entries:[]})));
+// Mark active cells + store entry positions
+PUZZLE.entries.forEach(e=>{
+  for(let i=0;i<e.len;i++){
+    const r=e.dir==='down'?e.row+i:e.row;
+    const c=e.dir==='across'?e.col+i:e.col;
+    grid[r][c].blocked=false;
+    grid[r][c].entries.push({id:e.id,pos:i});
+  }
+});
+
+let activeEntryId=null;
+let entryState={};// id -> {attempts:[[{letter,state}...]], solved, totalGuesses}
+PUZZLE.entries.forEach(e=>{entryState[e.id]={attempts:[[]],solved:false,currentGuesses:0};});
+let totalGuesses=0;
+let gameOver=false;
+
+// === Render grid ===
+function renderGrid(){
+  const g=document.getElementById('grid');g.innerHTML='';
+  for(let r=0;r<N;r++){
+    for(let c=0;c<N;c++){
+      const cell=document.createElement('div');
+      cell.className='cell';
+      if(grid[r][c].blocked){cell.classList.add('blocked');}
+      else{
+        if(grid[r][c].locked)cell.classList.add('locked');
+        cell.textContent=grid[r][c].letter||'';
+        // Entry number corner
+        const entryHere=PUZZLE.entries.find(e=>e.row===r&&e.col===c);
+        if(entryHere){
+          const num=document.createElement('div');
+          num.className='corner-num';num.textContent=entryHere.num;
+          cell.appendChild(num);
+        }
+        // Highlight active
+        if(activeEntryId){
+          const activeE=PUZZLE.entries.find(e=>e.id===activeEntryId);
+          if(cellInEntry(r,c,activeE))cell.classList.add('active-entry');
+        }
+      }
+      g.appendChild(cell);
+    }
+  }
+}
+function cellInEntry(r,c,e){
+  for(let i=0;i<e.len;i++){
+    const er=e.dir==='down'?e.row+i:e.row;
+    const ec=e.dir==='across'?e.col+i:e.col;
+    if(er===r&&ec===c)return true;
+  }
+  return false;
+}
+
+// === Render entry list ===
+function renderEntries(){
+  const list=document.getElementById('entries-list');list.innerHTML='';
+  const across=PUZZLE.entries.filter(e=>e.dir==='across');
+  const down=PUZZLE.entries.filter(e=>e.dir==='down');
+  function makeSection(title,entries){
+    if(entries.length===0)return null;
+    const section=document.createElement('div');section.className='entries-section';
+    section.innerHTML='<h3>'+title+'</h3>';
+    entries.forEach(e=>{
+      const st=entryState[e.id];
+      const row=document.createElement('div');
+      row.className='entry-row';
+      if(e.id===activeEntryId)row.classList.add('active');
+      if(st.solved)row.classList.add('solved');
+      const badge=st.solved?'✓':(3-st.currentGuesses)+'/3';
+      row.innerHTML='<span class="e-num">'+e.num+e.dir[0]+'</span><span class="e-clue">'+e.clue+'</span><span class="e-badge">'+badge+'</span>';
+      row.addEventListener('click',()=>selectEntry(e.id));
+      section.appendChild(row);
+    });
+    return section;
+  }
+  const s1=makeSection('Across',across);if(s1)list.appendChild(s1);
+  const s2=makeSection('Down',down);if(s2)list.appendChild(s2);
+}
+
+// === Select entry ===
+function selectEntry(id){
+  if(gameOver)return;
+  activeEntryId=id;
+  const e=PUZZLE.entries.find(x=>x.id===id);
+  document.getElementById('clue-banner').classList.remove('empty');
+  document.getElementById('clue-banner').innerHTML='<b>'+e.num+e.dir[0]+'</b>'+e.clue;
+  renderGrid();renderEntries();renderInputArea();
+}
+
+// === Input area ===
+function renderInputArea(){
+  if(!activeEntryId){document.getElementById('input-area').classList.remove('visible');return;}
+  const area=document.getElementById('input-area');
+  area.classList.add('visible');
+  const e=PUZZLE.entries.find(x=>x.id===activeEntryId);
+  const st=entryState[activeEntryId];
+  // Guess boxes showing locked letters
+  const boxes=document.getElementById('guess-boxes');boxes.innerHTML='';
+  for(let i=0;i<e.len;i++){
+    const box=document.createElement('div');box.className='gbox';
+    const r=e.dir==='down'?e.row+i:e.row;
+    const c=e.dir==='across'?e.col+i:e.col;
+    if(grid[r][c].locked){
+      box.classList.add('locked-pre');box.textContent=grid[r][c].letter;
+    }
+    boxes.appendChild(box);
+  }
+  // Past guesses
+  const past=document.getElementById('past-guesses');past.innerHTML='';
+  for(const attempt of st.attempts){
+    for(const guess of attempt){
+      const row=document.createElement('div');row.className='past-row';
+      for(const letter of guess){
+        const c=document.createElement('div');c.className='past-cell '+letter.state;
+        c.textContent=letter.letter;
+        row.appendChild(c);
+      }
+      past.appendChild(row);
+    }
+  }
+  // Hint
+  const hint=document.getElementById('hint');
+  if(st.solved){hint.textContent='Solved!';hint.className='hint';}
+  else if(st.currentGuesses>=3){hint.textContent='Out of guesses. Try another entry and come back.';hint.className='hint error';}
+  else{hint.textContent=(3-st.currentGuesses)+' guesses remaining';hint.className='hint';}
+  // Input state
+  const inp=document.getElementById('guess-input');
+  inp.value='';
+  inp.disabled=st.solved||st.currentGuesses>=3;
+  document.getElementById('submit-btn').disabled=true;
+  if(!inp.disabled)inp.focus();
+}
+
+// === Submit guess ===
+const input=document.getElementById('guess-input');
+const submitBtn=document.getElementById('submit-btn');
+input.addEventListener('input',e=>{
+  const val=e.target.value.toUpperCase().replace(/[^A-Z]/g,'');
+  e.target.value=val;
+  const activeE=PUZZLE.entries.find(x=>x.id===activeEntryId);
+  submitBtn.disabled=!activeE||val.length!==activeE.len;
+});
+input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!submitBtn.disabled)submitGuess();});
+submitBtn.addEventListener('click',submitGuess);
+
+function submitGuess(){
+  const e=PUZZLE.entries.find(x=>x.id===activeEntryId);
+  const st=entryState[activeEntryId];
+  if(!e||st.solved||st.currentGuesses>=3)return;
+  const val=input.value.toUpperCase();
+  if(val.length!==e.len)return;
+  // Check against locked letters
+  for(let i=0;i<e.len;i++){
+    const r=e.dir==='down'?e.row+i:e.row;
+    const c=e.dir==='across'?e.col+i:e.col;
+    if(grid[r][c].locked&&grid[r][c].letter!==val[i]){
+      showHintError('Locked letters must match');return;
+    }
+  }
+  // Compute feedback
+  const ans=e.answer;
+  const feedback=val.split('').map((l,i)=>({letter:l,state:'gray'}));
+  const ansArr=ans.split('');
+  // Mark greens first
+  for(let i=0;i<val.length;i++){
+    if(val[i]===ansArr[i]){feedback[i].state='green';ansArr[i]=null;}
+  }
+  // Mark yellows
+  for(let i=0;i<val.length;i++){
+    if(feedback[i].state==='green')continue;
+    const idx=ansArr.indexOf(val[i]);
+    if(idx>=0){feedback[i].state='yellow';ansArr[idx]=null;}
+  }
+  st.attempts[st.attempts.length-1].push(feedback);
+  st.currentGuesses++;
+  totalGuesses++;
+  // Lock greens into grid
+  for(let i=0;i<val.length;i++){
+    if(feedback[i].state==='green'){
+      const r=e.dir==='down'?e.row+i:e.row;
+      const c=e.dir==='across'?e.col+i:e.col;
+      grid[r][c].letter=val[i];grid[r][c].locked=true;
+    }
+  }
+  // Check solved
+  if(feedback.every(f=>f.state==='green')){
+    st.solved=true;
+    // Check if whole puzzle solved
+    if(PUZZLE.entries.every(en=>entryState[en.id].solved)){
+      gameOver=true;setTimeout(showResult,500);
+    }
+  }else if(st.currentGuesses>=3){
+    // Check if player can retry later (another entry not yet fully attempted)
+    // Start a new attempt if another entry has been solved since
+    st.attempts.push([]);st.currentGuesses=0;
+    // But if no other entries can be solved, this is a soft lockout
+  }
+  renderGrid();renderEntries();renderInputArea();
+}
+
+function showHintError(msg){
+  const h=document.getElementById('hint');
+  h.textContent=msg;h.className='hint error';
+  setTimeout(renderInputArea,1500);
+}
+
+// === Result ===
+function showResult(){
+  document.getElementById('stat-guesses').textContent=totalGuesses;
+  document.getElementById('stat-par').textContent=PUZZLE.par;
+  document.getElementById('result-title').textContent=totalGuesses<=PUZZLE.par?'Solved!':'Finished';
+  document.getElementById('result-modal').classList.add('visible');
+}
+
+document.getElementById('share-btn').addEventListener('click',()=>{
+  let txt='Crossle #'+puzzleNumber()+' '+totalGuesses+'/par '+PUZZLE.par+'\n';
+  PUZZLE.entries.forEach(e=>{
+    const st=entryState[e.id];
+    const lastAttempt=st.attempts[st.attempts.length-1];
+    const lastGuess=lastAttempt[lastAttempt.length-1];
+    if(lastGuess){
+      txt+=lastGuess.map(l=>l.state==='green'?'🟩':l.state==='yellow'?'🟨':'⬛').join('')+'\n';
+    }
+  });
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(txt).then(()=>{
+      document.getElementById('copied-msg').textContent='Copied!';
+    });
+  }
+});
+
+// === Init ===
+renderGrid();renderEntries();
+</script>
+</body>
+</html>
