@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Morph</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0a14;--surface:#141425;--text:#e8e8ef;--text-dim:#888;
+  --accent:#7c9cff;--success:#4ade80;--error:#f87171;--warn:#fbbf24;}
+html,body{width:100%;min-height:100vh;background:var(--bg);color:var(--text);
+  font-family:'DM Sans',sans-serif;-webkit-user-select:none;user-select:none;}
+body{display:flex;flex-direction:column;align-items:center;padding:16px;}
+
+.header{text-align:center;margin-bottom:12px;}
+.title{font-family:'IBM Plex Mono',monospace;font-size:28px;font-weight:700;color:var(--accent);letter-spacing:-1px;}
+.subtitle{font-size:12px;color:var(--text-dim);margin-top:2px;}
+
+.canvas-wrap{width:100%;max-width:360px;aspect-ratio:1;background:var(--surface);
+  border-radius:16px;overflow:hidden;margin:8px 0;position:relative;}
+canvas{width:100%;height:100%;image-rendering:pixelated;display:block;}
+.fade-overlay{position:absolute;inset:0;background:var(--surface);opacity:0;
+  transition:opacity 0.3s;pointer-events:none;}
+.fade-overlay.fading{opacity:0.5;}
+
+.status{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--text-dim);
+  margin:4px 0;text-align:center;}
+.status b{color:var(--text);}
+
+.guesses{display:flex;flex-direction:column;gap:4px;width:100%;max-width:360px;margin:8px 0;}
+.guess-row{display:flex;align-items:center;gap:8px;padding:8px 12px;
+  background:var(--surface);border-radius:8px;font-family:'IBM Plex Mono',monospace;
+  font-size:14px;min-height:36px;}
+.guess-row.empty{opacity:0.3;}
+.guess-row .num{color:var(--text-dim);font-size:11px;width:16px;}
+.guess-row .text{flex:1;text-transform:uppercase;letter-spacing:1px;}
+.guess-row .mark{font-size:16px;}
+.guess-row.wrong .mark{color:var(--error);}
+.guess-row.right{background:rgba(74,222,128,0.15);border:1px solid var(--success);}
+.guess-row.right .mark{color:var(--success);}
+
+.input-wrap{width:100%;max-width:360px;position:relative;margin:8px 0;}
+.guess-input{width:100%;padding:14px 16px;background:var(--surface);border:2px solid transparent;
+  border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:16px;
+  outline:none;transition:border-color 0.2s;}
+.guess-input:focus{border-color:var(--accent);}
+.guess-input::placeholder{color:var(--text-dim);}
+.submit-btn{width:100%;max-width:360px;padding:14px;background:var(--accent);color:#0a0a14;
+  border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;
+  cursor:pointer;margin-top:4px;}
+.submit-btn:disabled{opacity:0.3;pointer-events:none;}
+.submit-btn:active{transform:scale(0.98);}
+
+.autocomplete{position:absolute;top:100%;left:0;right:0;background:var(--surface);
+  border-radius:8px;margin-top:4px;max-height:160px;overflow-y:auto;z-index:10;
+  border:1px solid rgba(255,255,255,0.08);display:none;}
+.autocomplete.visible{display:block;}
+.autocomplete-item{padding:10px 16px;cursor:pointer;font-size:15px;border-bottom:1px solid rgba(255,255,255,0.04);}
+.autocomplete-item:hover,.autocomplete-item.active{background:rgba(124,156,255,0.15);}
+
+.result-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);
+  z-index:100;align-items:center;justify-content:center;padding:20px;}
+.result-modal.visible{display:flex;}
+.result-card{background:var(--surface);border-radius:20px;padding:28px;max-width:340px;
+  width:100%;text-align:center;}
+.result-title{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:700;
+  margin-bottom:8px;}
+.result-title.win{color:var(--success);}
+.result-title.lose{color:var(--error);}
+.result-answer{font-size:15px;color:var(--text-dim);margin-bottom:16px;}
+.result-answer b{color:var(--text);}
+.result-stats{display:flex;justify-content:space-around;margin:20px 0;padding:16px 0;
+  border-top:1px solid rgba(255,255,255,0.08);border-bottom:1px solid rgba(255,255,255,0.08);}
+.stat-item{text-align:center;}
+.stat-val{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700;color:var(--accent);}
+.stat-lbl{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-top:2px;}
+.share-btn{width:100%;padding:14px;background:var(--accent);color:#0a0a14;border:none;
+  border-radius:10px;font-weight:700;font-size:15px;cursor:pointer;margin-top:8px;}
+.copied-msg{font-size:12px;color:var(--success);min-height:16px;margin-top:6px;}
+
+.back-link{position:absolute;top:12px;left:12px;color:var(--text-dim);font-size:13px;
+  text-decoration:none;}
+</style>
+</head>
+<body>
+<a href="index.html" class="back-link">&larr; Games</a>
+
+<div class="header">
+  <div class="title">Morph</div>
+  <div class="subtitle" id="puzzle-date">Puzzle #1</div>
+</div>
+
+<div class="canvas-wrap">
+  <canvas id="canvas" width="400" height="400"></canvas>
+  <div class="fade-overlay" id="fade"></div>
+</div>
+
+<div class="status" id="status">Guess <b>1</b> of 6</div>
+
+<div class="input-wrap">
+  <input type="text" class="guess-input" id="guess-input" placeholder="What is this?" autocomplete="off">
+  <div class="autocomplete" id="autocomplete"></div>
+</div>
+<button class="submit-btn" id="submit-btn" disabled>Guess</button>
+
+<div class="guesses" id="guesses"></div>
+
+<div class="result-modal" id="result-modal">
+  <div class="result-card">
+    <div class="result-title" id="result-title">Got it!</div>
+    <div class="result-answer" id="result-answer">The answer was <b>pumpkin</b></div>
+    <div class="result-stats">
+      <div class="stat-item">
+        <div class="stat-val" id="stat-guesses">4/6</div>
+        <div class="stat-lbl">Guesses</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-val" id="stat-streak">1</div>
+        <div class="stat-lbl">Streak</div>
+      </div>
+    </div>
+    <button class="share-btn" id="share-btn">Share</button>
+    <div class="copied-msg" id="copied-msg"></div>
+  </div>
+</div>
+
+<script>
+// === Simple puzzle set for Pass 1 ===
+const PUZZLES=[
+  {emoji:'🎃',answer:'pumpkin',aliases:['pumpkin','jack-o-lantern','jack o lantern']},
+  {emoji:'🍕',answer:'pizza',aliases:['pizza','pizza pie']},
+  {emoji:'🐘',answer:'elephant',aliases:['elephant']},
+  {emoji:'🌮',answer:'taco',aliases:['taco','tacos']},
+  {emoji:'🚗',answer:'car',aliases:['car','automobile']},
+  {emoji:'🍎',answer:'apple',aliases:['apple']},
+  {emoji:'🐧',answer:'penguin',aliases:['penguin']},
+  {emoji:'🌈',answer:'rainbow',aliases:['rainbow']},
+];
+
+// === Date + seed ===
+function todayUTC(){const d=new Date();return d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0')+'-'+String(d.getUTCDate()).padStart(2,'0');}
+function dateSeed(str){let h=0;for(let i=0;i<str.length;i++)h=Math.imul(31,h)+str.charCodeAt(i)|0;return Math.abs(h);}
+function puzzleNumber(){return Math.floor((new Date()-new Date('2026-01-01T00:00:00Z'))/86400000)+1;}
+
+// === Select today's puzzle ===
+const puzzle=PUZZLES[dateSeed(todayUTC())%PUZZLES.length];
+document.getElementById('puzzle-date').textContent='Puzzle #'+puzzleNumber();
+
+// === Canvas pixelation ===
+const canvas=document.getElementById('canvas');
+const ctx=canvas.getContext('2d');
+const LEVEL_SIZES=[8,14,24,40,70,200];
+
+function renderAt(emoji,level){
+  const size=LEVEL_SIZES[level-1];
+  const small=document.createElement('canvas');
+  small.width=size;small.height=size;
+  const sctx=small.getContext('2d');
+  sctx.font=Math.floor(size*0.88)+'px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+  sctx.textAlign='center';sctx.textBaseline='middle';
+  sctx.fillText(emoji,size/2,size/2);
+  ctx.imageSmoothingEnabled=false;
+  ctx.clearRect(0,0,400,400);
+  ctx.drawImage(small,0,0,400,400);
+}
+
+// === Game state ===
+let currentLevel=1;
+let guesses=[];
+let gameOver=false;
+let won=false;
+
+function renderGuesses(){
+  const container=document.getElementById('guesses');
+  container.innerHTML='';
+  for(let i=0;i<6;i++){
+    const row=document.createElement('div');
+    row.className='guess-row';
+    if(!guesses[i]){
+      row.classList.add('empty');
+      row.innerHTML='<span class="num">'+(i+1)+'</span><span class="text">—</span>';
+    }else{
+      row.classList.add(guesses[i].correct?'right':'wrong');
+      row.innerHTML='<span class="num">'+(i+1)+'</span><span class="text">'+guesses[i].text.toUpperCase()+'</span><span class="mark">'+(guesses[i].correct?'✓':'✗')+'</span>';
+    }
+    container.appendChild(row);
+  }
+}
+
+function updateStatus(){
+  const status=document.getElementById('status');
+  if(gameOver){
+    status.textContent=won?'Solved!':'Out of guesses';
+  }else{
+    status.innerHTML='Guess <b>'+(guesses.length+1)+'</b> of 6';
+  }
+}
+
+function normalize(s){return s.toLowerCase().trim().replace(/[^a-z0-9 -]/g,'');}
+
+function checkGuess(text){
+  const n=normalize(text);
+  return puzzle.aliases.some(a=>normalize(a)===n);
+}
+
+// === Autocomplete ===
+const allAliases=[...new Set(PUZZLES.flatMap(p=>p.aliases))].sort();
+const acEl=document.getElementById('autocomplete');
+const inputEl=document.getElementById('guess-input');
+const submitBtn=document.getElementById('submit-btn');
+
+function showAutocomplete(query){
+  const q=normalize(query);
+  if(q.length<2){acEl.classList.remove('visible');return;}
+  const matches=allAliases.filter(a=>normalize(a).startsWith(q)).slice(0,5);
+  if(matches.length===0){acEl.classList.remove('visible');return;}
+  acEl.innerHTML=matches.map(m=>'<div class="autocomplete-item">'+m+'</div>').join('');
+  acEl.classList.add('visible');
+  acEl.querySelectorAll('.autocomplete-item').forEach(el=>{
+    el.addEventListener('click',()=>{inputEl.value=el.textContent;acEl.classList.remove('visible');submitBtn.disabled=false;inputEl.focus();});
+  });
+}
+
+inputEl.addEventListener('input',e=>{
+  const v=e.target.value;
+  submitBtn.disabled=v.trim().length<2;
+  showAutocomplete(v);
+});
+inputEl.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!submitBtn.disabled)submitGuess();
+  if(e.key==='Escape')acEl.classList.remove('visible');
+});
+
+function submitGuess(){
+  if(gameOver)return;
+  const text=inputEl.value.trim();
+  if(text.length<2)return;
+  const correct=checkGuess(text);
+  guesses.push({text,correct});
+  inputEl.value='';
+  submitBtn.disabled=true;
+  acEl.classList.remove('visible');
+  if(correct){
+    won=true;gameOver=true;currentLevel=6;
+    renderAt(puzzle.emoji,6);
+    renderGuesses();updateStatus();
+    setTimeout(showResult,800);
+  }else{
+    if(guesses.length<6){
+      currentLevel=guesses.length+1;
+      const fade=document.getElementById('fade');
+      fade.classList.add('fading');
+      setTimeout(()=>{renderAt(puzzle.emoji,currentLevel);fade.classList.remove('fading');},200);
+    }else{
+      gameOver=true;currentLevel=6;
+      renderAt(puzzle.emoji,6);
+      setTimeout(showResult,800);
+    }
+    renderGuesses();updateStatus();
+  }
+}
+
+submitBtn.addEventListener('click',submitGuess);
+
+function showResult(){
+  document.getElementById('result-title').textContent=won?'Got it!':'Unlucky!';
+  document.getElementById('result-title').className='result-title '+(won?'win':'lose');
+  document.getElementById('result-answer').innerHTML='The answer was <b>'+puzzle.answer.toUpperCase()+'</b>';
+  document.getElementById('stat-guesses').textContent=won?guesses.length+'/6':'X/6';
+  document.getElementById('stat-streak').textContent='1';
+  document.getElementById('result-modal').classList.add('visible');
+}
+
+document.getElementById('share-btn').addEventListener('click',()=>{
+  const squares=guesses.map(g=>g.correct?'🟩':'⬛').join('');
+  const text='Morph #'+puzzleNumber()+'  '+(won?guesses.length:'X')+'/6  '+squares;
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(text).then(()=>{
+      document.getElementById('copied-msg').textContent='Copied!';
+    });
+  }
+});
+
+// === Init ===
+renderAt(puzzle.emoji,1);
+renderGuesses();
+updateStatus();
+</script>
+</body>
+</html>
