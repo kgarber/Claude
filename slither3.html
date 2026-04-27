@@ -793,8 +793,35 @@ function renderBonusSlots(container,bonusWords,foundSet){
       if(foundSet.has(bw.word))el.style.color='#f5a623';
       slot.appendChild(el);
     }
+    slot.addEventListener('click',()=>showDefinition(bw.word));
     container.appendChild(slot);
   }
+}
+
+function showDefinition(word){
+  const existing=document.getElementById('def-overlay');
+  if(existing)existing.remove();
+  const overlay=document.createElement('div');
+  overlay.id='def-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML='<div style="background:#1a2a1a;border:1px solid rgba(168,255,62,0.2);border-radius:14px;padding:24px;max-width:360px;width:100%;color:#e0e0e0;font-family:DM Sans,sans-serif;font-size:14px;line-height:1.6;max-height:80vh;overflow-y:auto;"><div style="font-family:Playfair Display,serif;font-size:22px;font-weight:700;color:#f5a623;margin-bottom:12px;">'+word.toUpperCase()+'</div><div id="def-body" style="color:#c0c8c0;">Loading...</div><button style="margin-top:16px;width:100%;padding:12px;background:#a8ff3e;color:#0e1a13;border:none;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;" id="def-close">Close</button></div>';
+  document.body.appendChild(overlay);
+  document.getElementById('def-close').addEventListener('click',()=>overlay.remove());
+  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});
+  fetch('https://api.dictionaryapi.dev/api/v2/entries/en/'+encodeURIComponent(word))
+    .then(r=>r.json()).then(data=>{
+      const body=document.getElementById('def-body');
+      if(!data||!data[0]||!data[0].meanings){body.textContent='No definition found.';return;}
+      let html='';
+      for(const m of data[0].meanings.slice(0,3)){
+        html+='<div style="margin-bottom:10px;"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">'+m.partOfSpeech+'</div>';
+        for(const d of m.definitions.slice(0,2)){
+          html+='<div style="margin-bottom:6px;">'+d.definition+'</div>';
+        }
+        html+='</div>';
+      }
+      body.innerHTML=html||'No definition found.';
+    }).catch(()=>{document.getElementById('def-body').textContent='Could not load definition.';});
 }
 
 // === Scoring ===
