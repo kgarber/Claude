@@ -602,9 +602,19 @@ function findGridWords(grid,minLen,maxLen,limit){
   }
   return found;
 }
+// Common/recognizable word filter for bonus words
+const OBSCURE_SUFFIXES=['ene','ase','ose','yne','ane','ite','ide','ate','ium','oid','ous'];
+const OBSCURE_WORDS=new Set(['aa','ab','ad','ae','ag','ah','ai','al','am','an','ar','as','at','aw','ax','ay','ba','be','bi','bo','da','de','do','ed','ef','eh','el','em','en','er','es','et','ex','fa','go','ha','he','hi','ho','id','if','in','is','it','jo','ka','la','li','lo','ma','me','mi','mo','mu','my','na','ne','no','nu','od','oe','of','oh','oi','om','on','oo','op','or','os','ow','ox','oy','pa','pe','pi','po','qi','re','sh','si','so','ta','ti','to','uh','um','un','up','us','ut','we','wo','xi','xu','ya','ye','yo','za']);
+function isCommonWord(word){
+  if(word.length<=2)return false;
+  if(OBSCURE_WORDS.has(word))return false;
+  for(const suf of OBSCURE_SUFFIXES){if(word.length>=5&&word.endsWith(suf))return false;}
+  return true;
+}
+
 function dfsWords(grid,r,c,path,word,found,seen,minLen,maxLen,limit){
   if(found.length>=limit)return;
-  if(word.length>=minLen&&word.length<=maxLen&&dictionary.isWord(word)&&!seen.has(word)){
+  if(word.length>=minLen&&word.length<=maxLen&&dictionary.isWord(word)&&!seen.has(word)&&isCommonWord(word)){
     seen.add(word);
     found.push({word,path:path.map(p=>[p.r,p.c])});
   }
@@ -623,7 +633,7 @@ function dfsWords(grid,r,c,path,word,found,seen,minLen,maxLen,limit){
 }
 function generateBonusWords(grid,dateStr){
   const rng=mulberry32(dateSeed(dateStr+'bonus'));
-  const short=findGridWords(grid,3,4,50);
+  const short=findGridWords(grid,4,5,50);
   const medium=findGridWords(grid,5,5,40);
   const long=findGridWords(grid,6,7,25);
   const vlong=findGridWords(grid,7,9,15);
