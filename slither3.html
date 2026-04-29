@@ -1651,74 +1651,77 @@ let musicCtx=null,musicPlaying=false,musicGain=null,musicInterval=null;
 const NOTE_FREQ={C:261.63,D:293.66,E:329.63,F:349.23,G:392.00,A:440.00,B:493.88};
 function noteHz(n,o){return NOTE_FREQ[n]*Math.pow(2,o-4);}
 
-// Lo-fi chord progressions (jazzy)
 const PROG=[
-  [['C',3],['E',3],['G',3],['B',3]],   // Cmaj7
-  [['A',2],['C',3],['E',3],['G',3]],   // Am7
-  [['F',3],['A',3],['C',4],['E',4]],   // Fmaj7
-  [['G',2],['B',2],['D',3],['F',3]],   // G7
+  [['C',3],['E',3],['G',3],['B',3]],
+  [['A',2],['C',3],['E',3],['G',3]],
+  [['F',3],['A',3],['C',4],['E',4]],
+  [['G',2],['B',2],['D',3],['F',3]],
 ];
 
-function createNoise(ctx,dur,vol,dest,startTime){
-  const bufSize=ctx.sampleRate*dur;
-  const buf=ctx.createBuffer(1,bufSize,ctx.sampleRate);
-  const data=buf.getChannelData(0);
-  for(let i=0;i<bufSize;i++)data[i]=(Math.random()*2-1);
-  const src=ctx.createBufferSource();src.buffer=buf;
-  // Filter for vinyl crackle
-  const filt=ctx.createBiquadFilter();
-  filt.type='bandpass';filt.frequency.value=800;filt.Q.value=0.5;
+function createNoise(ctx,dur,vol,dest,t){
+  const buf=ctx.createBuffer(1,ctx.sampleRate*dur,ctx.sampleRate);
+  const d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+  const s=ctx.createBufferSource();s.buffer=buf;
+  const f=ctx.createBiquadFilter();f.type='bandpass';f.frequency.value=800;f.Q.value=0.5;
   const g=ctx.createGain();g.gain.value=vol;
-  src.connect(filt);filt.connect(g);g.connect(dest);
-  src.start(startTime);src.stop(startTime+dur);
+  s.connect(f);f.connect(g);g.connect(dest);s.start(t);s.stop(t+dur);
 }
 
-function playChord(ctx,notes,startTime,dur,dest){
+function playChord(ctx,notes,t,dur,dest){
   for(const[n,o] of notes){
     const freq=noteHz(n,o);
-    // Warm pad: 3 detuned sines
-    for(const detune of[-4,0,4]){
-      const osc=ctx.createOscillator();
-      const g=ctx.createGain();
-      osc.type='sine';
-      osc.frequency.value=freq+detune;
-      g.gain.setValueAtTime(0,startTime);
-      g.gain.linearRampToValueAtTime(0.04,startTime+0.5);
-      g.gain.setValueAtTime(0.035,startTime+dur*0.6);
-      g.gain.linearRampToValueAtTime(0,startTime+dur);
-      osc.connect(g);g.connect(dest);
-      osc.start(startTime);osc.stop(startTime+dur+0.1);
+    for(const det of[-3,0,3]){
+      const osc=ctx.createOscillator();const g=ctx.createGain();
+      osc.type='sine';osc.frequency.value=freq+det;
+      g.gain.setValueAtTime(0,t);
+      g.gain.linearRampToValueAtTime(0.035,t+0.4);
+      g.gain.setValueAtTime(0.03,t+dur*0.6);
+      g.gain.linearRampToValueAtTime(0,t+dur);
+      osc.connect(g);g.connect(dest);osc.start(t);osc.stop(t+dur+0.1);
     }
   }
 }
 
-function playMelodyNote(ctx,freq,startTime,dur,dest){
-  // Rhodes-like: sine + quiet overtone + soft envelope
-  const harmonics=[[1,0.18],[2,0.04],[3,0.02]];
-  for(const[mult,vol] of harmonics){
-    for(const det of[-2,2]){
-      const osc=ctx.createOscillator();
-      const g=ctx.createGain();
-      osc.type='sine';
-      osc.frequency.value=freq*mult+det;
-      g.gain.setValueAtTime(0,startTime);
-      g.gain.linearRampToValueAtTime(vol,startTime+0.02);
-      g.gain.setValueAtTime(vol*0.7,startTime+dur*0.3);
-      g.gain.exponentialRampToValueAtTime(0.001,startTime+dur*0.95);
-      osc.connect(g);g.connect(dest);
-      osc.start(startTime);osc.stop(startTime+dur);
-    }
+// String-like tone: layered sines with vibrato + slow attack for bowed feel
+function playString(ctx,freq,t,dur,vol,dest){
+  for(const det of[-2,0,2]){
+    const osc=ctx.createOscillator();const g=ctx.createGain();
+    osc.type='sine';osc.frequency.value=freq+det;
+    // Vibrato
+    const lfo=ctx.createOscillator();const lfoG=ctx.createGain();
+    lfo.frequency.value=5;lfoG.gain.value=3;
+    lfo.connect(lfoG);lfoG.connect(osc.frequency);lfo.start(t);lfo.stop(t+dur);
+    // Envelope: slow attack, sustain, gentle release
+    g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(vol*0.7,t+Math.min(0.12,dur*0.25));
+    g.gain.setValueAtTime(vol*0.5,t+dur*0.5);
+    g.gain.linearRampToValueAtTime(0,t+dur);
+    osc.connect(g);g.connect(dest);osc.start(t);osc.stop(t+dur+0.05);
   }
+  // Add a quiet second harmonic for richness
+  const osc2=ctx.createOscillator();const g2=ctx.createGain();
+  osc2.type='sine';osc2.frequency.value=freq*2;
+  g2.gain.setValueAtTime(0,t);
+  g2.gain.linearRampToValueAtTime(vol*0.15,t+0.1);
+  g2.gain.linearRampToValueAtTime(0,t+dur*0.8);
+  osc2.connect(g2);g2.connect(dest);osc2.start(t);osc2.stop(t+dur);
 }
 
-// Lazy melody — sparse, lots of space
-const MEL_NOTES=[
-  ['E',5,3],[null,0,5],['G',5,2],['A',5,4],[null,0,6],
-  ['G',5,3],[null,0,3],['E',5,2],['D',5,6],[null,0,4],
-  ['C',5,3],[null,0,5],['E',5,2],['G',5,4],[null,0,6],
-  ['A',5,4],[null,0,4],['G',5,2],['E',5,6],[null,0,8],
-  ['D',5,3],[null,0,5],['E',5,2],['C',5,6],[null,0,8],
-  [null,0,8],[null,0,8],
+// 4 different melody phrases that cycle — more variety, catchier
+const PHRASES=[
+  // Phrase A — upward hopeful
+  [['E',5,2],['G',5,2],['A',5,3],[null,0,1],['B',5,2],['A',5,2],['G',5,3],[null,0,1],
+   ['E',5,2],['D',5,2],['E',5,4],[null,0,4]],
+  // Phrase B — playful bounce
+  [['C',5,2],['E',5,1],['G',5,1],['A',5,2],['G',5,2],[null,0,2],
+   ['E',5,2],['G',5,1],['E',5,1],['D',5,3],[null,0,1],['C',5,4],[null,0,4]],
+  // Phrase C — call and response
+  [['A',5,3],['G',5,1],['E',5,2],[null,0,2],['D',5,3],['E',5,1],['G',5,2],[null,0,2],
+   ['A',5,2],['B',5,2],['A',5,4],[null,0,4]],
+  // Phrase D — descending resolution
+  [['B',5,2],['A',5,2],['G',5,2],['E',5,2],[null,0,2],
+   ['D',5,2],['C',5,2],['D',5,2],['E',5,4],[null,0,4],
+   [null,0,4]],
 ];
 
 function startMusic(){
@@ -1727,34 +1730,30 @@ function startMusic(){
     if(!musicCtx)musicCtx=new(window.AudioContext||window.webkitAudioContext)();
     musicCtx.resume().then(()=>{
       musicGain=musicCtx.createGain();
-      musicGain.gain.value=0.5;
-      // Lo-fi filter on master
+      musicGain.gain.value=0.45;
       const lopass=musicCtx.createBiquadFilter();
-      lopass.type='lowpass';lopass.frequency.value=2500;lopass.Q.value=0.7;
-      musicGain.connect(lopass);
-      lopass.connect(musicCtx.destination);
+      lopass.type='lowpass';lopass.frequency.value=3200;lopass.Q.value=0.5;
+      musicGain.connect(lopass);lopass.connect(musicCtx.destination);
       musicPlaying=true;
       $('music-btn').style.color='var(--lime)';
-      let melIdx=0,chordIdx=0,step=0;
-      const bpm=65,stepTime=60/bpm/4;
+      let phraseIdx=0,noteIdx=0,chordIdx=0,step=0;
+      const bpm=80,stepTime=60/bpm/4;
       const chordLen=16;
       function tick(){
         if(!musicPlaying)return;
         const now=musicCtx.currentTime;
-        // Chord pad (every chordLen steps)
         if(step%chordLen===0){
-          const chord=PROG[chordIdx%PROG.length];
-          playChord(musicCtx,chord,now,chordLen*stepTime,musicGain);
-          // Vinyl crackle
-          createNoise(musicCtx,chordLen*stepTime,0.012,musicGain,now);
+          playChord(musicCtx,PROG[chordIdx%PROG.length],now,chordLen*stepTime,musicGain);
+          createNoise(musicCtx,chordLen*stepTime,0.01,musicGain,now);
           chordIdx++;
         }
-        // Melody (sparse)
-        const m=MEL_NOTES[melIdx%MEL_NOTES.length];
+        const phrase=PHRASES[phraseIdx%PHRASES.length];
+        const m=phrase[noteIdx%phrase.length];
         if(m[0]){
-          playMelodyNote(musicCtx,noteHz(m[0],m[1]),now,m[2]*stepTime*0.9,musicGain);
+          playString(musicCtx,noteHz(m[0],m[1]),now,m[2]*stepTime*0.9,0.18,musicGain);
         }
-        melIdx++;
+        noteIdx++;
+        if(noteIdx>=phrase.length){noteIdx=0;phraseIdx++;}
         step++;
       }
       tick();
