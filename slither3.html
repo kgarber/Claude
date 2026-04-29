@@ -1668,52 +1668,50 @@ function noteHz(note,oct){return NOTE_FREQ[note]*Math.pow(2,oct-4);}
 
 function startMusic(){
   if(musicPlaying)return;
-  if(!musicCtx)musicCtx=new(window.AudioContext||window.webkitAudioContext)();
-  if(musicCtx.state==='suspended')musicCtx.resume();
-  musicGain=musicCtx.createGain();
-  musicGain.gain.value=0.08;
-  musicGain.connect(musicCtx.destination);
-  musicPlaying=true;
-  $('music-btn').style.color='var(--lime)';
-  let melIdx=0,bassIdx=0,step=0;
-  const bpm=110,stepTime=60/bpm/4;
-  function tick(){
-    if(!musicPlaying)return;
-    const now=musicCtx.currentTime;
-    // Melody
-    const m=MELODY[melIdx%MELODY.length];
-    if(m[0]){
-      const osc=musicCtx.createOscillator();
-      const g=musicCtx.createGain();
-      osc.type='triangle';
-      osc.frequency.value=noteHz(m[0],m[1]);
-      g.gain.setValueAtTime(0.12,now);
-      g.gain.exponentialRampToValueAtTime(0.001,now+m[2]*stepTime*0.9);
-      osc.connect(g);g.connect(musicGain);
-      osc.start(now);osc.stop(now+m[2]*stepTime);
-    }
-    // Bass (every 8 steps)
-    if(step%8===0){
-      const b=BASS[bassIdx%BASS.length];
-      if(b[0]){
-        const osc=musicCtx.createOscillator();
-        const g=musicCtx.createGain();
-        osc.type='sine';
-        osc.frequency.value=noteHz(b[0],b[1]);
-        g.gain.setValueAtTime(0.1,now);
-        g.gain.exponentialRampToValueAtTime(0.001,now+b[2]*stepTime*0.9);
-        osc.connect(g);g.connect(musicGain);
-        osc.start(now);osc.stop(now+b[2]*stepTime);
+  try{
+    if(!musicCtx)musicCtx=new(window.AudioContext||window.webkitAudioContext)();
+    musicCtx.resume().then(()=>{
+      musicGain=musicCtx.createGain();
+      musicGain.gain.value=0.35;
+      musicGain.connect(musicCtx.destination);
+      musicPlaying=true;
+      $('music-btn').style.color='var(--lime)';
+      let melIdx=0,bassIdx=0,step=0;
+      const bpm=110,stepTime=60/bpm/4;
+      function tick(){
+        if(!musicPlaying)return;
+        const now=musicCtx.currentTime;
+        const m=MELODY[melIdx%MELODY.length];
+        if(m[0]){
+          const osc=musicCtx.createOscillator();
+          const g=musicCtx.createGain();
+          osc.type='triangle';
+          osc.frequency.value=noteHz(m[0],m[1]);
+          g.gain.setValueAtTime(0.3,now);
+          g.gain.exponentialRampToValueAtTime(0.001,now+m[2]*stepTime*0.9);
+          osc.connect(g);g.connect(musicGain);
+          osc.start(now);osc.stop(now+m[2]*stepTime);
+        }
+        if(step%8===0){
+          const b=BASS[bassIdx%BASS.length];
+          if(b[0]){
+            const osc=musicCtx.createOscillator();
+            const g=musicCtx.createGain();
+            osc.type='sine';
+            osc.frequency.value=noteHz(b[0],b[1]);
+            g.gain.setValueAtTime(0.25,now);
+            g.gain.exponentialRampToValueAtTime(0.001,now+b[2]*stepTime*0.9);
+            osc.connect(g);g.connect(musicGain);
+            osc.start(now);osc.stop(now+b[2]*stepTime);
+          }
+          bassIdx++;
+        }
+        step++;melIdx++;
       }
-      bassIdx++;
-    }
-    step++;
-    // Advance melody index by note duration
-    melIdx++;
-  }
-  // Use setInterval for simplicity
-  tick();
-  musicInterval=setInterval(tick,stepTime*2*1000);
+      tick();
+      musicInterval=setInterval(tick,stepTime*2*1000);
+    });
+  }catch(e){}
 }
 
 function stopMusic(){
