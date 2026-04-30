@@ -1720,12 +1720,16 @@ function initToneMusic(){
   drumPart.loop=true;
   drumPart.start(0);
 
-  // Chord + bass progression — Jenova chromatic descent
+  // Chord + bass progression — actual Jenova: Dm → Fm → Cm → Am → Em → Gm → Dm
   const chords=[
-    {chord:['E3','G3','B3','D4'],bass:'E2'},
-    {chord:['Eb3','G3','Bb3','Db4'],bass:'Eb2'},
-    {chord:['D3','F3','A3','C4'],bass:'D2'},
-    {chord:['Db3','F3','Ab3','C4'],bass:'Db2'},
+    {chord:['D3','F3','A3','C4'],bass:'D2'},      // Dm7
+    {chord:['F3','Ab3','C4','Eb4'],bass:'F2'},     // Fm7
+    {chord:['C3','Eb3','G3','Bb3'],bass:'C2'},     // Cm7
+    {chord:['A2','C3','E3','G3'],bass:'A1'},       // Am7
+    {chord:['E3','G3','B3','D4'],bass:'E2'},       // Em7
+    {chord:['G2','Bb2','D3','F3'],bass:'G1'},      // Gm7
+    {chord:['D3','F3','A3','C4'],bass:'D2'},       // Dm7
+    {chord:['D3','F3','A3','C4'],bass:'D2'},       // Dm7 (repeat for 8-bar)
   ];
   let chordIdx=0;
   const chordPart=new Tone.Loop(t=>{
@@ -1736,46 +1740,40 @@ function initToneMusic(){
   },'1m');
   chordPart.start(0);
 
-  // Melody — J-E-N-O-V-A main riff (E minor pentatonic)
-  // E G A B pattern with driving 8th notes
+  // Melody — from actual J-E-N-O-V-A sheet music (D minor)
+  // Pattern per chord: root(dotted quarter) → 3rd below(8th) → root(half) → ascending 8th run
 
   function mel(notes){
     return notes.map(n=>n[0]?{time:n[1],note:n[0],dur:n[2]}:null).filter(Boolean);
   }
 
   const allMelodies=[
-    // Bar 1: E E G A | B B A G — the main riff
-    mel([['E4','0:0:0','8n'],['E4','0:0:2','8n'],['G4','0:1:0','8n'],['A4','0:1:2','8n'],
-         ['B4','0:2:0','8n'],['B4','0:2:2','8n'],['A4','0:3:0','8n'],['G4','0:3:2','8n']]),
-    // Bar 2: E E G A | G E D E — descends back
-    mel([['E4','0:0:0','8n'],['E4','0:0:2','8n'],['G4','0:1:0','8n'],['A4','0:1:2','8n'],
-         ['G4','0:2:0','8n'],['E4','0:2:2','8n'],['D4','0:3:0','8n'],['E4','0:3:2','8n']]),
-    // Bar 3: same riff again — higher octave
-    mel([['E5','0:0:0','8n'],['E5','0:0:2','8n'],['G5','0:1:0','8n'],['A5','0:1:2','8n'],
-         ['B5','0:2:0','8n'],['B5','0:2:2','8n'],['D6','0:3:0','8n'],['B5','0:3:2','8n']]),
-    // Bar 4: A G A G | E D E rest
-    mel([['A5','0:0:0','8n'],['G5','0:0:2','8n'],['A5','0:1:0','8n'],['G5','0:1:2','8n'],
-         ['E5','0:2:0','8n'],['D5','0:2:2','8n'],['E5','0:3:0','4n']]),
-    // Bar 5-6: repeat bar 1-2 (hook needs repetition)
-    mel([['E4','0:0:0','8n'],['E4','0:0:2','8n'],['G4','0:1:0','8n'],['A4','0:1:2','8n'],
-         ['B4','0:2:0','8n'],['B4','0:2:2','8n'],['A4','0:3:0','8n'],['G4','0:3:2','8n']]),
-    mel([['E4','0:0:0','8n'],['E4','0:0:2','8n'],['G4','0:1:0','8n'],['A4','0:1:2','8n'],
-         ['G4','0:2:0','8n'],['E4','0:2:2','8n'],['D4','0:3:0','8n'],['E4','0:3:2','8n']]),
-    // Bar 7-8: variation — ascending to peak then resolve
-    mel([['E5','0:0:0','8n'],['G5','0:0:2','8n'],['A5','0:1:0','8n'],['B5','0:1:2','8n'],
-         ['D6','0:2:0','4n'],['B5','0:3:0','4n']]),
-    mel([['A5','0:0:0','4n'],['G5','0:1:0','4n'],['E5','0:2:0','2n']]),
-    // Bar 9-12: repeat with slight variation
-    mel([['E4','0:0:0','8n'],['E4','0:0:2','8n'],['G4','0:1:0','8n'],['A4','0:1:2','8n'],
-         ['B4','0:2:0','4n'],['A4','0:3:0','8n'],['G4','0:3:2','8n']]),
-    mel([['A4','0:0:0','8n'],['G4','0:0:2','8n'],['E4','0:1:0','8n'],['D4','0:1:2','8n'],
-         ['E4','0:2:0','2n']]),
-    mel([['G4','0:0:0','8n'],['A4','0:0:2','8n'],['B4','0:1:0','8n'],['A4','0:1:2','8n'],
-         ['G4','0:2:0','8n'],['E4','0:2:2','8n'],['D4','0:3:0','8n'],['E4','0:3:2','8n']]),
-    mel([['E4','0:0:0','2n']]),
-    // Bar 13-16: rest — let pads breathe
+    // Bar 1 (Dm): D(4n.) → Bb(8n) → D(half) → D E F E run
+    mel([['D5','0:0:0','4n.'],['Bb4','0:1:2','8n'],['D5','0:2:0','8n'],['E5','0:2:2','8n'],['F5','0:3:0','8n'],['E5','0:3:2','8n']]),
+    // Bar 2 (Fm): F(4n.) → Db(8n) → F(half) → F G Ab G run
+    mel([['F5','0:0:0','4n.'],['Db5','0:1:2','8n'],['F5','0:2:0','8n'],['G5','0:2:2','8n'],['Ab5','0:3:0','8n'],['G5','0:3:2','8n']]),
+    // Bar 3 (Cm): C(4n.) → Ab(8n) → C(half) → C D Eb D run
+    mel([['C5','0:0:0','4n.'],['Ab4','0:1:2','8n'],['C5','0:2:0','8n'],['D5','0:2:2','8n'],['Eb5','0:3:0','8n'],['D5','0:3:2','8n']]),
+    // Bar 4 (Am): A(4n.) → F(8n) → A(half) → A B C B run
+    mel([['A4','0:0:0','4n.'],['F4','0:1:2','8n'],['A4','0:2:0','8n'],['B4','0:2:2','8n'],['C5','0:3:0','8n'],['B4','0:3:2','8n']]),
+    // Bar 5 (Em): E(4n.) → C(8n) → E(half) → E F# G F# run
+    mel([['E5','0:0:0','4n.'],['C5','0:1:2','8n'],['E5','0:2:0','8n'],['F#5','0:2:2','8n'],['G5','0:3:0','8n'],['F#5','0:3:2','8n']]),
+    // Bar 6 (Gm): G(4n.) → Eb(8n) → G run → resolve down
+    mel([['G5','0:0:0','4n.'],['Eb5','0:1:2','8n'],['G5','0:2:0','8n'],['A5','0:2:2','8n'],['Bb5','0:3:0','8n'],['A5','0:3:2','8n']]),
+    // Bar 7 (Dm): resolve — D sustained
+    mel([['D5','0:0:0','2n.'],['A4','0:3:0','4n']]),
+    // Bar 8 (Dm): rest bar
     mel([]),
-    mel([]),
+    // Bar 9-12: Section B feel — F → G/F → Ab/F → Bb/F ascending chords
+    // Melody follows sheet: stepwise ascending with each chord
+    mel([['F5','0:0:0','4n'],['E5','0:1:0','4n'],['F5','0:2:0','8n'],['G5','0:2:2','8n'],['A5','0:3:0','4n']]),
+    mel([['G5','0:0:0','4n'],['F5','0:1:0','4n'],['G5','0:2:0','8n'],['A5','0:2:2','8n'],['Bb5','0:3:0','4n']]),
+    mel([['Ab5','0:0:0','4n'],['G5','0:1:0','8n'],['Ab5','0:1:2','8n'],['Bb5','0:2:0','4n'],['Ab5','0:3:0','8n'],['G5','0:3:2','8n']]),
+    mel([['Bb5','0:0:0','4n'],['A5','0:1:0','8n'],['Bb5','0:1:2','8n'],['C6','0:2:0','4n'],['Bb5','0:3:0','4n']]),
+    // Bar 13-14: Section C — resolve back to Dm
+    mel([['D5','0:0:0','4n'],['Bb4','0:1:0','8n'],['A4','0:1:2','8n'],['D5','0:2:0','4n'],['Bb4','0:3:0','8n'],['A4','0:3:2','8n']]),
+    mel([['D5','0:0:0','2n']]),
+    // Bar 15-16: rest
     mel([]),
     mel([]),
   ];
@@ -1829,7 +1827,7 @@ $('music-btn').addEventListener('click',e=>{e.stopPropagation();toggleMusic();})
   });
 })();
 </script>
-<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:200;cursor:pointer;" id="version-btn">v1.43</div>
+<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:200;cursor:pointer;" id="version-btn">v1.44</div>
 <script>
 let vTaps=0,vTime=0;
 document.getElementById('version-btn').addEventListener('click',()=>{
