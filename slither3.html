@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tone@14.7.77/build/Tone.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -1646,163 +1647,133 @@ window.addEventListener('beforeunload',e=>{
   if(gameActive&&wordsFound.length>0){e.preventDefault();e.returnValue='';}
 });
 
-// === Music Engine — Jenova Lo-fi ===
-let musicCtx=null,musicPlaying=false,musicGain=null,musicInterval=null;
-const NF={C:261.63,Db:277.18,D:293.66,Eb:311.13,E:329.63,F:349.23,Gb:369.99,G:392.00,Ab:415.30,A:440.00,Bb:466.16,B:493.88};
-function noteHz(n,o){return NF[n]*Math.pow(2,o-4);}
+// === Music Engine — Tone.js Jenova Lo-fi ===
+let musicPlaying=false,musicInited=false;
 
-// Chord pads
-const PROG=[
-  [['E',3],['G',3],['B',3],['D',4]],
-  [['C',3],['E',3],['G',3],['B',3]],
-  [['A',2],['C',3],['E',3],['G',3]],
-  [['B',2],['D',3],['Gb',3],['A',3]],
-];
-const BASS_NOTES=[['E',2],['C',2],['A',1],['B',1]];
+// Tone.js instruments + sequences (created on first play)
 
-function makeNoise(ctx,dur){
-  const buf=ctx.createBuffer(1,ctx.sampleRate*dur,ctx.sampleRate);
-  const d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
-  return buf;
-}
-function playKick(ctx,t,dest){
-  const osc=ctx.createOscillator();const g=ctx.createGain();
-  osc.frequency.setValueAtTime(150,t);osc.frequency.exponentialRampToValueAtTime(35,t+0.12);
-  osc.type='sine';g.gain.setValueAtTime(0.3,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.25);
-  osc.connect(g);g.connect(dest);osc.start(t);osc.stop(t+0.3);
-}
-function playSnare(ctx,t,dest){
-  const buf=makeNoise(ctx,0.1);const s=ctx.createBufferSource();s.buffer=buf;
-  const f=ctx.createBiquadFilter();f.type='highpass';f.frequency.value=2000;
-  const g=ctx.createGain();g.gain.setValueAtTime(0.1,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.1);
-  s.connect(f);f.connect(g);g.connect(dest);s.start(t);s.stop(t+0.12);
-}
-function playHat(ctx,t,vol,dest){
-  const buf=makeNoise(ctx,0.04);const s=ctx.createBufferSource();s.buffer=buf;
-  const f=ctx.createBiquadFilter();f.type='highpass';f.frequency.value=8000;
-  const g=ctx.createGain();g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.04);
-  s.connect(f);f.connect(g);g.connect(dest);s.start(t);s.stop(t+0.05);
-}
-// Realistic piano: many harmonics with proper decay ratios
-function playPiano(ctx,freq,t,dur,vol,dest){
-  const partials=[1,2,3,4,5,6,7,8];
-  const amps=[1,0.5,0.3,0.2,0.12,0.08,0.05,0.03];
-  for(let p=0;p<partials.length;p++){
-    const pFreq=freq*partials[p]*(1+p*0.0003); // slight inharmonicity
-    for(const det of[-1,1]){ // chorus
-      const osc=ctx.createOscillator();const g=ctx.createGain();
-      osc.type='sine';osc.frequency.value=pFreq+det*(p+1)*0.5;
-      const v=vol*amps[p]*0.5;
-      // Piano envelope: fast attack, quick initial decay, slow sustain decay
-      g.gain.setValueAtTime(0,t);
-      g.gain.linearRampToValueAtTime(v,t+0.005);
-      g.gain.setValueAtTime(v*0.8,t+0.03);
-      g.gain.exponentialRampToValueAtTime(v*0.3,t+dur*0.3);
-      g.gain.exponentialRampToValueAtTime(0.001,t+dur);
-      osc.connect(g);g.connect(dest);osc.start(t);osc.stop(t+dur+0.05);
+function initToneMusic(){
+  if(musicInited)return;
+  musicInited=true;
+  Tone.Transport.bpm.value=75;
+
+  // Effects chain
+  const reverb=new Tone.Reverb({decay:3,wet:0.35}).toDestination();
+  const lofi=new Tone.AutoFilter({frequency:0.08,baseFrequency:200,octaves:3,wet:0.15}).connect(reverb).start();
+  const master=new Tone.Gain(0.7).connect(lofi);
+
+  // Piano — FM Synth (electric piano feel)
+  window._piano=new Tone.PolySynth(Tone.FMSynth,{
+    harmonicity:3,modulationIndex:1.5,
+    oscillator:{type:'sine'},
+    modulation:{type:'sine'},
+    envelope:{attack:0.008,decay:0.8,sustain:0.15,release:1.5},
+    modulationEnvelope:{attack:0.01,decay:0.3,sustain:0.2,release:0.8},
+    volume:-8
+  }).connect(master);
+
+  // Pad — warm strings
+  window._pad=new Tone.PolySynth(Tone.Synth,{
+    oscillator:{type:'fatsine',count:3,spread:30},
+    envelope:{attack:1.5,decay:1,sustain:0.6,release:3},
+    volume:-18
+  }).connect(master);
+
+  // Bass — deep sub
+  window._bass=new Tone.MonoSynth({
+    oscillator:{type:'fatsine',count:2,spread:10},
+    envelope:{attack:0.02,decay:0.5,sustain:0.4,release:0.8},
+    filterEnvelope:{attack:0.01,decay:0.3,sustain:0.5,release:0.5,baseFrequency:80,octaves:2},
+    volume:-10
+  }).connect(master);
+
+  // Drums
+  window._kick=new Tone.MembraneSynth({pitchDecay:0.05,octaves:6,envelope:{attack:0.001,decay:0.3,sustain:0,release:0.3},volume:-6}).connect(master);
+  window._snare=new Tone.NoiseSynth({noise:{type:'white'},envelope:{attack:0.001,decay:0.12,sustain:0,release:0.1},volume:-14}).connect(master);
+  window._hat=new Tone.NoiseSynth({noise:{type:'white'},envelope:{attack:0.001,decay:0.04,sustain:0,release:0.02},volume:-20}).connect(new Tone.Filter(8000,'highpass').connect(master));
+
+  // Vinyl crackle
+  window._crackle=new Tone.Noise('brown').connect(new Tone.AutoFilter({frequency:0.5,baseFrequency:600,octaves:2}).connect(new Tone.Gain(0.03).connect(master)).start());
+
+  // Drum pattern — boom bap
+  window._drumLoop=new Tone.Loop(t=>{
+    const s=Tone.Transport.position.split(':');
+    const beat=parseInt(s[1]),sub=parseInt(s[2]);
+    _kick.triggerAttackRelease('C1','8n',t);
+  },'4n');
+
+  // Use Tone.Part for precise drum sequencing
+  const drumPart=new Tone.Sequence((t,v)=>{
+    if(v==='k')_kick.triggerAttackRelease('C1','8n',t);
+    else if(v==='s')_snare.triggerAttackRelease('8n',t);
+    else if(v==='h')_hat.triggerAttackRelease('32n',t);
+    else if(v==='H')_hat.triggerAttackRelease('16n',t);
+  },['k','h','h','h','s','h','k','h','h','h','k','h','s','h','h','h'],'16n');
+  drumPart.loop=true;
+  drumPart.start(0);
+
+  // Chord + bass progression
+  const chords=[
+    {chord:['E3','G3','B3','D4'],bass:'E2'},
+    {chord:['C3','E3','G3','B3'],bass:'C2'},
+    {chord:['A2','C3','E3','G3'],bass:'A1'},
+    {chord:['B2','D3','F#3','A3'],bass:'B1'},
+  ];
+  let chordIdx=0;
+  const chordPart=new Tone.Loop(t=>{
+    const ch=chords[chordIdx%chords.length];
+    _pad.triggerAttackRelease(ch.chord,'1m',t,0.5);
+    _bass.triggerAttackRelease(ch.bass,'1m',t);
+    chordIdx++;
+  },'1m');
+  chordPart.start(0);
+
+  // Melody — structured, singable, E minor
+  const melA=['B4','0:0:2','D5','0:1:0','E5','0:1:2','G5','0:1:3',
+              'F#5','0:2:0','E5','0:2:2','D5','0:3:0'];
+  const melB=['E5','0:0:0','G5','0:0:2','A5','0:0:3','B5','0:1:0',
+              'A5','0:2:0','G5','0:2:2','E5','0:3:0'];
+  const melC=['B4','0:0:0','D5','0:0:2','E5','0:1:0','F#5','0:1:2',
+              'G5','0:2:0','F#5','0:2:3','E5','0:3:0'];
+  const melD=['A5','0:0:0','G5','0:0:2','E5','0:1:0','D5','0:1:2',
+              'B4','0:2:0',null,'0:2:3','E5','0:3:0'];
+
+  function parseMel(arr){
+    const notes=[];
+    for(let i=0;i<arr.length;i+=2){
+      if(arr[i])notes.push({time:arr[i+1],note:arr[i],dur:'4n'});
     }
+    return notes;
   }
-}
-function playPad(ctx,notes,t,dur,dest){
-  for(const[n,o] of notes){
-    for(const det of[-3,0,3]){
-      const osc=ctx.createOscillator();const g=ctx.createGain();
-      osc.type='sine';osc.frequency.value=noteHz(n,o)+det;
-      // Vibrato
-      const lfo=ctx.createOscillator();const lg=ctx.createGain();
-      lfo.frequency.value=4;lg.gain.value=2;
-      lfo.connect(lg);lg.connect(osc.frequency);lfo.start(t);lfo.stop(t+dur);
-      g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.02,t+0.8);
-      g.gain.setValueAtTime(0.018,t+dur*0.7);g.gain.linearRampToValueAtTime(0,t+dur);
-      osc.connect(g);g.connect(dest);osc.start(t);osc.stop(t+dur+0.1);
+
+  const allMelodies=[parseMel(melA),parseMel(melB),parseMel(melC),parseMel(melD)];
+  let melBar=0;
+  const melLoop=new Tone.Loop(t=>{
+    const mel=allMelodies[melBar%allMelodies.length];
+    for(const n of mel){
+      const offset=Tone.Time(n.time).toSeconds();
+      _piano.triggerAttackRelease(n.note,n.dur,t+offset);
     }
-  }
+    melBar++;
+  },'1m');
+  melLoop.start(0);
 }
-function playBass(ctx,freq,t,dur,dest){
-  for(const det of[-1,0,1]){
-    const osc=ctx.createOscillator();const g=ctx.createGain();
-    osc.type='sine';osc.frequency.value=freq+det;
-    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.18,t+0.015);
-    g.gain.setValueAtTime(0.12,t+dur*0.4);g.gain.exponentialRampToValueAtTime(0.001,t+dur*0.95);
-    osc.connect(g);g.connect(dest);osc.start(t);osc.stop(t+dur);
-  }
-}
-// Structured melody — actual singable tune in E minor, 8 bars with repeat
-// Each entry: [note, octave, beat position (0-15), duration in beats]
-const MELODY_A=[
-  ['B',4,0,2],['D',5,2,2],['E',5,4,3],['G',5,7,1],
-  ['Gb',5,8,2],['E',5,10,2],['D',5,12,4],
-];
-const MELODY_B=[
-  ['E',5,0,2],['G',5,2,1],['A',5,3,1],['B',5,4,4],
-  ['A',5,8,2],['G',5,10,2],['E',5,12,4],
-];
-const MELODY_C=[
-  ['B',4,0,2],['D',5,2,2],['E',5,4,2],['Gb',5,6,2],
-  ['G',5,8,3],['Gb',5,11,1],['E',5,12,4],
-];
-const MELODY_D=[
-  ['A',5,0,2],['G',5,2,2],['E',5,4,2],['D',5,6,2],
-  ['B',4,8,3],[null,0,11,1],['E',5,12,4],
-];
-const MELODIES=[MELODY_A,MELODY_B,MELODY_C,MELODY_D];
 
 function startMusic(){
   if(musicPlaying)return;
-  try{
-    if(!musicCtx)musicCtx=new(window.AudioContext||window.webkitAudioContext)();
-    musicCtx.resume().then(()=>{
-      musicGain=musicCtx.createGain();
-      musicGain.gain.value=0.45;
-      const lopass=musicCtx.createBiquadFilter();
-      lopass.type='lowpass';lopass.frequency.value=3000;lopass.Q.value=0.5;
-      musicGain.connect(lopass);lopass.connect(musicCtx.destination);
-      musicPlaying=true;
-      $('music-btn').style.color='var(--lime)';
-      let bar=0;
-      const bpm=75,beatTime=60/bpm;
-      function scheduleBar(){
-        if(!musicPlaying)return;
-        const now=musicCtx.currentTime+0.05;
-        const barDur=4*beatTime;
-        const stepTime=beatTime/4;
-        // Pad + crackle
-        if(bar%4===0){
-          playPad(musicCtx,PROG[(bar/4|0)%PROG.length],now,4*barDur,musicGain);
-          const buf=makeNoise(musicCtx,4*barDur);const s=musicCtx.createBufferSource();s.buffer=buf;
-          const f=musicCtx.createBiquadFilter();f.type='bandpass';f.frequency.value=900;f.Q.value=0.3;
-          const g=musicCtx.createGain();g.gain.value=0.006;
-          s.connect(f);f.connect(g);g.connect(musicGain);s.start(now);s.stop(now+4*barDur);
-        }
-        // Bass
-        const bn=BASS_NOTES[(bar)%BASS_NOTES.length];
-        playBass(musicCtx,noteHz(bn[0],bn[1]),now,barDur*0.9,musicGain);
-        // Drums
-        for(let s=0;s<16;s++){
-          const t=now+s*stepTime;
-          if(s===0||s===6||s===10)playKick(musicCtx,t,musicGain);
-          if(s===4||s===12)playSnare(musicCtx,t,musicGain);
-          if(s%2===0)playHat(musicCtx,t,s%4===0?0.05:0.025,musicGain);
-        }
-        // Melody
-        const mel=MELODIES[bar%MELODIES.length];
-        for(const note of mel){
-          if(!note[0])continue;
-          const t=now+note[2]*stepTime;
-          const dur=note[3]*stepTime*0.9;
-          playPiano(musicCtx,noteHz(note[0],note[1]),t,dur,0.16,musicGain);
-        }
-        bar++;
-        musicInterval=setTimeout(scheduleBar,barDur*1000);
-      }
-      scheduleBar();
-    });
-  }catch(e){}
+  Tone.start().then(()=>{
+    initToneMusic();
+    _crackle.start();
+    Tone.Transport.start();
+    musicPlaying=true;
+    $('music-btn').style.color='var(--lime)';
+  });
 }
 
 function stopMusic(){
   musicPlaying=false;
-  if(musicInterval){clearInterval(musicInterval);musicInterval=null;}
+  Tone.Transport.stop();
+  if(_crackle)_crackle.stop();
   $('music-btn').style.color='';
 }
 
