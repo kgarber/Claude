@@ -1728,65 +1728,45 @@ function initToneMusic(){
   },'1m');
   chordPart.start(0);
 
-  // Melody — Jenova rhythm: quick pickups into held notes
-  // "da-DAAAA... da-DAAAA..." feel
-  // [note, time, note, time, ...] — parseMel pairs them
-  // Using mixed durations in parseMel below
+  // Melody — transcription of the actual JENOVA theme
+  // The iconic: ♪♪ DAAAA... (two quick B's into long E)
+  // With D-E grace notes and G-F#-E-D descending runs
 
-  // Bar 1-2: B pickup into looong E
-  const melA=['B4','0:3:2'];  // quick pickup at end of bar
-  const melB=['E5','0:0:0'];  // sustains whole bar (the DAAAA)
-  // Bar 3-4: same call again
-  const melC=['B4','0:3:2'];
-  const melD=['E5','0:0:0'];
-  // Bar 5: chromatic tension — quick Eb-E into held F#
-  const melE=['Eb5','0:0:0','E5','0:0:2','F#5','0:1:0'];
-  // Bar 6: F# resolves down to E, held
-  const melF=['E5','0:0:0'];
-  // Bar 7: descending run G-F#-E-D (8th notes, quicker)
-  const melG=['G5','0:0:0','F#5','0:0:2','E5','0:1:0','D5','0:1:2'];
-  // Bar 8: resolve to E, then silence
-  const melH=['E5','0:0:0'];
-  // Bar 9-10: 2nd phrase — B pickup into high G
-  const melI=['B4','0:3:2'];
-  const melJ=['E5','0:0:0','G5','0:1:0'];
-  // Bar 11-12: F#-E held, descending
-  const melK=['F#5','0:0:0','E5','0:2:0'];
-  const melL=['D5','0:0:0','E5','0:2:0'];
-  // Bar 13-14: chromatic descent — mirrors the bass
-  const melM=['E5','0:0:0','Eb5','0:1:0','D5','0:2:0','Db5','0:3:0'];
-  // Bar 15-16: long resolve + rest
-  const melN=['D5','0:0:0','E5','0:2:0'];
-  const melO=[null,'0:0:0']; // full rest bar
-  const melP=[null,'0:0:0']; // another rest — let it breathe
-
-  function parseMel(arr){
-    const notes=[];
-    for(let i=0;i<arr.length;i+=2){
-      if(arr[i]){
-        // Calculate duration: if next note exists, dur = gap to it. Otherwise long hold.
-        let dur='2n';
-        if(i+2<arr.length&&arr[i+2]){
-          // Quick note if close together
-          const thisPos=Tone.Time(arr[i+1]).toSeconds();
-          const nextPos=Tone.Time(arr[i+3]).toSeconds();
-          const gap=nextPos-thisPos;
-          if(gap<0.4)dur='8n';
-          else if(gap<0.8)dur='4n';
-          else dur='2n';
-        }else{
-          dur='1n'; // last note in bar — hold it long
-        }
-        notes.push({time:arr[i+1],note:arr[i],dur});
-      }
-    }
-    return notes;
+  function mel(notes){
+    // Each note: [pitch, time, duration] or [null, time, duration] for rest
+    return notes.map(n=>n[0]?{time:n[1],note:n[0],dur:n[2]}:null).filter(Boolean);
   }
 
-  const allMelodies=[parseMel(melA),parseMel(melB),parseMel(melC),parseMel(melD),
-                     parseMel(melE),parseMel(melF),parseMel(melG),parseMel(melH),
-                     parseMel(melI),parseMel(melJ),parseMel(melK),parseMel(melL),
-                     parseMel(melM),parseMel(melN),parseMel(melO),parseMel(melP)];
+  const allMelodies=[
+    // Bar 1: da-da-DAAAA (B B E held)
+    mel([['B4','0:0:0','8n'],['B4','0:0:2','8n'],['E5','0:1:0','2n.']]),
+    // Bar 2: ...still ringing... D-E grace at end
+    mel([['D5','0:3:0','8n'],['E5','0:3:2','4n']]),
+    // Bar 3: da-da-DAAAA again (repeat the call)
+    mel([['B4','0:0:0','8n'],['B4','0:0:2','8n'],['E5','0:1:0','2n']]),
+    // Bar 4: descending run G-F#-E-D-E
+    mel([['G5','0:1:0','8n'],['F#5','0:1:2','8n'],['E5','0:2:0','8n'],['D5','0:2:2','8n'],['E5','0:3:0','4n']]),
+    // Bar 5: ascending B-E-G-B
+    mel([['B4','0:0:0','8n'],['E5','0:0:2','8n'],['G5','0:1:0','4n'],['B5','0:2:0','2n']]),
+    // Bar 6: A-G descent, held
+    mel([['A5','0:0:0','8n'],['G5','0:0:2','2n.']]),
+    // Bar 7: ornamental F#-G-A-G-F#-E
+    mel([['F#5','0:0:0','8n'],['G5','0:0:2','8n'],['A5','0:1:0','4n'],['G5','0:2:0','8n'],['F#5','0:2:2','8n'],['E5','0:3:0','4n']]),
+    // Bar 8: long E resolve
+    mel([['E5','0:0:0','1n']]),
+    // Bar 9-10: chromatic variant — Eb-E quick into F# held
+    mel([['Eb5','0:0:0','16n'],['E5','0:0:1','16n'],['F#5','0:0:2','2n.']]),
+    mel([['E5','0:0:0','1n']]),
+    // Bar 11-12: da-da-DAAAA one more time, higher energy
+    mel([['B4','0:0:0','8n'],['B4','0:0:2','8n'],['E5','0:1:0','8n'],['G5','0:1:2','2n']]),
+    mel([['F#5','0:0:0','8n'],['E5','0:0:2','4n.'],['D5','0:2:0','4n'],['E5','0:3:0','4n']]),
+    // Bar 13-14: chromatic melody descent (mirrors bass)
+    mel([['E5','0:0:0','4n'],['Eb5','0:1:0','4n'],['D5','0:2:0','4n'],['Db5','0:3:0','4n']]),
+    mel([['D5','0:0:0','4n.'],['E5','0:1:2','2n']]),
+    // Bar 15-16: rest — let the pads breathe
+    mel([]),
+    mel([]),
+  ];
   let melBar=0;
   const melLoop=new Tone.Loop(t=>{
     const mel=allMelodies[melBar%allMelodies.length];
