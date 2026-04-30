@@ -1651,94 +1651,101 @@ let musicCtx=null,musicPlaying=false,musicGain=null,musicInterval=null;
 const NF={C:261.63,Db:277.18,D:293.66,Eb:311.13,E:329.63,F:349.23,Gb:369.99,G:392.00,Ab:415.30,A:440.00,Bb:466.16,B:493.88};
 function noteHz(n,o){return NF[n]*Math.pow(2,o-4);}
 
-// Dark minor 7th chords — Jenova-inspired progression
+// Chord pads
 const PROG=[
-  [['E',3],['G',3],['B',3],['D',4]],     // Em7
-  [['Eb',3],['Gb',3],['Bb',3],['Db',4]], // Ebm7
-  [['D',3],['F',3],['A',3],['C',4]],     // Dm7
-  [['Db',3],['E',3],['Ab',3],['B',3]],   // Dbmaj7
+  [['E',3],['G',3],['B',3],['D',4]],
+  [['C',3],['E',3],['G',3],['B',3]],
+  [['A',2],['C',3],['E',3],['G',3]],
+  [['B',2],['D',3],['Gb',3],['A',3]],
 ];
-// Chromatic descending bass — the Jenova signature
-const BASS_LINE=[['E',2],['Eb',2],['D',2],['Db',2],['C',2],['B',1],['Bb',1],['A',1]];
+const BASS_NOTES=[['E',2],['C',2],['A',1],['B',1]];
 
 function makeNoise(ctx,dur){
   const buf=ctx.createBuffer(1,ctx.sampleRate*dur,ctx.sampleRate);
   const d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
   return buf;
 }
-// Lo-fi drums
 function playKick(ctx,t,dest){
   const osc=ctx.createOscillator();const g=ctx.createGain();
   osc.frequency.setValueAtTime(150,t);osc.frequency.exponentialRampToValueAtTime(35,t+0.12);
-  osc.type='sine';g.gain.setValueAtTime(0.35,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.25);
+  osc.type='sine';g.gain.setValueAtTime(0.3,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.25);
   osc.connect(g);g.connect(dest);osc.start(t);osc.stop(t+0.3);
 }
 function playSnare(ctx,t,dest){
-  const buf=makeNoise(ctx,0.12);const s=ctx.createBufferSource();s.buffer=buf;
-  const f=ctx.createBiquadFilter();f.type='highpass';f.frequency.value=1500;
-  const g=ctx.createGain();g.gain.setValueAtTime(0.12,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.12);
-  s.connect(f);f.connect(g);g.connect(dest);s.start(t);s.stop(t+0.15);
-  const osc=ctx.createOscillator();const g2=ctx.createGain();
-  osc.frequency.value=180;osc.type='sine';
-  g2.gain.setValueAtTime(0.1,t);g2.gain.exponentialRampToValueAtTime(0.001,t+0.08);
-  osc.connect(g2);g2.connect(dest);osc.start(t);osc.stop(t+0.1);
+  const buf=makeNoise(ctx,0.1);const s=ctx.createBufferSource();s.buffer=buf;
+  const f=ctx.createBiquadFilter();f.type='highpass';f.frequency.value=2000;
+  const g=ctx.createGain();g.gain.setValueAtTime(0.1,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.1);
+  s.connect(f);f.connect(g);g.connect(dest);s.start(t);s.stop(t+0.12);
 }
 function playHat(ctx,t,vol,dest){
-  const buf=makeNoise(ctx,0.05);const s=ctx.createBufferSource();s.buffer=buf;
-  const f=ctx.createBiquadFilter();f.type='highpass';f.frequency.value=7000;
-  const g=ctx.createGain();g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.05);
-  s.connect(f);f.connect(g);g.connect(dest);s.start(t);s.stop(t+0.06);
+  const buf=makeNoise(ctx,0.04);const s=ctx.createBufferSource();s.buffer=buf;
+  const f=ctx.createBiquadFilter();f.type='highpass';f.frequency.value=8000;
+  const g=ctx.createGain();g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.04);
+  s.connect(f);f.connect(g);g.connect(dest);s.start(t);s.stop(t+0.05);
 }
-function playCrackle(ctx,t,dur,dest){
-  const buf=makeNoise(ctx,dur);const s=ctx.createBufferSource();s.buffer=buf;
-  const f=ctx.createBiquadFilter();f.type='bandpass';f.frequency.value=900;f.Q.value=0.3;
-  const g=ctx.createGain();g.gain.value=0.008;
-  s.connect(f);f.connect(g);g.connect(dest);s.start(t);s.stop(t+dur);
+// Realistic piano: many harmonics with proper decay ratios
+function playPiano(ctx,freq,t,dur,vol,dest){
+  const partials=[1,2,3,4,5,6,7,8];
+  const amps=[1,0.5,0.3,0.2,0.12,0.08,0.05,0.03];
+  for(let p=0;p<partials.length;p++){
+    const pFreq=freq*partials[p]*(1+p*0.0003); // slight inharmonicity
+    for(const det of[-1,1]){ // chorus
+      const osc=ctx.createOscillator();const g=ctx.createGain();
+      osc.type='sine';osc.frequency.value=pFreq+det*(p+1)*0.5;
+      const v=vol*amps[p]*0.5;
+      // Piano envelope: fast attack, quick initial decay, slow sustain decay
+      g.gain.setValueAtTime(0,t);
+      g.gain.linearRampToValueAtTime(v,t+0.005);
+      g.gain.setValueAtTime(v*0.8,t+0.03);
+      g.gain.exponentialRampToValueAtTime(v*0.3,t+dur*0.3);
+      g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+      osc.connect(g);g.connect(dest);osc.start(t);osc.stop(t+dur+0.05);
+    }
+  }
 }
-// Warm pad
 function playPad(ctx,notes,t,dur,dest){
   for(const[n,o] of notes){
     for(const det of[-3,0,3]){
       const osc=ctx.createOscillator();const g=ctx.createGain();
       osc.type='sine';osc.frequency.value=noteHz(n,o)+det;
-      g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.025,t+0.5);
-      g.gain.setValueAtTime(0.02,t+dur*0.7);g.gain.linearRampToValueAtTime(0,t+dur);
+      // Vibrato
+      const lfo=ctx.createOscillator();const lg=ctx.createGain();
+      lfo.frequency.value=4;lg.gain.value=2;
+      lfo.connect(lg);lg.connect(osc.frequency);lfo.start(t);lfo.stop(t+dur);
+      g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.02,t+0.8);
+      g.gain.setValueAtTime(0.018,t+dur*0.7);g.gain.linearRampToValueAtTime(0,t+dur);
       osc.connect(g);g.connect(dest);osc.start(t);osc.stop(t+dur+0.1);
     }
   }
 }
-// Piano-like keys
-function playKey(ctx,freq,t,dur,vol,dest){
-  const harmonics=[[1,vol],[2,vol*0.3],[3,vol*0.1],[4,vol*0.05]];
-  for(const[m,v] of harmonics){
-    for(const det of[-1.5,1.5]){
-      const osc=ctx.createOscillator();const g=ctx.createGain();
-      osc.type='sine';osc.frequency.value=freq*m+det;
-      g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+0.008);
-      g.gain.setValueAtTime(v*0.6,t+0.05);g.gain.exponentialRampToValueAtTime(0.001,t+dur*0.9);
-      osc.connect(g);g.connect(dest);osc.start(t);osc.stop(t+dur);
-    }
+function playBass(ctx,freq,t,dur,dest){
+  for(const det of[-1,0,1]){
+    const osc=ctx.createOscillator();const g=ctx.createGain();
+    osc.type='sine';osc.frequency.value=freq+det;
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.18,t+0.015);
+    g.gain.setValueAtTime(0.12,t+dur*0.4);g.gain.exponentialRampToValueAtTime(0.001,t+dur*0.95);
+    osc.connect(g);g.connect(dest);osc.start(t);osc.stop(t+dur);
   }
 }
-// Bass
-function playBass(ctx,freq,t,dur,dest){
-  const osc=ctx.createOscillator();const g=ctx.createGain();
-  osc.type='sine';osc.frequency.value=freq;
-  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.2,t+0.02);
-  g.gain.setValueAtTime(0.15,t+dur*0.5);g.gain.exponentialRampToValueAtTime(0.001,t+dur*0.95);
-  osc.connect(g);g.connect(dest);osc.start(t);osc.stop(t+dur);
-}
-// Melody phrases — dark, chromatic, Jenova-inspired
-const PHRASES=[
-  [['B',4,2],['E',5,2],['G',5,3],[null,0,1],['Gb',5,2],['E',5,2],['Eb',5,3],[null,0,1],
-   ['D',5,2],['Db',5,2],['D',5,2],['E',5,4],[null,0,4]],
-  [['E',5,3],['Eb',5,1],['D',5,2],['B',4,2],[null,0,2],['A',4,2],['B',4,2],
-   ['D',5,2],['E',5,4],[null,0,2],['G',5,2],['Gb',5,2],['E',5,4],[null,0,4]],
-  [[null,0,4],['G',5,2],['Gb',5,1],['E',5,1],['Eb',5,2],['D',5,2],[null,0,2],
-   ['B',4,3],['D',5,1],['E',5,4],[null,0,2],['Gb',5,2],['G',5,2],['Gb',5,2],['E',5,4],[null,0,2]],
-  [['B',5,2],['A',5,2],['G',5,2],['Gb',5,2],['E',5,3],[null,0,1],
-   ['Eb',5,2],['D',5,2],['Db',5,2],['D',5,2],['E',5,6],[null,0,6]],
+// Structured melody — actual singable tune in E minor, 8 bars with repeat
+// Each entry: [note, octave, beat position (0-15), duration in beats]
+const MELODY_A=[
+  ['B',4,0,2],['D',5,2,2],['E',5,4,3],['G',5,7,1],
+  ['Gb',5,8,2],['E',5,10,2],['D',5,12,4],
 ];
+const MELODY_B=[
+  ['E',5,0,2],['G',5,2,1],['A',5,3,1],['B',5,4,4],
+  ['A',5,8,2],['G',5,10,2],['E',5,12,4],
+];
+const MELODY_C=[
+  ['B',4,0,2],['D',5,2,2],['E',5,4,2],['Gb',5,6,2],
+  ['G',5,8,3],['Gb',5,11,1],['E',5,12,4],
+];
+const MELODY_D=[
+  ['A',5,0,2],['G',5,2,2],['E',5,4,2],['D',5,6,2],
+  ['B',4,8,3],[null,0,11,1],['E',5,12,4],
+];
+const MELODIES=[MELODY_A,MELODY_B,MELODY_C,MELODY_D];
 
 function startMusic(){
   if(musicPlaying)return;
@@ -1746,45 +1753,49 @@ function startMusic(){
     if(!musicCtx)musicCtx=new(window.AudioContext||window.webkitAudioContext)();
     musicCtx.resume().then(()=>{
       musicGain=musicCtx.createGain();
-      musicGain.gain.value=0.5;
+      musicGain.gain.value=0.45;
       const lopass=musicCtx.createBiquadFilter();
-      lopass.type='lowpass';lopass.frequency.value=2800;lopass.Q.value=0.7;
+      lopass.type='lowpass';lopass.frequency.value=3000;lopass.Q.value=0.5;
       musicGain.connect(lopass);lopass.connect(musicCtx.destination);
       musicPlaying=true;
       $('music-btn').style.color='var(--lime)';
-      let phraseIdx=0,noteIdx=0,chordIdx=0,bassIdx=0,step=0;
-      const bpm=78,stepTime=60/bpm/4;
-      const barLen=16;
-      function tick(){
+      let bar=0;
+      const bpm=75,beatTime=60/bpm;
+      function scheduleBar(){
         if(!musicPlaying)return;
-        const now=musicCtx.currentTime;
-        // Drums — boom bap pattern
-        const beatPos=step%barLen;
-        if(beatPos===0||beatPos===6)playKick(musicCtx,now,musicGain);
-        if(beatPos===4||beatPos===12)playSnare(musicCtx,now,musicGain);
-        if(beatPos%2===0)playHat(musicCtx,now,beatPos%4===0?0.06:0.03,musicGain);
-        // Pad + crackle every bar
-        if(step%barLen===0){
-          playPad(musicCtx,PROG[chordIdx%PROG.length],now,barLen*stepTime,musicGain);
-          playCrackle(musicCtx,now,barLen*stepTime,musicGain);
-          chordIdx++;
+        const now=musicCtx.currentTime+0.05;
+        const barDur=4*beatTime;
+        const stepTime=beatTime/4;
+        // Pad + crackle
+        if(bar%4===0){
+          playPad(musicCtx,PROG[(bar/4|0)%PROG.length],now,4*barDur,musicGain);
+          const buf=makeNoise(musicCtx,4*barDur);const s=musicCtx.createBufferSource();s.buffer=buf;
+          const f=musicCtx.createBiquadFilter();f.type='bandpass';f.frequency.value=900;f.Q.value=0.3;
+          const g=musicCtx.createGain();g.gain.value=0.006;
+          s.connect(f);f.connect(g);g.connect(musicGain);s.start(now);s.stop(now+4*barDur);
         }
-        // Bass — chromatic descent every 2 beats
-        if(step%(barLen/4)===0){
-          const b=BASS_LINE[bassIdx%BASS_LINE.length];
-          playBass(musicCtx,noteHz(b[0],b[1]),now,4*stepTime*0.9,musicGain);
-          bassIdx++;
+        // Bass
+        const bn=BASS_NOTES[(bar)%BASS_NOTES.length];
+        playBass(musicCtx,noteHz(bn[0],bn[1]),now,barDur*0.9,musicGain);
+        // Drums
+        for(let s=0;s<16;s++){
+          const t=now+s*stepTime;
+          if(s===0||s===6||s===10)playKick(musicCtx,t,musicGain);
+          if(s===4||s===12)playSnare(musicCtx,t,musicGain);
+          if(s%2===0)playHat(musicCtx,t,s%4===0?0.05:0.025,musicGain);
         }
         // Melody
-        const phrase=PHRASES[phraseIdx%PHRASES.length];
-        const m=phrase[noteIdx%phrase.length];
-        if(m[0])playKey(musicCtx,noteHz(m[0],m[1]),now,m[2]*stepTime*0.85,0.14,musicGain);
-        noteIdx++;
-        if(noteIdx>=phrase.length){noteIdx=0;phraseIdx++;}
-        step++;
+        const mel=MELODIES[bar%MELODIES.length];
+        for(const note of mel){
+          if(!note[0])continue;
+          const t=now+note[2]*stepTime;
+          const dur=note[3]*stepTime*0.9;
+          playPiano(musicCtx,noteHz(note[0],note[1]),t,dur,0.16,musicGain);
+        }
+        bar++;
+        musicInterval=setTimeout(scheduleBar,barDur*1000);
       }
-      tick();
-      musicInterval=setInterval(tick,stepTime*2*1000);
+      scheduleBar();
     });
   }catch(e){}
 }
