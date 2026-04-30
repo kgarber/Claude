@@ -671,15 +671,23 @@ function generateBonusWords(grid,dateStr){
       return bonus;
     }
   }
-  // Fallback: return best effort (may not be fully solvable)
+  // Fallback: return individually verified words (may be fewer than 4)
   const bonus=[];
   const usedCells=new Set();
+  const allBC=new Set();
   for(const bucket of allCandidates){
     for(const candidate of bucket){
       const cells=candidate.path.map(([r,c])=>r+','+c);
       if(cells.some(k=>usedCells.has(k)))continue;
+      // Must be individually reachable
+      const[sr,sc]=candidate.path[0];
+      if(sr!==0&&sr!==N-1&&sc!==0&&sc!==N-1){
+        const except=new Set([...allBC,...cells]);
+        except.delete(sr+','+sc);
+        if(!findBridgeWord(grid,sr,sc,except,false))continue;
+      }
       bonus.push(candidate);
-      for(const k of cells)usedCells.add(k);
+      for(const k of cells){usedCells.add(k);allBC.add(k);}
       break;
     }
   }
@@ -1817,7 +1825,7 @@ $('music-btn').addEventListener('click',e=>{e.stopPropagation();toggleMusic();})
   });
 })();
 </script>
-<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:200;cursor:pointer;" id="version-btn">v1.40</div>
+<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:200;cursor:pointer;" id="version-btn">v1.41</div>
 <script>
 let vTaps=0,vTime=0;
 document.getElementById('version-btn').addEventListener('click',()=>{
