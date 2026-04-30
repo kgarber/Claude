@@ -1712,12 +1712,12 @@ function initToneMusic(){
   drumPart.loop=true;
   drumPart.start(0);
 
-  // Chord + bass progression
+  // Chord + bass progression — Jenova chromatic descent
   const chords=[
     {chord:['E3','G3','B3','D4'],bass:'E2'},
-    {chord:['C3','E3','G3','B3'],bass:'C2'},
-    {chord:['A2','C3','E3','G3'],bass:'A1'},
-    {chord:['B2','D3','F#3','A3'],bass:'B1'},
+    {chord:['Eb3','G3','Bb3','Db4'],bass:'Eb2'},
+    {chord:['D3','F3','A3','C4'],bass:'D2'},
+    {chord:['Db3','F3','Ab3','C4'],bass:'Db2'},
   ];
   let chordIdx=0;
   const chordPart=new Tone.Loop(t=>{
@@ -1728,17 +1728,17 @@ function initToneMusic(){
   },'1m');
   chordPart.start(0);
 
-  // Melody — simple hook, lots of space, repeats with variations
-  // Main motif: E5-G5-B5 (just 3 notes ascending, iconic and hummable)
-  // Each bar has only 2-4 notes max
-  const melA=['E5','0:0:0','G5','0:1:0','B5','0:2:0'];       // ascending hook
-  const melB=['B5','0:0:0','A5','0:1:0','G5','0:2:0'];       // descending answer
-  const melC=['E5','0:0:0','G5','0:1:0','B5','0:2:0'];       // hook again (repetition = catchy)
-  const melD=['A5','0:0:0','G5','0:1:0','E5','0:2:0',null,'0:3:0']; // resolve down + rest
-  const melE=[null,'0:0:0'];                                    // full bar rest (breathing room)
-  const melF=['G5','0:0:0','A5','0:1:0','B5','0:2:0','D6','0:3:0']; // variation — goes higher
-  const melG=['D6','0:0:0','B5','0:1:0','A5','0:2:0'];        // come back down
-  const melH=['G5','0:0:0','E5','0:2:0',null,'0:3:0'];        // gentle ending + rest
+  // Melody — actual Jenova theme motif, slowed for lo-fi
+  // The iconic call: B-E-B-E, then Eb-E-F#-E chromatic tension
+  // Then G-F#-E-D descent, resolve to E
+  const melA=['B4','0:0:0','E5','0:1:0','B4','0:2:0','E5','0:3:0'];              // the call
+  const melB=['Eb5','0:0:0','E5','0:1:0','F#5','0:2:0','E5','0:3:0'];            // chromatic tension
+  const melC=['G5','0:0:0','F#5','0:1:0','E5','0:2:0','D5','0:3:0'];             // descending
+  const melD=['E5','0:0:0',null,'0:1:0',null,'0:2:0',null,'0:3:0'];              // resolve + breathe
+  const melE=['B4','0:0:0','E5','0:1:0','G5','0:2:0','F#5','0:3:0'];             // 2nd phrase — higher
+  const melF=['E5','0:0:0','D5','0:1:0','B4','0:2:0',null,'0:3:0'];              // fall back
+  const melG=['E5','0:0:0','Eb5','0:1:0','D5','0:2:0','Db5','0:3:0'];            // chromatic descent melody
+  const melH=['D5','0:0:0','E5','0:2:0',null,'0:3:0'];                           // resolve + rest
 
   function parseMel(arr){
     const notes=[];
