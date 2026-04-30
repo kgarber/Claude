@@ -1736,42 +1736,48 @@ function initToneMusic(){
   },'1m');
   chordPart.start(0);
 
-  // Melody — transcription of the actual JENOVA theme
-  // The iconic: ♪♪ DAAAA... (two quick B's into long E)
-  // With D-E grace notes and G-F#-E-D descending runs
+  // Melody — actual J-E-N-O-V-A theme
+  // Main motif: repeated E's with D neighbor, then same on G
+  // E E E D E... E E E D E G... G G G F# G... F# E D E
 
   function mel(notes){
-    // Each note: [pitch, time, duration] or [null, time, duration] for rest
     return notes.map(n=>n[0]?{time:n[1],note:n[0],dur:n[2]}:null).filter(Boolean);
   }
 
   const allMelodies=[
-    // Bar 1: da-da-DAAAA (B B E held)
-    mel([['B4','0:0:0','8n'],['B4','0:0:2','8n'],['E5','0:1:0','2n.']]),
-    // Bar 2: ...still ringing... D-E grace at end
-    mel([['D5','0:3:0','8n'],['E5','0:3:2','4n']]),
-    // Bar 3: da-da-DAAAA again (repeat the call)
-    mel([['B4','0:0:0','8n'],['B4','0:0:2','8n'],['E5','0:1:0','2n']]),
-    // Bar 4: descending run G-F#-E-D-E
-    mel([['G5','0:1:0','8n'],['F#5','0:1:2','8n'],['E5','0:2:0','8n'],['D5','0:2:2','8n'],['E5','0:3:0','4n']]),
-    // Bar 5: ascending B-E-G-B
-    mel([['B4','0:0:0','8n'],['E5','0:0:2','8n'],['G5','0:1:0','4n'],['B5','0:2:0','2n']]),
-    // Bar 6: A-G descent, held
-    mel([['A5','0:0:0','8n'],['G5','0:0:2','2n.']]),
-    // Bar 7: ornamental F#-G-A-G-F#-E
-    mel([['F#5','0:0:0','8n'],['G5','0:0:2','8n'],['A5','0:1:0','4n'],['G5','0:2:0','8n'],['F#5','0:2:2','8n'],['E5','0:3:0','4n']]),
-    // Bar 8: long E resolve
-    mel([['E5','0:0:0','1n']]),
-    // Bar 9-10: chromatic variant — Eb-E quick into F# held
-    mel([['Eb5','0:0:0','16n'],['E5','0:0:1','16n'],['F#5','0:0:2','2n.']]),
-    mel([['E5','0:0:0','1n']]),
-    // Bar 11-12: da-da-DAAAA one more time, higher energy
-    mel([['B4','0:0:0','8n'],['B4','0:0:2','8n'],['E5','0:1:0','8n'],['G5','0:1:2','2n']]),
-    mel([['F#5','0:0:0','8n'],['E5','0:0:2','4n.'],['D5','0:2:0','4n'],['E5','0:3:0','4n']]),
-    // Bar 13-14: chromatic melody descent (mirrors bass)
-    mel([['E5','0:0:0','4n'],['Eb5','0:1:0','4n'],['D5','0:2:0','4n'],['Db5','0:3:0','4n']]),
-    mel([['D5','0:0:0','4n.'],['E5','0:1:2','2n']]),
-    // Bar 15-16: rest — let the pads breathe
+    // Bar 1: E E E D | E (held) — the driving hook
+    mel([['E5','0:0:0','8n'],['E5','0:0:2','8n'],['E5','0:1:0','8n'],['D5','0:1:2','8n'],
+         ['E5','0:2:0','2n']]),
+    // Bar 2: E E E D | E G — same motif, lifts to G
+    mel([['E5','0:0:0','8n'],['E5','0:0:2','8n'],['E5','0:1:0','8n'],['D5','0:1:2','8n'],
+         ['E5','0:2:0','4n'],['G5','0:3:0','4n']]),
+    // Bar 3: G G G F# | G (held) — same shape, higher
+    mel([['G5','0:0:0','8n'],['G5','0:0:2','8n'],['G5','0:1:0','8n'],['F#5','0:1:2','8n'],
+         ['G5','0:2:0','2n']]),
+    // Bar 4: F# E D | E (held) — descending resolution
+    mel([['F#5','0:0:0','4n'],['E5','0:1:0','4n'],['D5','0:2:0','4n'],['E5','0:3:0','4n']]),
+    // Bar 5-6: repeat the hook (repetition = recognition)
+    mel([['E5','0:0:0','8n'],['E5','0:0:2','8n'],['E5','0:1:0','8n'],['D5','0:1:2','8n'],
+         ['E5','0:2:0','2n']]),
+    mel([['E5','0:0:0','8n'],['E5','0:0:2','8n'],['E5','0:1:0','8n'],['D5','0:1:2','8n'],
+         ['E5','0:2:0','4n'],['G5','0:3:0','4n']]),
+    // Bar 7: B5 peak — climbs higher
+    mel([['G5','0:0:0','8n'],['A5','0:0:2','8n'],['B5','0:1:0','2n.']]),
+    // Bar 8: A G F# E descent
+    mel([['A5','0:0:0','4n'],['G5','0:1:0','4n'],['F#5','0:2:0','4n'],['E5','0:3:0','4n']]),
+    // Bar 9-10: chromatic tension — Eb sneaks in
+    mel([['E5','0:0:0','8n'],['Eb5','0:0:2','8n'],['E5','0:1:0','8n'],['F#5','0:1:2','8n'],
+         ['G5','0:2:0','2n']]),
+    mel([['F#5','0:0:0','4n'],['E5','0:1:0','2n.']]),
+    // Bar 11-12: the hook one final time
+    mel([['E5','0:0:0','8n'],['E5','0:0:2','8n'],['E5','0:1:0','8n'],['D5','0:1:2','8n'],
+         ['E5','0:2:0','4n'],['G5','0:3:0','4n']]),
+    mel([['G5','0:0:0','8n'],['G5','0:0:2','8n'],['G5','0:1:0','8n'],['F#5','0:1:2','8n'],
+         ['E5','0:2:0','2n']]),
+    // Bar 13-14: long resolve
+    mel([['D5','0:0:0','4n'],['E5','0:1:0','1n']]),
+    mel([]),
+    // Bar 15-16: rest
     mel([]),
     mel([]),
   ];
@@ -1825,7 +1831,7 @@ $('music-btn').addEventListener('click',e=>{e.stopPropagation();toggleMusic();})
   });
 })();
 </script>
-<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:200;cursor:pointer;" id="version-btn">v1.41</div>
+<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:200;cursor:pointer;" id="version-btn">v1.42</div>
 <script>
 let vTaps=0,vTime=0;
 document.getElementById('version-btn').addEventListener('click',()=>{
