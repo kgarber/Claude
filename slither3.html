@@ -1728,28 +1728,65 @@ function initToneMusic(){
   },'1m');
   chordPart.start(0);
 
-  // Melody — actual Jenova theme motif, slowed for lo-fi
-  // The iconic call: B-E-B-E, then Eb-E-F#-E chromatic tension
-  // Then G-F#-E-D descent, resolve to E
-  const melA=['B4','0:0:0','E5','0:1:0','B4','0:2:0','E5','0:3:0'];              // the call
-  const melB=['Eb5','0:0:0','E5','0:1:0','F#5','0:2:0','E5','0:3:0'];            // chromatic tension
-  const melC=['G5','0:0:0','F#5','0:1:0','E5','0:2:0','D5','0:3:0'];             // descending
-  const melD=['E5','0:0:0',null,'0:1:0',null,'0:2:0',null,'0:3:0'];              // resolve + breathe
-  const melE=['B4','0:0:0','E5','0:1:0','G5','0:2:0','F#5','0:3:0'];             // 2nd phrase — higher
-  const melF=['E5','0:0:0','D5','0:1:0','B4','0:2:0',null,'0:3:0'];              // fall back
-  const melG=['E5','0:0:0','Eb5','0:1:0','D5','0:2:0','Db5','0:3:0'];            // chromatic descent melody
-  const melH=['D5','0:0:0','E5','0:2:0',null,'0:3:0'];                           // resolve + rest
+  // Melody — Jenova rhythm: quick pickups into held notes
+  // "da-DAAAA... da-DAAAA..." feel
+  // [note, time, note, time, ...] — parseMel pairs them
+  // Using mixed durations in parseMel below
+
+  // Bar 1-2: B pickup into looong E
+  const melA=['B4','0:3:2'];  // quick pickup at end of bar
+  const melB=['E5','0:0:0'];  // sustains whole bar (the DAAAA)
+  // Bar 3-4: same call again
+  const melC=['B4','0:3:2'];
+  const melD=['E5','0:0:0'];
+  // Bar 5: chromatic tension — quick Eb-E into held F#
+  const melE=['Eb5','0:0:0','E5','0:0:2','F#5','0:1:0'];
+  // Bar 6: F# resolves down to E, held
+  const melF=['E5','0:0:0'];
+  // Bar 7: descending run G-F#-E-D (8th notes, quicker)
+  const melG=['G5','0:0:0','F#5','0:0:2','E5','0:1:0','D5','0:1:2'];
+  // Bar 8: resolve to E, then silence
+  const melH=['E5','0:0:0'];
+  // Bar 9-10: 2nd phrase — B pickup into high G
+  const melI=['B4','0:3:2'];
+  const melJ=['E5','0:0:0','G5','0:1:0'];
+  // Bar 11-12: F#-E held, descending
+  const melK=['F#5','0:0:0','E5','0:2:0'];
+  const melL=['D5','0:0:0','E5','0:2:0'];
+  // Bar 13-14: chromatic descent — mirrors the bass
+  const melM=['E5','0:0:0','Eb5','0:1:0','D5','0:2:0','Db5','0:3:0'];
+  // Bar 15-16: long resolve + rest
+  const melN=['D5','0:0:0','E5','0:2:0'];
+  const melO=[null,'0:0:0']; // full rest bar
+  const melP=[null,'0:0:0']; // another rest — let it breathe
 
   function parseMel(arr){
     const notes=[];
     for(let i=0;i<arr.length;i+=2){
-      if(arr[i])notes.push({time:arr[i+1],note:arr[i],dur:'2n'});
+      if(arr[i]){
+        // Calculate duration: if next note exists, dur = gap to it. Otherwise long hold.
+        let dur='2n';
+        if(i+2<arr.length&&arr[i+2]){
+          // Quick note if close together
+          const thisPos=Tone.Time(arr[i+1]).toSeconds();
+          const nextPos=Tone.Time(arr[i+3]).toSeconds();
+          const gap=nextPos-thisPos;
+          if(gap<0.4)dur='8n';
+          else if(gap<0.8)dur='4n';
+          else dur='2n';
+        }else{
+          dur='1n'; // last note in bar — hold it long
+        }
+        notes.push({time:arr[i+1],note:arr[i],dur});
+      }
     }
     return notes;
   }
 
   const allMelodies=[parseMel(melA),parseMel(melB),parseMel(melC),parseMel(melD),
-                     parseMel(melE),parseMel(melF),parseMel(melG),parseMel(melH)];
+                     parseMel(melE),parseMel(melF),parseMel(melG),parseMel(melH),
+                     parseMel(melI),parseMel(melJ),parseMel(melK),parseMel(melL),
+                     parseMel(melM),parseMel(melN),parseMel(melO),parseMel(melP)];
   let melBar=0;
   const melLoop=new Tone.Loop(t=>{
     const mel=allMelodies[melBar%allMelodies.length];
