@@ -597,20 +597,31 @@ function findGridWords(grid,minLen,maxLen,limit){
   const seen=new Set();
   for(let r=0;r<N&&found.length<limit;r++){
     for(let c=0;c<N&&found.length<limit;c++){
-      // Skip edge cells — bonus words should be interior
-      if(r===0||r===N-1||c===0||c===N-1)continue;
+      // Skip edge cells — bonus words should be interior (unless allowEdge)
+      if(!arguments[5]&&(r===0||r===N-1||c===0||c===N-1))continue;
       dfsWords(grid,r,c,[{r,c}],grid[r][c].toLowerCase(),found,seen,minLen,maxLen,limit);
     }
   }
   return found;
 }
 // Common/recognizable word filter for bonus words
-const OBSCURE_SUFFIXES=['ene','ase','ose','yne','ane','ite','ide','ate','ium','oid','ous'];
-const OBSCURE_WORDS=new Set(['aa','ab','ad','ae','ag','ah','ai','al','am','an','ar','as','at','aw','ax','ay','ba','be','bi','bo','da','de','do','ed','ef','eh','el','em','en','er','es','et','ex','fa','go','ha','he','hi','ho','id','if','in','is','it','jo','ka','la','li','lo','ma','me','mi','mo','mu','my','na','ne','no','nu','od','oe','of','oh','oi','om','on','oo','op','or','os','ow','ox','oy','pa','pe','pi','po','qi','re','sh','si','so','ta','ti','to','uh','um','un','up','us','ut','we','wo','xi','xu','ya','ye','yo','za']);
+const OBSCURE_SUFFIXES=['ene','ase','ose','yne','ane','ite','ide','ium','oid','ism','ist','eme','ole','ule','yne','ane','ene','ose','ase'];
+const OBSCURE_ENDINGS=['mbs','nths','lph','rph','ngth','ght','tch','dge'];
+const OBSCURE_WORDS=new Set(['aa','ab','ad','ae','ag','ah','ai','al','am','an','ar','as','at','aw','ax','ay','ba','be','bi','bo','da','de','do','ed','ef','eh','el','em','en','er','es','et','ex','fa','go','ha','he','hi','ho','id','if','in','is','it','jo','ka','la','li','lo','ma','me','mi','mo','mu','my','na','ne','no','nu','od','oe','of','oh','oi','om','on','oo','op','or','os','ow','ox','oy','pa','pe','pi','po','qi','re','sh','si','so','ta','ti','to','uh','um','un','up','us','ut','we','wo','xi','xu','ya','ye','yo','za',
+  'aal','aas','aba','abo','abs','aby','ace','act','add','ado','ads','adz','aff','aft','aga','age','ago','ags','aha','ahi','ahs','aid','ail','aim','ain','air','ais','ait','ala','alb','ale','all','alp','als','alt','ama','ami','amp','amu','ana','and','ane','ani','ant','any','ape','apo','app','apt','arb','arc','are','arf','ark','arm','ars','art','ash','ask','asp','ass','ate','att','auk','ava','ave','avo','awa','awe','awl','awn','axe','aye','azo','baa','bad','bag','bah','bal','bam','ban','bap','bar','bas','bat','bay','bed','bee','beg','bel','ben','bes','bet','bey','bib','bid','big','bin','bis','bit','biz','boa','bob','bod','bog','boo','bop','bos','bot','bow','box','boy','bra','bro','brr','bub','bud','bug','bum','bun','bup','bur','bus','but','buy','cab','cad','cam','can','cap','car','cat','caw','cee','cel','cep','chi','cig','cis','cob','cod','cog','col','con','coo','cop','cor','cos','cot','cow','cox','coy','coz','cru','cry','cub','cud','cue','cum','cup','cur','cut','dab','dad','dag','dah','dak','dal','dam','dap','daw','day','deb','dee','del','den','dev','dew','dey','dib','did','die','dif','dig','dim','din','dip','dis','dit','doc','doe','dog','dol','dom','don','dor','dos','dot','dow','dry','dub','dud','due','dug','duh','dui','dun','duo','dup','dye','ear','eat','eau','ebb','ecu','edh','eds','eel','egg','ego','eke','eld','elf','elk','ell','elm','els','emu','end','eng','ens','eon','era','ere','erg','ern','err','ers','ess','eta','eth','eve','ewe','eye']);
 function isCommonWord(word){
-  if(word.length<=2)return false;
+  if(word.length<=3)return false;
+  if(word.length>8)return false;
   if(OBSCURE_WORDS.has(word))return false;
   for(const suf of OBSCURE_SUFFIXES){if(word.length>=5&&word.endsWith(suf))return false;}
+  for(const end of OBSCURE_ENDINGS){if(word.endsWith(end))return false;}
+  // Reject words with 3+ consecutive consonants (often obscure)
+  const vowels='aeiou';
+  let consec=0;
+  for(const ch of word){
+    if(vowels.includes(ch))consec=0;
+    else{consec++;if(consec>=4)return false;}
+  }
   return true;
 }
 
@@ -671,15 +682,15 @@ function generateBonusWords(grid,dateStr){
       return bonus;
     }
   }
-  // Fallback: return individually verified words (may be fewer than 4)
+  // Fallback: individually verified words, allow edge starts if needed
   const bonus=[];
   const usedCells=new Set();
   const allBC=new Set();
+  // First pass: interior words only
   for(const bucket of allCandidates){
     for(const candidate of bucket){
       const cells=candidate.path.map(([r,c])=>r+','+c);
       if(cells.some(k=>usedCells.has(k)))continue;
-      // Must be individually reachable
       const[sr,sc]=candidate.path[0];
       if(sr!==0&&sr!==N-1&&sc!==0&&sc!==N-1){
         const except=new Set([...allBC,...cells]);
@@ -689,6 +700,23 @@ function generateBonusWords(grid,dateStr){
       bonus.push(candidate);
       for(const k of cells){usedCells.add(k);allBC.add(k);}
       break;
+    }
+  }
+  // Second pass: if fewer than 4, add edge-starting words to fill
+  if(bonus.length<4){
+    const edgeWords=[
+      ...findGridWords(grid,4,5,30,true),
+      ...findGridWords(grid,5,6,20,true),
+      ...findGridWords(grid,6,8,15,true),
+    ];
+    for(let i=edgeWords.length-1;i>0;i--){const j=Math.floor(rng()*((i+1)|0));[edgeWords[i],edgeWords[j]]=[edgeWords[j],edgeWords[i]];}
+    for(const candidate of edgeWords){
+      if(bonus.length>=4)break;
+      if(bonus.some(b=>b.word===candidate.word))continue;
+      const cells=candidate.path.map(([r,c])=>r+','+c);
+      if(cells.some(k=>usedCells.has(k)))continue;
+      bonus.push(candidate);
+      for(const k of cells)usedCells.add(k);
     }
   }
   bonus.sort((a,b)=>a.word.length-b.word.length);
@@ -1824,7 +1852,7 @@ $('music-btn').addEventListener('click',e=>{e.stopPropagation();toggleMusic();})
   });
 })();
 </script>
-<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:200;cursor:pointer;" id="version-btn">v1.46</div>
+<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:200;cursor:pointer;" id="version-btn">v1.47</div>
 <script>
 let vTaps=0,vTime=0;
 document.getElementById('version-btn').addEventListener('click',()=>{
