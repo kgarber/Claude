@@ -1015,7 +1015,7 @@ function updateUI(){
   $('f-fertilizer').textContent=fertilizerMultiplier.toFixed(1);
   $('f-seed').textContent=seedMultiplier.toFixed(1);
   $('f-total').textContent=score;
-  $('growth-count').textContent=cellsUsed+'/'+(N*N)+' cells \u00b7 '+wordsFound.length+' word'+(wordsFound.length!==1?'s':'');
+  $('words-count').textContent=cellsUsed+'/'+(N*N)+' cells \u00b7 '+wordsFound.length+' word'+(wordsFound.length!==1?'s':'');
   // Stars
   if(!pickingStart&&tracePath.length===0){
     $('word-hint').textContent='Tap a cell to start tracing a word';
@@ -1863,7 +1863,7 @@ $('music-btn').addEventListener('click',e=>{e.stopPropagation();toggleMusic();})
   });
 })();
 </script>
-<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:200;cursor:pointer;" id="version-btn">v0.3</div>
+<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:200;cursor:pointer;" id="version-btn">v0.4</div>
 <script>
 let vTaps=0,vTime=0;
 document.getElementById('version-btn').addEventListener('click',()=>{
