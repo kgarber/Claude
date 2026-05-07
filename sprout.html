@@ -7,7 +7,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/tone@14.7.77/build/Tone.js" onerror="console.log('Tone.js failed to load')"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -1694,161 +1693,14 @@ window.addEventListener('beforeunload',e=>{
   if(gameActive&&wordsFound.length>0){e.preventDefault();e.returnValue='';}
 });
 
-// === Music Engine — Tone.js Jenova Lo-fi ===
-let musicPlaying=false,musicInited=false;
-
-// Tone.js instruments + sequences (created on first play)
-
-function initToneMusic(){
-  if(musicInited||typeof Tone==='undefined')return;
-  musicInited=true;
-  Tone.Transport.bpm.value=75;
-
-  // Effects chain
-  const reverb=new Tone.Reverb({decay:3,wet:0.35}).toDestination();
-  const lofi=new Tone.AutoFilter({frequency:0.08,baseFrequency:200,octaves:3,wet:0.15}).connect(reverb).start();
-  const master=new Tone.Gain(0.7).connect(lofi);
-
-  // Piano — FM Synth (electric piano feel)
-  window._piano=new Tone.PolySynth(Tone.FMSynth,{
-    harmonicity:3,modulationIndex:1.5,
-    oscillator:{type:'sine'},
-    modulation:{type:'sine'},
-    envelope:{attack:0.008,decay:0.8,sustain:0.15,release:1.5},
-    modulationEnvelope:{attack:0.01,decay:0.3,sustain:0.2,release:0.8},
-    volume:-16
-  }).connect(master);
-
-  // Pad — warm strings
-  window._pad=new Tone.PolySynth(Tone.Synth,{
-    oscillator:{type:'fatsine',count:3,spread:30},
-    envelope:{attack:1.5,decay:1,sustain:0.6,release:3},
-    volume:-18
-  }).connect(master);
-
-  // Bass — deep sub
-  window._bass=new Tone.MonoSynth({
-    oscillator:{type:'fatsine',count:2,spread:10},
-    envelope:{attack:0.02,decay:0.5,sustain:0.4,release:0.8},
-    filterEnvelope:{attack:0.01,decay:0.3,sustain:0.5,release:0.5,baseFrequency:80,octaves:2},
-    volume:-10
-  }).connect(master);
-
-  // Drums
-  window._kick=new Tone.MembraneSynth({pitchDecay:0.05,octaves:6,envelope:{attack:0.001,decay:0.3,sustain:0,release:0.3},volume:-6}).connect(master);
-  window._snare=new Tone.NoiseSynth({noise:{type:'white'},envelope:{attack:0.001,decay:0.12,sustain:0,release:0.1},volume:-14}).connect(master);
-  window._hat=new Tone.NoiseSynth({noise:{type:'white'},envelope:{attack:0.001,decay:0.04,sustain:0,release:0.02},volume:-20}).connect(new Tone.Filter(8000,'highpass').connect(master));
-
-  // Vinyl crackle
-  window._crackle=new Tone.Noise('brown').connect(new Tone.AutoFilter({frequency:0.5,baseFrequency:600,octaves:2}).connect(new Tone.Gain(0.03).connect(master)).start());
-
-  // Drum pattern — boom bap
-  window._drumLoop=new Tone.Loop(t=>{
-    const s=Tone.Transport.position.split(':');
-    const beat=parseInt(s[1]),sub=parseInt(s[2]);
-    _kick.triggerAttackRelease('C1','8n',t);
-  },'4n');
-
-  // Use Tone.Part for precise drum sequencing
-  const drumPart=new Tone.Sequence((t,v)=>{
-    if(v==='k')_kick.triggerAttackRelease('C1','8n',t);
-    else if(v==='s')_snare.triggerAttackRelease('8n',t);
-    else if(v==='h')_hat.triggerAttackRelease('32n',t);
-    else if(v==='H')_hat.triggerAttackRelease('16n',t);
-  },['k','h','h','h','s','h','k','h','h','h','k','h','s','h','h','h'],'16n');
-  drumPart.loop=true;
-  drumPart.start(0);
-
-  // Chord + bass progression — actual Jenova: Dm → Fm → Cm → Am → Em → Gm → Dm
-  const chords=[
-    {chord:['D3','F3','A3','C4'],bass:'D2'},      // Dm7
-    {chord:['F3','Ab3','C4','Eb4'],bass:'F2'},     // Fm7
-    {chord:['C3','Eb3','G3','Bb3'],bass:'C2'},     // Cm7
-    {chord:['A2','C3','E3','G3'],bass:'A1'},       // Am7
-    {chord:['E3','G3','B3','D4'],bass:'E2'},       // Em7
-    {chord:['G2','Bb2','D3','F3'],bass:'G1'},      // Gm7
-    {chord:['D3','F3','A3','C4'],bass:'D2'},       // Dm7
-    {chord:['D3','F3','A3','C4'],bass:'D2'},       // Dm7 (repeat for 8-bar)
-  ];
-  let chordIdx=0;
-  const chordPart=new Tone.Loop(t=>{
-    const ch=chords[chordIdx%chords.length];
-    _pad.triggerAttackRelease(ch.chord,'1m',t,0.5);
-    _bass.triggerAttackRelease(ch.bass,'1m',t);
-    chordIdx++;
-  },'1m');
-  chordPart.start(0);
-
-  // Melody — JENOVA: D E F, D E F G A
-  function mel(notes){
-    return notes.map(n=>n[0]?{time:n[1],note:n[0],dur:n[2]}:null).filter(Boolean);
-  }
-
-  const allMelodies=[
-    // Bar 1: D E F (short ascending run)
-    mel([['D5','0:0:0','8n'],['E5','0:0:2','8n'],['F5','0:1:0','4n']]),
-    // Bar 2: D E F G A (repeat, extend higher)
-    mel([['D5','0:0:0','8n'],['E5','0:0:2','8n'],['F5','0:1:0','8n'],['G5','0:1:2','8n'],['A5','0:2:0','2n']]),
-    // Bar 3-4: repeat the motif
-    mel([['D5','0:0:0','8n'],['E5','0:0:2','8n'],['F5','0:1:0','4n']]),
-    mel([['D5','0:0:0','8n'],['E5','0:0:2','8n'],['F5','0:1:0','8n'],['G5','0:1:2','8n'],['A5','0:2:0','2n']]),
-    // Bar 5: descending answer — A G F E D
-    mel([['A5','0:0:0','8n'],['G5','0:0:2','8n'],['F5','0:1:0','8n'],['E5','0:1:2','8n'],['D5','0:2:0','2n']]),
-    // Bar 6: rest
-    mel([]),
-    // Bar 7-8: motif with extension to Bb
-    mel([['D5','0:0:0','8n'],['E5','0:0:2','8n'],['F5','0:1:0','4n']]),
-    mel([['D5','0:0:0','8n'],['E5','0:0:2','8n'],['F5','0:1:0','8n'],['G5','0:1:2','8n'],['A5','0:2:0','4n'],['Bb5','0:3:0','4n']]),
-    // Bar 9: Bb A G F E — coming back down
-    mel([['Bb5','0:0:0','8n'],['A5','0:0:2','8n'],['G5','0:1:0','8n'],['F5','0:1:2','8n'],['E5','0:2:0','2n']]),
-    // Bar 10: resolve to D
-    mel([['D5','0:0:0','2n']]),
-    // Bar 11: chromatic color — Ab passing tone
-    mel([['D5','0:0:0','8n'],['E5','0:0:2','8n'],['F5','0:1:0','8n'],['G5','0:1:2','8n'],['Ab5','0:2:0','8n'],['G5','0:2:2','8n'],['F5','0:3:0','4n']]),
-    // Bar 12: resolve
-    mel([['E5','0:0:0','4n'],['D5','0:1:0','2n.']]),
-    // Bar 13-16: rest
-    mel([]),
-    mel([]),
-    mel([]),
-    mel([]),
-  ];
-  let melBar=0;
-  const melLoop=new Tone.Loop(t=>{
-    const mel=allMelodies[melBar%allMelodies.length];
-    for(const n of mel){
-      const offset=Tone.Time(n.time).toSeconds();
-      _piano.triggerAttackRelease(n.note,n.dur,t+offset);
-    }
-    melBar++;
-  },'1m');
-  melLoop.start(0);
-}
-
-function startMusic(){
-  if(musicPlaying||typeof Tone==='undefined')return;
-  Tone.start().then(()=>{
-    initToneMusic();
-    _crackle.start();
-    Tone.Transport.start();
-    musicPlaying=true;
-    $('music-btn').style.color='var(--sprout)';
-  });
-}
-
-function stopMusic(){
-  musicPlaying=false;
-  Tone.Transport.stop();
-  if(_crackle)_crackle.stop();
-  $('music-btn').style.color='';
-}
-
+// === Music Engine (stub — Tone.js removed) ===
+let musicPlaying=false;
+function startMusic(){}
+function stopMusic(){musicPlaying=false;$('music-btn').style.color='';}
 function toggleMusic(){
-  if(musicPlaying)stopMusic();
-  else startMusic();
-  localStorage.setItem('sprout_music',musicPlaying?'1':'0');
+  musicPlaying=!musicPlaying;
+  $('music-btn').style.color=musicPlaying?'var(--sprout)':'';
 }
-
 $('music-btn').addEventListener('click',e=>{e.stopPropagation();toggleMusic();});
 
 // === Init ===
@@ -1863,7 +1715,7 @@ $('music-btn').addEventListener('click',e=>{e.stopPropagation();toggleMusic();})
   });
 })();
 </script>
-<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:200;cursor:pointer;" id="version-btn">v0.5</div>
+<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:200;cursor:pointer;" id="version-btn">v0.6</div>
 <script>
 let vTaps=0,vTime=0;
 document.getElementById('version-btn').addEventListener('click',()=>{
