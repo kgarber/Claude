@@ -671,7 +671,7 @@ function generateBonusWords(grid,dateStr){
   });
   // Try up to 200 combinations
   for(let attempt=0;attempt<200;attempt++){
-    const seed=[];
+    const bw=[];
     const usedCells=new Set();
     for(let bi=0;bi<allCandidates.length;bi++){
       const idx=(attempt*7+bi*13)%allCandidates[bi].length;
@@ -682,20 +682,19 @@ function generateBonusWords(grid,dateStr){
         const candidate=allCandidates[bi][ci];
         const cells=candidate.path.map(([r,c])=>r+','+c);
         if(cells.some(k=>usedCells.has(k)))continue;
-        seed.push(candidate);
+        bw.push(candidate);
         for(const k of cells)usedCells.add(k);
         found=true;
       }
     }
-    if(seed.length<4)continue;
-    // Now verify: can all 4 seed words be solved together?
-    if(canSolveAllBonus(grid,seed)){
-      seed.sort((a,b)=>a.word.length-b.word.length);
-      return seed;
+    if(bw.length<4)continue;
+    if(canSolveAllBonus(grid,bw)){
+      bw.sort((a,b)=>a.word.length-b.word.length);
+      return bw;
     }
   }
   // Fallback: individually verified words, allow edge starts if needed
-  const seed=[];
+  const bw=[];
   const usedCells=new Set();
   const allBC=new Set();
   // First pass: interior words only
@@ -709,7 +708,7 @@ function generateBonusWords(grid,dateStr){
         except.delete(sr+','+sc);
         if(!findBridgeWord(grid,sr,sc,except,false))continue;
       }
-      seed.push(candidate);
+      bw.push(candidate);
       for(const k of cells){usedCells.add(k);allBC.add(k);}
       break;
     }
@@ -724,15 +723,15 @@ function generateBonusWords(grid,dateStr){
     for(let i=edgeWords.length-1;i>0;i--){const j=Math.floor(rng()*((i+1)|0));[edgeWords[i],edgeWords[j]]=[edgeWords[j],edgeWords[i]];}
     for(const candidate of edgeWords){
       if(seed.length>=4)break;
-      if(seed.some(b=>b.word===candidate.word))continue;
+      if(bw.some(b=>b.word===candidate.word))continue;
       const cells=candidate.path.map(([r,c])=>r+','+c);
       if(cells.some(k=>usedCells.has(k)))continue;
-      seed.push(candidate);
+      bw.push(candidate);
       for(const k of cells)usedCells.add(k);
     }
   }
-  seed.sort((a,b)=>a.word.length-b.word.length);
-  return seed;
+  bw.sort((a,b)=>a.word.length-b.word.length);
+  return bw;
 }
 
 // === Bonus Word Solver ===
@@ -1864,7 +1863,7 @@ $('music-btn').addEventListener('click',e=>{e.stopPropagation();toggleMusic();})
   });
 })();
 </script>
-<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:200;cursor:pointer;" id="version-btn">v0.2</div>
+<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:200;cursor:pointer;" id="version-btn">v0.3</div>
 <script>
 let vTaps=0,vTime=0;
 document.getElementById('version-btn').addEventListener('click',()=>{
