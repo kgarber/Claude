@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Count Trainer</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0f0a;--surface:#1a2a1a;--text:#e8e8ef;--text-dim:#778;
+  --green:#2ecc71;--red:#e74c3c;--gold:#f1c40f;--card:#fff;}
+html,body{width:100%;min-height:100vh;background:var(--bg);color:var(--text);
+  font-family:'DM Sans',sans-serif;-webkit-user-select:none;user-select:none;}
+body{display:flex;flex-direction:column;align-items:center;padding:16px;}
+
+.header{text-align:center;margin-bottom:16px;}
+.title{font-family:'IBM Plex Mono',monospace;font-size:28px;font-weight:700;color:var(--green);}
+.subtitle{font-size:12px;color:var(--text-dim);margin-top:4px;}
+
+.mode-btns{display:flex;gap:8px;margin:12px 0;}
+.mode-btn{padding:10px 20px;border-radius:10px;border:2px solid var(--surface);
+  background:var(--surface);color:var(--text);font-weight:600;font-size:14px;cursor:pointer;}
+.mode-btn.active{border-color:var(--green);color:var(--green);}
+
+.speed-control{display:flex;align-items:center;gap:12px;margin:8px 0;font-size:13px;color:var(--text-dim);}
+.speed-control input{width:120px;accent-color:var(--green);}
+.speed-label{font-family:'IBM Plex Mono',monospace;color:var(--text);min-width:40px;}
+
+.card-area{width:100%;max-width:400px;min-height:220px;display:flex;align-items:center;
+  justify-content:center;margin:16px 0;position:relative;}
+.card{width:120px;height:170px;background:var(--card);border-radius:12px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font-size:48px;font-weight:700;box-shadow:0 4px 20px rgba(0,0,0,0.4);
+  transition:transform 0.15s;position:relative;}
+.card.red{color:#d32f2f;}
+.card.black{color:#1a1a1a;}
+.card .suit{font-size:28px;margin-top:-4px;}
+.card .corner{position:absolute;font-size:14px;line-height:1;}
+.card .corner-tl{top:8px;left:8px;}
+.card .corner-br{bottom:8px;right:8px;transform:rotate(180deg);}
+.card.flip-in{animation:flipIn 0.3s ease;}
+@keyframes flipIn{0%{transform:rotateY(90deg) scale(0.8);}100%{transform:rotateY(0) scale(1);}}
+
+.count-value{font-family:'IBM Plex Mono',monospace;font-size:14px;padding:4px 12px;
+  border-radius:20px;position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);}
+.count-value.plus{background:rgba(46,204,113,0.2);color:var(--green);}
+.count-value.zero{background:rgba(255,255,255,0.1);color:var(--text-dim);}
+.count-value.minus{background:rgba(231,76,60,0.2);color:var(--red);}
+
+.stats-bar{display:flex;justify-content:space-around;width:100%;max-width:400px;
+  padding:12px;background:var(--surface);border-radius:10px;margin:8px 0;}
+.stat{text-align:center;}
+.stat-val{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700;}
+.stat-lbl{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;}
+
+.check-area{width:100%;max-width:400px;text-align:center;margin:12px 0;}
+.check-prompt{font-size:16px;margin-bottom:12px;color:var(--gold);}
+.count-btns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;}
+.count-btn{width:52px;height:44px;border-radius:8px;border:none;background:var(--surface);
+  color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:700;
+  cursor:pointer;transition:all 0.1s;}
+.count-btn:active{transform:scale(0.95);background:var(--green);color:#000;}
+.count-btn.correct{background:var(--green);color:#000;}
+.count-btn.wrong{background:var(--red);color:#fff;}
+
+.game-btns{display:flex;gap:10px;margin:16px 0;}
+.game-btn{padding:14px 28px;border-radius:12px;border:none;font-weight:700;font-size:15px;
+  cursor:pointer;}
+.start-btn{background:var(--green);color:#000;}
+.stop-btn{background:var(--red);color:#fff;}
+.start-btn:active,.stop-btn:active{transform:scale(0.96);}
+
+.help-text{font-size:12px;color:var(--text-dim);text-align:center;max-width:360px;
+  line-height:1.6;margin:12px 0;}
+.help-text b{color:var(--text);}
+
+.ref-table{width:100%;max-width:360px;margin:12px 0;border-collapse:collapse;font-size:13px;}
+.ref-table td{padding:6px 12px;border-bottom:1px solid rgba(255,255,255,0.06);}
+.ref-table .cards{font-family:'IBM Plex Mono',monospace;font-weight:700;}
+.ref-table .val{font-family:'IBM Plex Mono',monospace;font-weight:700;text-align:center;}
+.ref-table .plus-col{color:var(--green);}
+.ref-table .zero-col{color:var(--text-dim);}
+.ref-table .minus-col{color:var(--red);}
+
+.back-link{position:absolute;top:12px;left:12px;color:var(--text-dim);font-size:13px;text-decoration:none;}
+.result-msg{font-size:18px;font-weight:700;margin:8px 0;min-height:28px;}
+.result-msg.correct{color:var(--green);}
+.result-msg.wrong{color:var(--red);}
+</style>
+</head>
+<body>
+<a href="index.html" class="back-link">&larr; Games</a>
+
+<div class="header">
+  <div class="title">Count Trainer</div>
+  <div class="subtitle">Practice Hi-Lo card counting</div>
+</div>
+
+<div class="mode-btns">
+  <button class="mode-btn active" id="mode-single">One at a Time</button>
+  <button class="mode-btn" id="mode-check">Count Check</button>
+</div>
+
+<div class="speed-control">
+  <span>Speed:</span>
+  <input type="range" id="speed-slider" min="500" max="3000" value="1500" step="100">
+  <span class="speed-label" id="speed-label">1.5s</span>
+</div>
+
+<div class="card-area" id="card-area">
+  <div style="color:var(--text-dim);font-size:14px;">Press Start to begin</div>
+</div>
+
+<div class="stats-bar">
+  <div class="stat"><div class="stat-val" id="stat-count">0</div><div class="stat-lbl">Running Count</div></div>
+  <div class="stat"><div class="stat-val" id="stat-cards">0</div><div class="stat-lbl">Cards Dealt</div></div>
+  <div class="stat"><div class="stat-val" id="stat-remaining">312</div><div class="stat-lbl">Remaining</div></div>
+  <div class="stat"><div class="stat-val" id="stat-true">0.0</div><div class="stat-lbl">True Count</div></div>
+</div>
+
+<div class="check-area" id="check-area" style="display:none;">
+  <div class="check-prompt">What's the running count?</div>
+  <div class="result-msg" id="result-msg"></div>
+  <div class="count-btns" id="count-btns"></div>
+</div>
+
+<div class="game-btns">
+  <button class="game-btn start-btn" id="start-btn">Start</button>
+  <button class="game-btn stop-btn" id="stop-btn" style="display:none;">Stop</button>
+</div>
+
+<div class="help-text">
+  <b>Hi-Lo System:</b><br>
+  <table class="ref-table">
+    <tr><td class="cards">2 3 4 5 6</td><td class="val plus-col">+1</td><td>Low cards (good for player)</td></tr>
+    <tr><td class="cards">7 8 9</td><td class="val zero-col">0</td><td>Neutral</td></tr>
+    <tr><td class="cards">10 J Q K A</td><td class="val minus-col">-1</td><td>High cards (good for house)</td></tr>
+  </table>
+  <br>
+  <b>True Count</b> = Running Count ÷ Decks Remaining<br>
+  Positive count → bet more. Negative → bet minimum.
+</div>
+
+<script>
+const SUITS=['♠','♥','♦','♣'];
+const RANKS=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+const HI_LO={A:-1,2:1,3:1,4:1,5:1,6:1,7:0,8:0,9:0,10:-1,J:-1,Q:-1,K:-1};
+const DECKS=6;
+
+let shoe=[],runningCount=0,cardsDealt=0,interval=null,mode='single',speed=1500;
+let checking=false,score={correct:0,total:0};
+
+function buildShoe(){
+  shoe=[];
+  for(let d=0;d<DECKS;d++)for(const s of SUITS)for(const r of RANKS)shoe.push({rank:r,suit:s});
+  // Shuffle
+  for(let i=shoe.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shoe[i],shoe[j]]=[shoe[j],shoe[i]];}
+}
+
+function isRed(suit){return suit==='♥'||suit==='♦';}
+
+function renderCard(card){
+  const area=document.getElementById('card-area');
+  const color=isRed(card.suit)?'red':'black';
+  const display=card.rank;
+  area.innerHTML=`<div class="card ${color} flip-in">
+    <div class="corner corner-tl">${display}<br>${card.suit}</div>
+    <div style="font-size:52px;">${display}</div>
+    <div class="suit">${card.suit}</div>
+    <div class="corner corner-br">${display}<br>${card.suit}</div>
+    <div class="count-value ${HI_LO[card.rank]>0?'plus':HI_LO[card.rank]<0?'minus':'zero'}">${HI_LO[card.rank]>0?'+':''}${HI_LO[card.rank]}</div>
+  </div>`;
+}
+
+function updateStats(){
+  document.getElementById('stat-count').textContent=runningCount>0?'+'+runningCount:runningCount;
+  document.getElementById('stat-count').style.color=runningCount>0?'var(--green)':runningCount<0?'var(--red)':'var(--text)';
+  document.getElementById('stat-cards').textContent=cardsDealt;
+  const remaining=DECKS*52-cardsDealt;
+  document.getElementById('stat-remaining').textContent=remaining;
+  const decksLeft=Math.max(1,remaining/52);
+  const trueCount=(runningCount/decksLeft).toFixed(1);
+  document.getElementById('stat-true').textContent=trueCount>0?'+'+trueCount:trueCount;
+  document.getElementById('stat-true').style.color=trueCount>0?'var(--green)':trueCount<0?'var(--red)':'var(--text)';
+}
+
+function dealCard(){
+  if(shoe.length===0||cardsDealt>=DECKS*52-10){
+    stopGame();return;
+  }
+  if(mode==='check'&&cardsDealt>0&&cardsDealt%5===0&&!checking){
+    pauseForCheck();return;
+  }
+  const card=shoe.pop();
+  runningCount+=HI_LO[card.rank];
+  cardsDealt++;
+  renderCard(card);
+  updateStats();
+}
+
+function pauseForCheck(){
+  checking=true;
+  clearInterval(interval);
+  const area=document.getElementById('check-area');
+  area.style.display='block';
+  document.getElementById('result-msg').textContent='';
+  // Generate count buttons — correct answer ± some wrong ones
+  const btns=document.getElementById('count-btns');
+  btns.innerHTML='';
+  const options=new Set([runningCount]);
+  while(options.size<8){options.add(runningCount+Math.floor(Math.random()*7)-3);}
+  const sorted=[...options].sort((a,b)=>a-b);
+  for(const val of sorted){
+    const btn=document.createElement('button');
+    btn.className='count-btn';
+    btn.textContent=val>0?'+'+val:val;
+    btn.addEventListener('click',()=>checkAnswer(val,btn));
+    btns.appendChild(btn);
+  }
+}
+
+function checkAnswer(val,btn){
+  score.total++;
+  const msg=document.getElementById('result-msg');
+  if(val===runningCount){
+    score.correct++;
+    btn.classList.add('correct');
+    msg.textContent='Correct!';
+    msg.className='result-msg correct';
+  }else{
+    btn.classList.add('wrong');
+    // Highlight correct
+    document.querySelectorAll('.count-btn').forEach(b=>{
+      if(parseInt(b.textContent)===runningCount)b.classList.add('correct');
+    });
+    msg.textContent='Count is '+(runningCount>0?'+':'')+runningCount;
+    msg.className='result-msg wrong';
+  }
+  setTimeout(()=>{
+    document.getElementById('check-area').style.display='none';
+    checking=false;
+    interval=setInterval(dealCard,speed);
+  },1200);
+}
+
+function startGame(){
+  buildShoe();
+  runningCount=0;cardsDealt=0;checking=false;
+  score={correct:0,total:0};
+  updateStats();
+  document.getElementById('start-btn').style.display='none';
+  document.getElementById('stop-btn').style.display='inline-block';
+  document.getElementById('check-area').style.display='none';
+  interval=setInterval(dealCard,speed);
+  dealCard();
+}
+
+function stopGame(){
+  clearInterval(interval);
+  document.getElementById('start-btn').style.display='inline-block';
+  document.getElementById('stop-btn').style.display='none';
+  document.getElementById('check-area').style.display='none';
+  if(mode==='check'&&score.total>0){
+    document.getElementById('card-area').innerHTML=
+      '<div style="text-align:center;"><div style="font-size:18px;font-weight:700;color:var(--green);margin-bottom:8px;">Session Complete</div>'+
+      '<div style="font-size:14px;color:var(--text-dim);">Score: '+score.correct+'/'+score.total+' ('+Math.round(score.correct/score.total*100)+'%)</div>'+
+      '<div style="font-size:14px;color:var(--text-dim);margin-top:4px;">Cards dealt: '+cardsDealt+'</div></div>';
+  }else{
+    document.getElementById('card-area').innerHTML=
+      '<div style="text-align:center;"><div style="font-size:14px;color:var(--text-dim);">'+cardsDealt+' cards dealt. Press Start for a new shoe.</div></div>';
+  }
+}
+
+// Mode toggle
+document.getElementById('mode-single').addEventListener('click',()=>{
+  mode='single';
+  document.getElementById('mode-single').classList.add('active');
+  document.getElementById('mode-check').classList.remove('active');
+});
+document.getElementById('mode-check').addEventListener('click',()=>{
+  mode='check';
+  document.getElementById('mode-check').classList.add('active');
+  document.getElementById('mode-single').classList.remove('active');
+});
+
+// Speed slider
+const slider=document.getElementById('speed-slider');
+slider.addEventListener('input',()=>{
+  speed=parseInt(slider.value);
+  document.getElementById('speed-label').textContent=(speed/1000).toFixed(1)+'s';
+  if(interval){clearInterval(interval);interval=setInterval(dealCard,speed);}
+});
+
+document.getElementById('start-btn').addEventListener('click',startGame);
+document.getElementById('stop-btn').addEventListener('click',stopGame);
+</script>
+</body>
+</html>
