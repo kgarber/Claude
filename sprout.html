@@ -716,7 +716,7 @@ function generateBonusWords(grid,dateStr){
     }
   }
   // Second pass: if fewer than 4, add edge-starting words to fill
-  if(seed.length<4){
+  if(bw.length<4){
     const edgeWords=[
       ...findGridWords(grid,4,5,30,true),
       ...findGridWords(grid,5,6,20,true),
@@ -724,7 +724,7 @@ function generateBonusWords(grid,dateStr){
     ];
     for(let i=edgeWords.length-1;i>0;i--){const j=Math.floor(rng()*((i+1)|0));[edgeWords[i],edgeWords[j]]=[edgeWords[j],edgeWords[i]];}
     for(const candidate of edgeWords){
-      if(seed.length>=4)break;
+      if(bw.length>=4)break;
       if(bw.some(b=>b.word===candidate.word))continue;
       const cells=candidate.path.map(([r,c])=>r+','+c);
       if(cells.some(k=>usedCells.has(k)))continue;
@@ -1718,7 +1718,7 @@ $('music-btn').addEventListener('click',e=>{e.stopPropagation();toggleMusic();})
   });
 })();
 </script>
-<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:200;cursor:pointer;" id="version-btn">v0.7</div>
+<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:200;cursor:pointer;" id="version-btn">v0.8</div>
 <script>
 let vTaps=0,vTime=0;
 document.getElementById('version-btn').addEventListener('click',()=>{
