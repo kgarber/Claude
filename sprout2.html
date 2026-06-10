@@ -1,0 +1,1706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Sprout v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0f1208;--cell:#f0e8d0;--cell-used:#2a3020;--cell-active:rgba(109,212,0,0.25);
+  --sprout:#6dd400;--sprout-glow:rgba(109,212,0,0.35);--red:#e74c3c;
+  --text:#e0e0e0;--text-dim:#6a7a6a;--text-dark:#1a1a1a;
+  --font-display:'Playfair Display',serif;--font-sans:'DM Sans',sans-serif;
+}
+html,body{width:100%;height:100%;background:var(--bg);color:var(--text);
+  font-family:var(--font-sans);overflow-x:hidden;touch-action:manipulation;
+  -webkit-user-select:none;user-select:none;}
+body{display:flex;flex-direction:column;align-items:center;min-height:100vh;min-height:100dvh;}
+body::before{content:'';position:fixed;inset:0;opacity:0.04;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 5c0 8-4 14-10 18M30 5c0 8 4 14 10 18M15 45c5-5 10-8 15-8M45 45c-5-5-10-8-15-8' stroke='%2360a040' fill='none' stroke-width='0.6' opacity='0.5'/%3E%3Ccircle cx='30' cy='5' r='1.5' fill='%2360a040' opacity='0.3'/%3E%3C/svg%3E");
+  background-size:60px 60px;}
+.screen{display:none;flex-direction:column;align-items:center;
+  width:100%;max-width:480px;padding:16px;position:relative;z-index:1;}
+.screen.active{display:flex;}
+
+/* Title */
+#title-screen{justify-content:center;min-height:100vh;min-height:100dvh;gap:20px;text-align:center;}
+.logo{font-family:var(--font-display);font-size:48px;font-weight:800;color:var(--sprout);}
+.tagline{font-size:13px;color:var(--text-dim);font-style:italic;margin-top:-8px;}
+.puzzle-date{font-family:var(--font-sans);font-size:12px;color:var(--text-dim);margin-top:4px;}
+.play-btn{background:var(--sprout);color:#0e1a13;border:none;padding:16px 40px;
+  border-radius:12px;font-family:var(--font-sans);font-size:17px;font-weight:700;
+  cursor:pointer;transition:all 0.2s;box-shadow:0 0 30px var(--sprout-glow);}
+.play-btn:active{transform:scale(0.96);}
+.back-link{color:var(--text-dim);font-size:13px;text-decoration:none;
+  font-family:var(--font-sans);}
+.loading-msg{font-size:13px;color:var(--text-dim);min-height:20px;}
+.par-line{font-family:var(--font-sans);font-size:12px;color:var(--text-dim);
+  display:flex;gap:14px;justify-content:center;}
+.par-line span{font-family:'IBM Plex Mono',monospace;}
+.par-line .tier-par{color:#888;}
+.par-line .tier-great{color:#a8c8a8;}
+.par-line .tier-genius{color:var(--sprout);}
+
+/* Game */
+#game-screen{gap:2px;padding-top:4px;padding-bottom:70px;}
+.game-header{display:flex;justify-content:space-between;align-items:center;width:100%;font-size:12px;}
+.game-header .left{display:flex;flex-direction:column;gap:2px;}
+.words-count{font-size:11px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;}
+
+/* Formula bar */
+.formula-bar{display:flex;align-items:center;justify-content:center;
+  gap:4px;width:100%;padding:4px 4px;
+  background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);
+  border-radius:8px;}
+.formula-factor{text-align:center;flex:1;}
+.formula-value{font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:700;
+  color:var(--text);line-height:1;}
+.formula-label{font-family:var(--font-sans);font-size:8px;color:var(--text-dim);
+  text-transform:uppercase;letter-spacing:0.5px;line-height:1;margin-top:2px;}
+.formula-op{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--text-dim);
+  flex-shrink:0;}
+.formula-mult{color:#fbbf24;}
+.formula-fertilizer{color:#e5a820;}
+.formula-seed{color:#f5a623;}
+.formula-total{color:var(--sprout);font-size:20px;text-shadow:0 0 10px var(--sprout-glow);}
+.formula-value.pulse{animation:formulaPulse 0.5s ease;}
+@keyframes formulaPulse{0%{transform:scale(1)}30%{transform:scale(1.25)}100%{transform:scale(1)}}
+.gcell.tap-pop{animation:tapPop 0.1s ease;}
+@keyframes tapPop{0%{transform:scale(1)}50%{transform:scale(1.08)}100%{transform:scale(1)}}
+.seed-slot.found-anim{animation:seedCheck 0.6s ease;}
+@keyframes seedCheck{0%{transform:scale(1)}30%{transform:scale(1.1);border-color:#f5a623;}100%{transform:scale(1);}}
+
+/* Score popup */
+.score-popup{position:fixed;top:40%;left:50%;transform:translate(-50%,-50%);
+  pointer-events:none;z-index:60;
+  font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;
+  color:var(--text);text-align:center;white-space:nowrap;
+  background:rgba(14,26,19,0.95);padding:12px 20px;border-radius:12px;
+  border:1px solid rgba(109,212,0,0.3);
+  box-shadow:0 4px 20px rgba(0,0,0,0.5);
+  animation:popupFade 2.5s ease-out forwards;}
+.score-popup .formula{color:var(--text-dim);font-size:12px;display:block;margin-top:2px;}
+.score-popup .formula .factor{color:var(--text);font-weight:700;}
+.score-popup .formula .mult{color:#fbbf24;}
+.score-popup .formula .seed-tag{color:#f5a623;font-weight:700;}
+.score-popup .result{font-family:var(--font-display);font-size:28px;
+  font-weight:700;color:var(--sprout);text-shadow:0 0 12px var(--sprout-glow);display:block;}
+@keyframes popupFade{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(0.8);}
+  10%{opacity:1;transform:translate(-50%,-50%) scale(1);}
+  75%{opacity:1;transform:translate(-50%,-50%) scale(1);}
+  100%{opacity:0;transform:translate(-50%,-55%) scale(1);}
+}
+/* Seed words */
+.seed-words{display:flex;gap:6px;justify-content:center;width:100%;flex-wrap:wrap;}
+.seed-slot{display:flex;gap:2px;align-items:center;padding:3px 6px;
+  border-radius:8px;background:rgba(109,212,0,0.04);border:1px solid rgba(109,212,0,0.12);}
+.seed-slot.found{border-color:rgba(109,212,0,0.5);background:rgba(109,212,0,0.1);}
+.seed-letter{width:16px;height:20px;display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-display);font-size:14px;font-weight:700;
+  border-radius:4px;color:var(--text-dim);}
+.seed-letter.revealed{color:var(--text);background:rgba(255,255,255,0.06);}
+.seed-letter.blank{color:rgba(255,255,255,0.15);}
+.seed-slot.found .seed-letter{color:var(--sprout);background:rgba(109,212,0,0.15);}
+.seed-found-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  z-index:60;font-family:var(--font-display);font-size:32px;font-weight:700;
+  color:var(--sprout);text-shadow:0 0 30px var(--sprout-glow);
+  pointer-events:none;animation:seedPop 1.5s ease-out forwards;}
+@keyframes seedPop{0%{opacity:0;transform:translate(-50%,-50%) scale(0.5);}
+  15%{opacity:1;transform:translate(-50%,-50%) scale(1.2);}
+  70%{opacity:1;transform:translate(-50%,-50%) scale(1);}
+  100%{opacity:0;transform:translate(-50%,-60%) scale(1);}}
+
+.current-word{font-family:var(--font-display);font-size:20px;font-weight:700;
+  height:24px;color:var(--sprout);text-align:center;letter-spacing:2px;overflow:hidden;
+  transition:color 0.15s;}
+.current-word.invalid{color:var(--red);}
+.current-word.valid-word{color:#7dff3e;text-shadow:0 0 10px rgba(125,255,62,0.4);}
+.bottom-bar{position:fixed;bottom:0;left:0;right:0;z-index:50;
+  display:none;padding:12px 16px 32px;gap:10px;justify-content:center;
+  background:linear-gradient(transparent,rgba(14,26,19,0.95) 30%);}
+.bottom-bar.visible{display:flex;}
+.bottom-bar button{padding:12px 0;border-radius:10px;font-family:var(--font-sans);
+  font-size:14px;font-weight:700;cursor:pointer;border:none;flex:1;max-width:130px;}
+.bottom-bar button:disabled{opacity:0.3;pointer-events:none;}
+.btn-back{background:none;border:1px solid rgba(255,255,255,0.15) !important;color:var(--text-dim);}
+.btn-submit{background:var(--sprout);color:#0e1a13;box-shadow:0 0 15px var(--sprout-glow);}
+.btn-undo-word{background:none;border:1px solid rgba(109,212,0,0.3) !important;color:var(--sprout);}
+.btn-show{background:none;border:1px solid rgba(245,166,35,0.4) !important;color:#f5a623;
+  -webkit-user-select:none;user-select:none;}
+.btn-show:disabled{opacity:0.3;pointer-events:none;}
+.path-overlay{position:absolute;top:0;left:0;width:100%;height:100%;
+  pointer-events:none;z-index:2;}
+.path-overlay line{stroke-linecap:round;}
+.gcell.path-start{box-shadow:0 0 0 3px #f5a623,0 0 12px rgba(245,166,35,0.5) !important;z-index:11;}
+.gcell.path-cell{box-shadow:0 0 0 2px #6dd400,0 0 10px var(--sprout-glow) !important;z-index:11;}
+.word-hint{font-size:10px;color:var(--text-dim);height:14px;text-align:center;overflow:hidden;}
+
+/* Grid */
+.grid-wrap{position:relative;margin:1px auto;touch-action:none;-webkit-touch-callout:none;}
+.grid{display:grid;gap:3px;position:relative;z-index:1;touch-action:none;}
+.gcell{display:flex;align-items:center;justify-content:center;
+  border-radius:5px;background:var(--cell);font-family:var(--font-display);
+  font-weight:700;color:var(--text-dark);cursor:pointer;
+  transition:all 0.3s;position:relative;z-index:3;
+  box-shadow:0 1px 3px rgba(0,0,0,0.3);}
+/* Soil → sprout transition when used */
+.gcell.used{background:linear-gradient(135deg,#2a3a1e,#3a4a28);color:rgba(255,255,255,0.08);
+  box-shadow:inset 0 1px 2px rgba(0,0,0,0.4);cursor:default;}
+.gcell.used::before{content:'';position:absolute;bottom:2px;right:2px;width:8px;height:8px;
+  border-radius:50%;background:rgba(109,212,0,0.25);}
+.gcell.used.restartable{color:rgba(255,255,255,0.4);cursor:pointer;
+  box-shadow:inset 0 0 0 3px rgba(60,120,220,0.85);background:linear-gradient(135deg,#2d4d2a,#3a5a30);}
+.gcell.used.restartable::before{background:rgba(109,212,0,0.5);}
+.gcell.head{box-shadow:0 0 0 3px var(--sprout),0 0 15px var(--sprout-glow);}
+.gcell.tracing,.gcell.double.tracing,.gcell.double.used.tracing{
+  background:linear-gradient(135deg,rgba(109,212,0,0.3),rgba(109,212,0,0.15));color:var(--text-dark);
+  box-shadow:0 0 0 2px var(--sprout),0 0 12px var(--sprout-glow) !important;}
+.gcell.stranded{color:rgba(26,26,26,0.35);box-shadow:none;}
+.gcell.start-option{box-shadow:inset 0 0 0 3px rgba(60,120,220,0.85);}
+.gcell.next-option{box-shadow:inset 0 0 0 3px rgba(60,120,220,0.85);}
+.gcell.accepted{animation:bloom 0.6s ease;}
+.gcell.rejected{animation:shake 0.35s ease;}
+
+@keyframes bloom{
+  0%{transform:scale(1);background:var(--cell);}
+  30%{transform:scale(1.15);background:rgba(109,212,0,0.4);box-shadow:0 0 20px var(--sprout-glow);}
+  60%{transform:scale(1.05);background:rgba(109,212,0,0.25);}
+  100%{transform:scale(1);background:linear-gradient(135deg,#2a3a1e,#3a4a28);}
+}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-4px)}
+  40%{transform:translateX(4px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+
+.game-footer{display:flex;justify-content:space-between;align-items:center;width:100%;margin-top:6px;}
+.word-list{font-size:11px;color:var(--text-dim);max-height:60px;overflow-y:auto;
+  width:100%;text-align:center;line-height:1.6;}
+.end-btn,.undo-btn{background:none;border:1px solid rgba(255,255,255,0.1);color:var(--text-dim);
+  padding:8px 16px;border-radius:8px;font-family:var(--font-sans);font-size:12px;cursor:pointer;}
+.end-btn:active,.undo-btn:active{background:rgba(255,255,255,0.05);}
+.undo-btn{border-color:rgba(109,212,0,0.3);color:var(--sprout);}
+.undo-btn:disabled{opacity:0.3;pointer-events:none;}
+.rotate-btn{border-color:rgba(109,212,0,0.3);color:var(--sprout);padding:6px 8px;display:flex;align-items:center;}
+.grid.rotating{transition:transform 0.4s cubic-bezier(0.4,0,0.2,1),opacity 0.2s;
+  transform:rotate(90deg) scale(0.92);opacity:0;}
+/* Fertilizer cells — golden soil */
+.gcell.double{background:linear-gradient(135deg,#e8dcc0 40%,#d4a840 100%);
+  box-shadow:0 1px 3px rgba(0,0,0,0.3),inset 0 0 0 1.5px rgba(180,140,30,0.5);}
+.gcell.double::after{content:'✦';position:absolute;top:1px;right:3px;
+  font-size:8px;font-family:var(--font-sans);font-weight:700;color:#9a7010;line-height:1;}
+.gcell.double.start-option{box-shadow:inset 0 0 0 3px rgba(60,120,220,0.85);}
+.gcell.double.used{background:linear-gradient(135deg,#3a4a20,#4a5a28);box-shadow:none;}
+.gcell.double.used::before{background:rgba(212,168,64,0.4);}
+.gcell.double.used.restartable{background:linear-gradient(135deg,#3a5a20,#4a6a28);
+  box-shadow:inset 0 0 0 3px rgba(60,120,220,0.85);}
+.gcell.double.next-option{box-shadow:inset 0 0 0 3px rgba(60,120,220,0.85);}
+.gcell.double.used::after{color:rgba(212,168,64,0.3);}
+.gcell.double.used.restartable::after{color:rgba(200,127,10,0.4);}
+
+/* End Screen */
+#end-screen{justify-content:center;min-height:100vh;min-height:100dvh;gap:16px;text-align:center;}
+.end-title{font-family:var(--font-display);font-size:28px;font-weight:700;color:var(--sprout);}
+.end-stats{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);
+  border-radius:14px;padding:20px;width:100%;display:flex;flex-direction:column;gap:10px;}
+.end-row{display:flex;justify-content:space-between;font-size:14px;}
+.end-label{color:var(--text-dim);}
+.end-val{color:var(--text);font-weight:600;}
+.end-words{font-size:12px;color:var(--text-dim);line-height:1.8;max-height:120px;overflow-y:auto;}
+.share-btn{background:var(--sprout);color:#0e1a13;border:none;padding:12px 28px;
+  border-radius:10px;font-family:var(--font-sans);font-size:15px;font-weight:700;cursor:pointer;}
+.share-btn:active{transform:scale(0.96);}
+.copied-msg{font-size:12px;color:var(--sprout);min-height:18px;}
+.countdown{font-size:13px;color:var(--text-dim);}
+.countdown-time{font-size:24px;color:var(--text);font-weight:600;}
+.home-link{color:var(--text-dim);font-size:13px;cursor:pointer;background:none;border:none;
+  font-family:var(--font-sans);padding:8px;}
+
+/* Help button + modal */
+.help-btn{background:none;border:1px solid rgba(109,212,0,0.3);color:var(--sprout);
+  padding:8px 16px;border-radius:8px;font-family:var(--font-sans);font-size:13px;
+  font-weight:600;cursor:pointer;}
+.help-btn:active{background:rgba(168,255,62,0.1);}
+.help-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);
+  z-index:200;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;}
+.help-overlay.active{display:flex;}
+.help-content{background:#0e1a13;border:1px solid rgba(109,212,0,0.2);
+  border-radius:14px;padding:24px;max-width:480px;width:100%;color:var(--text);
+  font-family:var(--font-sans);font-size:14px;line-height:1.6;}
+.help-content h2{font-family:var(--font-display);color:var(--sprout);font-size:24px;
+  margin-bottom:8px;}
+.help-content h3{color:var(--sprout);font-size:14px;margin-top:16px;margin-bottom:6px;
+  text-transform:uppercase;letter-spacing:1px;font-family:var(--font-sans);}
+.help-content p{margin-bottom:8px;color:#c0c8c0;}
+.help-content ul{list-style:none;padding-left:0;margin-bottom:8px;}
+.help-content li{padding-left:14px;position:relative;margin-bottom:4px;color:#c0c8c0;}
+.help-content li::before{content:'\2022';position:absolute;left:0;color:var(--sprout);}
+.help-content .close-help{margin-top:20px;background:var(--sprout);color:#0e1a13;
+  border:none;padding:12px 28px;border-radius:10px;font-family:var(--font-sans);
+  font-size:14px;font-weight:700;cursor:pointer;width:100%;}
+</style>
+</head>
+<body>
+<div id="error-log" style="position:fixed;bottom:40px;left:8px;right:8px;max-height:100px;overflow-y:auto;font-size:10px;color:#f87171;font-family:monospace;z-index:999;background:rgba(0,0,0,0.9);padding:8px;border-radius:4px;display:none;-webkit-user-select:text;user-select:text;cursor:text;"></div>
+<script>window.onerror=function(msg,url,line){var el=document.getElementById('error-log');el.style.display='block';el.textContent+='ERR L'+line+': '+msg+'\n';};
+window.addEventListener('unhandledrejection',function(e){var el=document.getElementById('error-log');el.style.display='block';el.textContent+='REJECT: '+e.reason+'\n';});</script>
+
+<div id="title-screen" class="screen active">
+  <a href="index.html" class="back-link">&larr; All Games</a>
+  <div class="logo">Sprout</div>
+  <div class="tagline">Plant words. Grow your garden. Harvest points.</div>
+  <div class="puzzle-date" id="puzzle-date"></div>
+  <button class="play-btn" id="play-btn">Play Today's Puzzle</button>
+  <button class="help-btn" id="help-btn">How to Play</button>
+  <div class="loading-msg" id="loading-msg"></div>
+</div>
+
+<div class="help-overlay" id="help-overlay">
+  <div class="help-content">
+    <h2>How to Play</h2>
+
+    <h3>1. Start from the Edge</h3>
+    <p>Tap any letter with a <b style="color:rgb(60,120,220);">blue border</b> to begin. These are on the edges of the 9&times;9 grid.</p>
+    <div style="display:grid;grid-template-columns:repeat(4,32px);gap:2px;margin:10px auto;width:fit-content;">
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:inset 0 0 0 3px rgba(60,120,220,0.85);">S</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:inset 0 0 0 3px rgba(60,120,220,0.85);">N</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:inset 0 0 0 3px rgba(60,120,220,0.85);">E</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:inset 0 0 0 3px rgba(60,120,220,0.85);">L</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:inset 0 0 0 3px rgba(60,120,220,0.85);">O</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">T</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">I</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:inset 0 0 0 3px rgba(60,120,220,0.85);">D</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:inset 0 0 0 3px rgba(60,120,220,0.85);">R</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">A</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">A</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:inset 0 0 0 3px rgba(60,120,220,0.85);">R</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:inset 0 0 0 3px rgba(60,120,220,0.85);">P</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:inset 0 0 0 3px rgba(60,120,220,0.85);">H</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:inset 0 0 0 3px rgba(60,120,220,0.85);">E</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:inset 0 0 0 3px rgba(60,120,220,0.85);">N</div>
+    </div>
+    <p style="text-align:center;font-size:12px;color:var(--text-dim);"><b style="color:rgb(60,120,220);">Blue border</b> = you can start here</p>
+
+    <h3>2. Spell a Word</h3>
+    <p>Tap letters next to each other to spell a word. Go any direction, even diagonally. When the word turns <b style="color:#7dff3e;">green</b>, hit <b>Submit</b>.</p>
+    <div style="display:grid;grid-template-columns:repeat(4,32px);gap:2px;margin:10px auto;width:fit-content;">
+      <div style="width:32px;height:32px;border-radius:4px;background:rgba(109,212,0,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #6dd400;">S</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">N</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">E</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">L</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">O</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:rgba(109,212,0,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #6dd400;">T</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">I</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">D</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">R</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">A</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:rgba(109,212,0,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #6dd400;">A</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:rgba(109,212,0,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #6dd400;">R</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">P</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">H</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">E</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">N</div>
+    </div>
+    <p style="text-align:center;font-size:12px;color:var(--text-dim);line-height:1.4;"><b style="color:#6dd400;">STAR</b>: S(edge) &rarr; T(diagonal) &rarr; A(diagonal) &rarr; R(right)<br>Words can zig-zag in any direction!</p>
+
+    <h3>3. Work Your Way In</h3>
+    <p>Used letters fade. Tap any <b>faded letter</b> to start your next word &mdash; the word begins with that letter. Build inward!</p>
+    <div style="display:grid;grid-template-columns:repeat(4,32px);gap:2px;margin:10px auto;width:fit-content;">
+      <div style="width:32px;height:32px;border-radius:4px;background:#2d3d2a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:rgba(255,255,255,0.2);">S</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">N</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:rgba(109,212,0,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #6dd400;">E</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">L</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">O</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:#2d3d2a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:rgba(255,255,255,0.4);box-shadow:inset 0 0 0 3px rgba(60,120,220,0.85);">T</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:rgba(109,212,0,0.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;box-shadow:0 0 0 2px #6dd400;">I</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">D</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">R</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">A</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:#2d3d2a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:rgba(255,255,255,0.2);">A</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:#2d3d2a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:rgba(255,255,255,0.2);">R</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">P</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">H</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">E</div>
+      <div style="width:32px;height:32px;border-radius:4px;background:var(--cell);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:serif;color:#1a1a1a;">N</div>
+    </div>
+    <p style="text-align:center;font-size:12px;color:var(--text-dim);line-height:1.4;">STAR is faded. Tap faded <b style="color:rgb(60,120,220);">T</b> &rarr; <b style="color:#6dd400;">I</b>(right) &rarr; <b style="color:#6dd400;">E</b>(up) = <b style="color:#6dd400;">TIE</b><br>The word starts with T (the faded letter you tapped).</p>
+
+    <h3>4. Score More</h3>
+    <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:10px;margin:8px 0;font-size:13px;line-height:1.8;">
+      <div><b>Longer words = way more points</b></div>
+      <div style="color:var(--text-dim);">2 letters = 4 pts &middot; 3 = 9 &middot; 4 = 16 &middot; 5 = 25 &middot; 6 = 36</div>
+      <div style="margin-top:6px;"><b style="color:#fbbf24;">Use more cells = higher multiplier</b></div>
+      <div style="color:var(--text-dim);">Every cell you use adds +0.01x</div>
+      <div style="margin-top:6px;"><b style="color:#e5a820;">✦ Fertilizer cells = big boost</b></div>
+      <div style="color:var(--text-dim);">Each fertilizer adds +0.5x to your multiplier</div>
+      <div style="margin-top:6px;"><b style="color:#f5a623;">Seed words = extra multiplier</b></div>
+      <div style="color:var(--text-dim);">4 words shown above the grid. Find one = +0.5x</div>
+    </div>
+
+    <h3>Example</h3>
+    <p style="font-size:13px;color:#c0c8c0;">Say you played these words:</p>
+    <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:10px;margin:8px 0;font-size:12px;font-family:'IBM Plex Mono',monospace;line-height:2;">
+      <div>STONE (5) = 5&times;5 = <b>25</b></div>
+      <div>TRAP (4) = 4&times;4 = <b>16</b></div>
+      <div>RANK (4) = 4&times;4 = <b>16</b></div>
+      <div>HER (3) = 3&times;3 = <b>9</b></div>
+      <div style="border-top:1px solid rgba(255,255,255,0.1);margin-top:4px;padding-top:4px;"><b>Word pts = 66</b></div>
+    </div>
+    <p style="font-size:13px;color:#c0c8c0;margin-top:6px;">16 cells used, 2 ◆ fertilizers, 1 seed word found:</p>
+    <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:10px;margin:8px 0;font-family:'IBM Plex Mono',monospace;text-align:center;line-height:1.8;">
+      <div style="font-size:14px;">
+        <span>66</span>
+        <span style="color:var(--text-dim);"> &times; </span>
+        <span style="color:#fbbf24;">1.16</span>
+        <span style="color:var(--text-dim);"> &times; </span>
+        <span style="color:#e5a820;">2.0</span>
+        <span style="color:var(--text-dim);"> &times; </span>
+        <span style="color:#f5a623;">1.5</span>
+        <span style="color:var(--text-dim);"> = </span>
+        <span style="color:#6dd400;font-size:18px;font-weight:700;">229</span>
+      </div>
+      <div style="font-size:9px;color:var(--text-dim);margin-top:2px;">
+        words &times; grid (16 cells) &times; ◆ (2 fertilizers) &times; seed (1 found)
+      </div>
+    </div>
+
+    <h3>Buttons</h3>
+    <div style="font-size:13px;line-height:1.8;color:#c0c8c0;">
+      <b>⌫</b> Remove last letter &middot; <b>Undo Word</b> Take back a word<br>
+      <b>Show</b> See your word paths &middot; <b>?</b> This screen<br>
+      <b>Rotate</b> Turn the grid 90&deg; &middot; <b>New Grid</b> Fresh letters
+    </div>
+
+    <button class="close-help" id="close-help">Got it</button>
+  </div>
+</div>
+
+<div id="game-screen" class="screen">
+  <div class="game-header">
+    <div class="words-count" id="words-count">0 cells</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
+      <button class="undo-btn" id="game-help-btn" title="How to play" style="font-size:14px;padding:6px 10px;">?</button>
+      <button class="undo-btn rotate-btn" id="rotate-btn" title="Rotate view"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="6" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.6"/><rect x="10" y="6" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.6"/><rect x="6" y="10" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.6"/><rect x="10" y="10" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.6"/><path d="M16 4 A8 8 0 0 1 16 16" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M16 16 L14 14 M16 16 L18 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M4 16 A8 8 0 0 1 4 4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M4 4 L6 6 M4 4 L2 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+      <button class="end-btn" id="end-btn">End</button>
+    </div>
+  </div>
+  <div class="formula-bar" id="formula-bar">
+    <div class="formula-factor">
+      <div class="formula-value" id="f-words">0</div>
+      <div class="formula-label">harvest</div>
+    </div>
+    <div class="formula-op">&times;</div>
+    <div class="formula-factor">
+      <div class="formula-value formula-mult" id="f-mult">1.00</div>
+      <div class="formula-label">growth</div>
+    </div>
+    <div class="formula-op">&times;</div>
+    <div class="formula-factor">
+      <div class="formula-value formula-fertilizer" id="f-fertilizer">1.0</div>
+      <div class="formula-label">✦</div>
+    </div>
+    <div class="formula-op">&times;</div>
+    <div class="formula-factor">
+      <div class="formula-value formula-seed" id="f-seed">1.0</div>
+      <div class="formula-label">seed</div>
+    </div>
+    <div class="formula-op">=</div>
+    <div class="formula-factor">
+      <div class="formula-value formula-total" id="f-total">0</div>
+      <div class="formula-label">score</div>
+    </div>
+  </div>
+  <div class="seed-words" id="seed-words"></div>
+  <div class="current-word" id="current-word">&nbsp;</div>
+  <div class="word-hint" id="word-hint">Tap a starting cell</div>
+  <div class="grid-wrap" id="grid-wrap">
+    <div class="grid" id="grid"></div>
+    <svg class="path-overlay" id="path-overlay"></svg>
+  </div>
+</div>
+
+<div class="bottom-bar" id="bottom-bar">
+  <button class="btn-back" id="back-btn" disabled>&#9003;</button>
+  <button class="btn-submit" id="submit-btn" disabled>Submit</button>
+  <button class="btn-undo-word" id="undo-btn" disabled>Undo Word</button>
+  <button class="btn-show" id="show-btn" disabled>Show</button>
+</div>
+
+<div id="end-screen" class="screen">
+  <div class="end-title" id="end-title">Game Over</div>
+  <div class="end-stats">
+    <div class="end-row"><span class="end-label">Score</span><span class="end-val" id="end-score"></span></div>
+    <div class="end-row"><span class="end-label">Words</span><span class="end-val" id="end-words-count"></span></div>
+    <div class="end-row"><span class="end-label">Cells used</span><span class="end-val" id="end-cells"></span></div>
+    <div class="end-row"><span class="end-label">Best word</span><span class="end-val" id="end-best"></span></div>
+    <div class="end-row"><span class="end-label">Seed words</span><span class="end-val" id="end-seed"></span></div>
+    <div class="end-row"><span class="end-label">Streak</span><span class="end-val" id="end-streak"></span></div>
+  </div>
+  <div class="seed-words" id="end-seed-words" style="margin:4px 0;"></div>
+  <div class="end-words" id="end-words"></div>
+  <button class="share-btn" id="share-btn">Share Result</button>
+  <div class="copied-msg" id="copied-msg"></div>
+  <div class="countdown">Next puzzle in<br><span class="countdown-time" id="end-countdown"></span></div>
+  <button class="home-link" id="home-btn">Back to games</button>
+</div>
+
+<script>
+// === PRNG ===
+function mulberry32(s){return function(){s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function dateSeed(str){let h=0;for(let i=0;i<str.length;i++)h=Math.imul(31,h)+str.charCodeAt(i)|0;return h;}
+function todayUTC(){const d=new Date();return d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0')+'-'+String(d.getUTCDate()).padStart(2,'0');}
+function puzzleNumber(){return Math.floor((new Date()-new Date('2026-01-01T00:00:00Z'))/86400000)+1;}
+function msToMidnight(){const n=new Date();return new Date(Date.UTC(n.getUTCFullYear(),n.getUTCMonth(),n.getUTCDate()+1))-n;}
+function fmtCountdown(ms){const s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');}
+
+// === Dictionary (Trie) ===
+class TrieNode{constructor(){this.c={};this.end=false;}}
+class Trie{
+  constructor(){this.root=new TrieNode();}
+  insert(w){let n=this.root;for(const ch of w){if(!n.c[ch])n.c[ch]=new TrieNode();n=n.c[ch];}n.end=true;}
+  isWord(w){let n=this.root;for(const ch of w){if(!n.c[ch])return false;n=n.c[ch];}return n.end;}
+  isPrefix(p){let n=this.root;for(const ch of p){if(!n.c[ch])return false;n=n.c[ch];}return true;}
+}
+let dictionary=null;
+let dictLoaded=false;
+
+async function loadDictionary(){
+  const msg=document.getElementById('loading-msg');
+  msg.textContent='Loading dictionary...';
+  try{
+    let text=null;
+    // Try cache first
+    try{text=localStorage.getItem('sprout_dict');}catch(e){}
+    if(!text){
+      msg.textContent='Downloading word list...';
+      const res=await fetch('https://raw.githubusercontent.com/dolph/dictionary/master/enable1.txt');
+      text=await res.text();
+      try{localStorage.setItem('sprout_dict',text);}catch(e){}
+    }
+    dictionary=new Trie();
+    const words=text.split('\n');
+    for(const w of words){
+      const clean=w.trim().toLowerCase();
+      if(clean.length>=2&&clean.length<=15)dictionary.insert(clean);
+    }
+    dictLoaded=true;
+    msg.textContent='';
+  }catch(e){
+    msg.textContent='Failed to load dictionary. Check connection and refresh.';
+  }
+}
+
+// === Grid Generation ===
+const N=9;
+// Base letter distribution (percentages). Scaled to N*N tiles dynamically.
+const LETTER_RATIOS={E:12,A:9,I:8,O:8,T:7,N:7,R:6,S:6,L:5,U:4,D:4,H:4,C:3,M:3,P:3,G:2,B:2,F:2,Y:2,W:2,K:1};
+function buildLetterPool(total){
+  const entries=Object.entries(LETTER_RATIOS);
+  const sum=entries.reduce((s,[,v])=>s+v,0);
+  let pool=[];
+  for(const[ch,v] of entries){
+    const n=Math.max(1,Math.round(v*total/sum));
+    for(let i=0;i<n;i++)pool.push(ch);
+  }
+  // Adjust to exact length
+  while(pool.length>total)pool.pop();
+  while(pool.length<total)pool.push('E');
+  return pool.join('');
+}
+let LETTERS=buildLetterPool(N*N);
+const GOOD_STARTERS='ETAOINSRHLDCUMBFPGWY';
+const GOOD_SECONDS='ETAOINSRHLDCUMAEIOU';
+function generateGridRaw(rng){
+  const pool=LETTERS.split('');
+  for(let i=pool.length-1;i>0;i--){const j=Math.floor(rng()*((i+1)|0));[pool[i],pool[j]]=[pool[j],pool[i]];}
+  const grid=[];
+  for(let r=0;r<N;r++){grid[r]=[];for(let c=0;c<N;c++)grid[r][c]=pool[r*N+c];}
+  // Left column: 4-5 vowels + common consonants
+  const vowels='AEIOU';
+  const leftVowelCount=4+Math.floor(rng()*2);
+  const leftLetters=[];
+  for(let i=0;i<leftVowelCount;i++)leftLetters.push(vowels[Math.floor(rng()*5)]);
+  while(leftLetters.length<N)leftLetters.push(GOOD_STARTERS[Math.floor(rng()*GOOD_STARTERS.length)]);
+  for(let i=leftLetters.length-1;i>0;i--){const j=Math.floor(rng()*((i+1)|0));[leftLetters[i],leftLetters[j]]=[leftLetters[j],leftLetters[i]];}
+  for(let r=0;r<N;r++)grid[r][0]=leftLetters[r];
+  // Column 1: also good letters to pair with left column starters
+  for(let r=0;r<N;r++){
+    if(!'AEIOUETAOINSRHLDCUMBFPGWY'.includes(grid[r][1])){
+      grid[r][1]=GOOD_SECONDS[Math.floor(rng()*GOOD_SECONDS.length)];
+    }
+  }
+  // Ensure vowels in every 3x3 region
+  for(let r=0;r<=N-3;r+=2){
+    for(let c=0;c<=N-3;c+=2){
+      let hasVowel=false;
+      for(let dr=0;dr<3&&r+dr<N;dr++)for(let dc=0;dc<3&&c+dc<N;dc++)
+        if(vowels.includes(grid[r+dr][c+dc]))hasVowel=true;
+      if(!hasVowel){
+        const dr=Math.floor(rng()*3),dc=Math.floor(rng()*3);
+        const rr=Math.min(r+dr,N-1),cc=Math.min(c+dc,N-1);
+        grid[rr][cc]=vowels[Math.floor(rng()*5)];
+      }
+    }
+  }
+  return grid;
+}
+function countEdgeStarts(grid){
+  // Count how many edge cells can form at least one 2-3 letter word with neighbors
+  if(!dictionary)return 40; // assume fine if dict not loaded
+  let count=0;
+  const checked=new Set();
+  for(let r=0;r<N;r++){
+    for(let c=0;c<N;c++){
+      if(!(r===0||r===N-1||c===0||c===N-1))continue;
+      const key=r+','+c;
+      if(checked.has(key))continue;
+      checked.add(key);
+      const ch=grid[r][c].toLowerCase();
+      let canWord=false;
+      for(let dr=-1;dr<=1&&!canWord;dr++){
+        for(let dc=-1;dc<=1&&!canWord;dc++){
+          if(dr===0&&dc===0)continue;
+          const nr=r+dr,nc=c+dc;
+          if(nr<0||nr>=N||nc<0||nc>=N)continue;
+          const pair=ch+grid[nr][nc].toLowerCase();
+          if(dictionary.isWord(pair)){canWord=true;break;}
+          if(dictionary.isPrefix(pair)){
+            for(let dr2=-1;dr2<=1&&!canWord;dr2++){
+              for(let dc2=-1;dc2<=1&&!canWord;dc2++){
+                if(dr2===0&&dc2===0)continue;
+                const nr2=nr+dr2,nc2=nc+dc2;
+                if(nr2<0||nr2>=N||nc2<0||nc2>=N)continue;
+                if(nr2===r&&nc2===c)continue;
+                const tri=pair+grid[nr2][nc2].toLowerCase();
+                if(dictionary.isWord(tri))canWord=true;
+              }
+            }
+          }
+        }
+      }
+      if(canWord)count++;
+    }
+  }
+  return count;
+}
+function generateGrid(dateStr){
+  // Try with base seed, then variations until at least 4 left-column starts work
+  for(let attempt=0;attempt<20;attempt++){
+    const seed=dateSeed(dateStr)+(attempt*7919);
+    const rng=mulberry32(seed);
+    const grid=generateGridRaw(rng);
+    if(countEdgeStarts(grid)>=8)return grid;
+  }
+  // Fallback: return last attempt
+  return generateGridRaw(mulberry32(dateSeed(dateStr)));
+}
+function generateDoublePoints(dateStr){
+  const rng=mulberry32(dateSeed(dateStr+'dbl'));
+  const dp=Array.from({length:N},()=>Array(N).fill(false));
+  // Place fertilizer cells proportional to grid size (~11% of cells)
+  const count=Math.max(5,Math.round(N*N*0.11)+Math.floor(rng()*3)-1);
+  let placed=0;
+  while(placed<count){
+    const r=Math.floor(rng()*N),c=1+Math.floor(rng()*(N-1));
+    if(!dp[r][c]){dp[r][c]=true;placed++;}
+  }
+  return dp;
+}
+
+// === Bonus Words ===
+function findGridWords(grid,minLen,maxLen,limit){
+  if(!dictionary)return[];
+  const found=[];
+  const seen=new Set();
+  for(let r=0;r<N&&found.length<limit;r++){
+    for(let c=0;c<N&&found.length<limit;c++){
+      // Skip edge cells — seed words should be interior (unless allowEdge)
+      if(!arguments[5]&&(r===0||r===N-1||c===0||c===N-1))continue;
+      dfsWords(grid,r,c,[{r,c}],grid[r][c].toLowerCase(),found,seen,minLen,maxLen,limit);
+    }
+  }
+  return found;
+}
+// Common/recognizable word filter for seed words
+const OBSCURE_SUFFIXES=['ene','ase','ose','yne','ane','ite','ide','ium','oid','ism','ist','eme','ole','ule','yne','ane','ene','ose','ase'];
+const OBSCURE_ENDINGS=['mbs','nths','lph','rph','ngth','ght','tch','dge'];
+const OBSCURE_WORDS=new Set(['aa','ab','ad','ae','ag','ah','ai','al','am','an','ar','as','at','aw','ax','ay','ba','be','bi','bo','da','de','do','ed','ef','eh','el','em','en','er','es','et','ex','fa','go','ha','he','hi','ho','id','if','in','is','it','jo','ka','la','li','lo','ma','me','mi','mo','mu','my','na','ne','no','nu','od','oe','of','oh','oi','om','on','oo','op','or','os','ow','ox','oy','pa','pe','pi','po','qi','re','sh','si','so','ta','ti','to','uh','um','un','up','us','ut','we','wo','xi','xu','ya','ye','yo','za',
+  'aal','aas','aba','abo','abs','aby','ace','act','add','ado','ads','adz','aff','aft','aga','age','ago','ags','aha','ahi','ahs','aid','ail','aim','ain','air','ais','ait','ala','alb','ale','all','alp','als','alt','ama','ami','amp','amu','ana','and','ane','ani','ant','any','ape','apo','app','apt','arb','arc','are','arf','ark','arm','ars','art','ash','ask','asp','ass','ate','att','auk','ava','ave','avo','awa','awe','awl','awn','axe','aye','azo','baa','bad','bag','bah','bal','bam','ban','bap','bar','bas','bat','bay','bed','bee','beg','bel','ben','bes','bet','bey','bib','bid','big','bin','bis','bit','biz','boa','bob','bod','bog','boo','bop','bos','bot','bow','box','boy','bra','bro','brr','bub','bud','bug','bum','bun','bup','bur','bus','but','buy','cab','cad','cam','can','cap','car','cat','caw','cee','cel','cep','chi','cig','cis','cob','cod','cog','col','con','coo','cop','cor','cos','cot','cow','cox','coy','coz','cru','cry','cub','cud','cue','cum','cup','cur','cut','dab','dad','dag','dah','dak','dal','dam','dap','daw','day','deb','dee','del','den','dev','dew','dey','dib','did','die','dif','dig','dim','din','dip','dis','dit','doc','doe','dog','dol','dom','don','dor','dos','dot','dow','dry','dub','dud','due','dug','duh','dui','dun','duo','dup','dye','ear','eat','eau','ebb','ecu','edh','eds','eel','egg','ego','eke','eld','elf','elk','ell','elm','els','emu','end','eng','ens','eon','era','ere','erg','ern','err','ers','ess','eta','eth','eve','ewe','eye']);
+function isCommonWord(word){
+  if(word.length<=3)return false;
+  if(word.length>8)return false;
+  if(OBSCURE_WORDS.has(word))return false;
+  for(const suf of OBSCURE_SUFFIXES){if(word.length>=5&&word.endsWith(suf))return false;}
+  for(const end of OBSCURE_ENDINGS){if(word.endsWith(end))return false;}
+  // Reject words with 3+ consecutive consonants (often obscure)
+  const vowels='aeiou';
+  let consec=0;
+  for(const ch of word){
+    if(vowels.includes(ch))consec=0;
+    else{consec++;if(consec>=4)return false;}
+  }
+  return true;
+}
+
+function dfsWords(grid,r,c,path,word,found,seen,minLen,maxLen,limit){
+  if(found.length>=limit)return;
+  if(word.length>=minLen&&word.length<=maxLen&&dictionary.isWord(word)&&!seen.has(word)&&isCommonWord(word)){
+    seen.add(word);
+    found.push({word,path:path.map(p=>[p.r,p.c])});
+  }
+  if(word.length>=maxLen)return;
+  for(let dr=-1;dr<=1;dr++){
+    for(let dc=-1;dc<=1;dc++){
+      if(dr===0&&dc===0)continue;
+      const nr=r+dr,nc=c+dc;
+      if(nr<0||nr>=N||nc<0||nc>=N)continue;
+      if(path.some(p=>p.r===nr&&p.c===nc))continue;
+      const nw=word+grid[nr][nc].toLowerCase();
+      if(!dictionary.isPrefix(nw))continue;
+      dfsWords(grid,nr,nc,[...path,{r:nr,c:nc}],nw,found,seen,minLen,maxLen,limit);
+    }
+  }
+}
+function generateBonusWords(grid,dateStr){
+  const rng=mulberry32(dateSeed(dateStr+'seed'));
+  const short=findGridWords(grid,4,5,50);
+  const medium=findGridWords(grid,5,5,40);
+  const long=findGridWords(grid,6,7,25);
+  const vlong=findGridWords(grid,7,9,15);
+  const buckets=[vlong,long,medium,short];
+  // Try multiple combinations to find 4 solvable seed words
+  const allCandidates=buckets.map(b=>{
+    const s=[...b];
+    for(let i=s.length-1;i>0;i--){const j=Math.floor(rng()*((i+1)|0));[s[i],s[j]]=[s[j],s[i]];}
+    return s;
+  });
+  // Try up to 200 combinations
+  for(let attempt=0;attempt<200;attempt++){
+    const bw=[];
+    const usedCells=new Set();
+    for(let bi=0;bi<allCandidates.length;bi++){
+      const idx=(attempt*7+bi*13)%allCandidates[bi].length;
+      const startIdx=idx;
+      let found=false;
+      for(let k=0;k<allCandidates[bi].length&&!found;k++){
+        const ci=(startIdx+k)%allCandidates[bi].length;
+        const candidate=allCandidates[bi][ci];
+        const cells=candidate.path.map(([r,c])=>r+','+c);
+        if(cells.some(k=>usedCells.has(k)))continue;
+        bw.push(candidate);
+        for(const k of cells)usedCells.add(k);
+        found=true;
+      }
+    }
+    if(bw.length<4)continue;
+    if(canSolveAllBonus(grid,bw)){
+      bw.sort((a,b)=>a.word.length-b.word.length);
+      return bw;
+    }
+  }
+  // Fallback: individually verified words, allow edge starts if needed
+  const bw=[];
+  const usedCells=new Set();
+  const allBC=new Set();
+  // First pass: interior words only
+  for(const bucket of allCandidates){
+    for(const candidate of bucket){
+      const cells=candidate.path.map(([r,c])=>r+','+c);
+      if(cells.some(k=>usedCells.has(k)))continue;
+      const[sr,sc]=candidate.path[0];
+      if(sr!==0&&sr!==N-1&&sc!==0&&sc!==N-1){
+        const except=new Set([...allBC,...cells]);
+        except.delete(sr+','+sc);
+        if(!findBridgeWord(grid,sr,sc,except,false))continue;
+      }
+      bw.push(candidate);
+      for(const k of cells){usedCells.add(k);allBC.add(k);}
+      break;
+    }
+  }
+  // Second pass: if fewer than 4, add edge-starting words to fill
+  if(bw.length<4){
+    const edgeWords=[
+      ...findGridWords(grid,4,5,30,true),
+      ...findGridWords(grid,5,6,20,true),
+      ...findGridWords(grid,6,8,15,true),
+    ];
+    for(let i=edgeWords.length-1;i>0;i--){const j=Math.floor(rng()*((i+1)|0));[edgeWords[i],edgeWords[j]]=[edgeWords[j],edgeWords[i]];}
+    for(const candidate of edgeWords){
+      if(bw.length>=4)break;
+      if(bw.some(b=>b.word===candidate.word))continue;
+      const cells=candidate.path.map(([r,c])=>r+','+c);
+      if(cells.some(k=>usedCells.has(k)))continue;
+      bw.push(candidate);
+      for(const k of cells)usedCells.add(k);
+    }
+  }
+  bw.sort((a,b)=>a.word.length-b.word.length);
+  return bw;
+}
+
+// === Bonus Word Solver ===
+// Verify that all seed words can be played by finding bridge words
+// for each. Simulates the full sequence: for each seed word, find
+// a chain of real words from the edge (or previously used cells)
+// that makes the seed start cell used, without consuming any cells
+// needed by other seed words.
+function canSolveAllBonus(grid,seedWords){
+  // All cells used by any seed word
+  const allBonusCells=new Set();
+  for(const bw of seedWords)for(const[r,c] of bw.path)allBonusCells.add(r+','+c);
+  // For each seed word, find a bridge: a valid word from an edge (or
+  // from a cell that can be reached from an edge) that makes the seed
+  // word's start cell "used", only consuming cells NOT in any seed path.
+  for(const bw of seedWords){
+    const[sr,sc]=bw.path[0];
+    // If start cell is on the edge, it's directly reachable
+    if(sr===0||sr===N-1||sc===0||sc===N-1)continue;
+    // Find a bridge word: a valid word starting from an edge cell
+    // whose path includes (sr,sc) and does NOT use any other seed cells
+    // (except (sr,sc) itself which we WANT to be used)
+    const seedCellsExceptStart=new Set(allBonusCells);
+    seedCellsExceptStart.delete(sr+','+sc);
+    if(!findBridgeWord(grid,sr,sc,seedCellsExceptStart))return false;
+  }
+  return true;
+}
+
+function findBridgeWord(grid,tr,tc,forbidden,returnPath){
+  if(!dictionary)return returnPath?null:true;
+  for(let r=0;r<N;r++){
+    for(let c=0;c<N;c++){
+      if(!(r===0||r===N-1||c===0||c===N-1))continue;
+      if(forbidden.has(r+','+c))continue;
+      if(!isAdj(r,c,tr,tc))continue;
+      const result=bridgeWordDFS(grid,r,c,[{r,c}],grid[r][c].toLowerCase(),tr,tc,forbidden,returnPath);
+      if(result)return result;
+    }
+  }
+  for(let r=0;r<N;r++){
+    for(let c=0;c<N;c++){
+      if(!(r===0||r===N-1||c===0||c===N-1))continue;
+      if(forbidden.has(r+','+c))continue;
+      const result=twoHopBridgeDFS(grid,r,c,[{r,c}],grid[r][c].toLowerCase(),tr,tc,forbidden,returnPath);
+      if(result)return result;
+    }
+  }
+  return returnPath?null:false;
+}
+
+function bridgeWordDFS(grid,r,c,path,word,tr,tc,forbidden,returnPath){
+  const passedTarget=path.some(p=>p.r===tr&&p.c===tc);
+  if(word.length>=2&&passedTarget&&dictionary.isWord(word))return returnPath?{word,path:path.map(p=>[p.r,p.c])}:true;
+  if(word.length>=6)return false;
+  for(let dr=-1;dr<=1;dr++){
+    for(let dc=-1;dc<=1;dc++){
+      if(dr===0&&dc===0)continue;
+      const nr=r+dr,nc=c+dc;
+      if(nr<0||nr>=N||nc<0||nc>=N)continue;
+      if(path.some(p=>p.r===nr&&p.c===nc))continue;
+      // Can use the target cell, but not other forbidden cells
+      if(forbidden.has(nr+','+nc)&&!(nr===tr&&nc===tc))continue;
+      const nw=word+grid[nr][nc].toLowerCase();
+      if(!dictionary.isPrefix(nw))continue;
+      const res=bridgeWordDFS(grid,nr,nc,[...path,{r:nr,c:nc}],nw,tr,tc,forbidden,returnPath);
+      if(res)return res;
+    }
+  }
+  return returnPath?null:false;
+}
+
+function twoHopBridgeDFS(grid,r,c,path,word,tr,tc,forbidden){
+  if(word.length>=2&&dictionary.isWord(word)){
+    const last=path[path.length-1];
+    if(isAdj(last.r,last.c,tr,tc)){
+      // From this endpoint, find a word through target
+      const usedInBridge=new Set(path.map(p=>p.r+','+p.c));
+      const allForbid=new Set([...forbidden,...usedInBridge]);
+      allForbid.delete(tr+','+tc); // target is allowed
+      if(bridgeWordDFS(grid,last.r,last.c,[{r:last.r,c:last.c}],
+        grid[last.r][last.c].toLowerCase(),tr,tc,allForbid))return true;
+    }
+  }
+  if(word.length>=4)return false;
+  for(let dr=-1;dr<=1;dr++){
+    for(let dc=-1;dc<=1;dc++){
+      if(dr===0&&dc===0)continue;
+      const nr=r+dr,nc=c+dc;
+      if(nr<0||nr>=N||nc<0||nc>=N)continue;
+      if(nr===tr&&nc===tc)continue;
+      if(forbidden.has(nr+','+nc))continue;
+      if(path.some(p=>p.r===nr&&p.c===nc))continue;
+      const nw=word+grid[nr][nc].toLowerCase();
+      if(!dictionary.isPrefix(nw))continue;
+      if(twoHopBridgeDFS(grid,nr,nc,[...path,{r:nr,c:nc}],nw,tr,tc,forbidden))return true;
+    }
+  }
+  return false;
+}
+function renderBonusSlots(container,seedWords,foundSet){
+  container.innerHTML='';
+  for(const bw of seedWords){
+    const slot=document.createElement('div');
+    slot.className='seed-slot'+(foundSet.has(bw.word)?' found found-anim':'');
+    for(let i=0;i<bw.word.length;i++){
+      const el=document.createElement('div');
+      el.className='seed-letter revealed';
+      el.textContent=bw.word[i].toUpperCase();
+      if(foundSet.has(bw.word))el.style.color='#f5a623';
+      slot.appendChild(el);
+    }
+    slot.addEventListener('click',()=>showDefinition(bw.word));
+    container.appendChild(slot);
+  }
+}
+
+function showDefinition(word){
+  const existing=document.getElementById('def-overlay');
+  if(existing)existing.remove();
+  const overlay=document.createElement('div');
+  overlay.id='def-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML='<div style="background:#1a2a1a;border:1px solid rgba(109,212,0,0.2);border-radius:14px;padding:24px;max-width:360px;width:100%;color:#e0e0e0;font-family:DM Sans,sans-serif;font-size:14px;line-height:1.6;max-height:80vh;overflow-y:auto;"><div style="font-family:Playfair Display,serif;font-size:22px;font-weight:700;color:#f5a623;margin-bottom:12px;">'+word.toUpperCase()+'</div><div id="def-body" style="color:#c0c8c0;">Loading...</div><button style="margin-top:16px;width:100%;padding:12px;background:#6dd400;color:#0e1a13;border:none;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;" id="def-close">Close</button></div>';
+  document.body.appendChild(overlay);
+  document.getElementById('def-close').addEventListener('click',()=>overlay.remove());
+  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});
+  fetch('https://api.dictionaryapi.dev/api/v2/entries/en/'+encodeURIComponent(word))
+    .then(r=>r.json()).then(data=>{
+      const body=document.getElementById('def-body');
+      if(!data||!data[0]||!data[0].meanings){body.textContent='No definition found.';return;}
+      let html='';
+      for(const m of data[0].meanings.slice(0,3)){
+        html+='<div style="margin-bottom:10px;"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">'+m.partOfSpeech+'</div>';
+        for(const d of m.definitions.slice(0,2)){
+          html+='<div style="margin-bottom:6px;">'+d.definition+'</div>';
+        }
+        html+='</div>';
+      }
+      body.innerHTML=html||'No definition found.';
+    }).catch(()=>{document.getElementById('def-body').textContent='Could not load definition.';});
+}
+
+// === Scoring ===
+function wordScore(len){return len*len;}
+
+
+// === Game State ===
+let grid,used,doublePoints,headCell=null,tracePath=[],score=0,wordsFound=[],cellsUsed=0;
+let rawWordPoints=0,multiplier=1.0,fertilizerMultiplier=1.0,seedMultiplier=1.0;
+let gameActive=false,pickingStart=true,processing=false;
+let undoStack=[],refreshCount=0,lastStepDir=null,rotationCount=0;
+let seedWords=[],seedFound=new Set(),seedSolutions={};
+const $=id=>document.getElementById(id);
+const screens={title:$('title-screen'),game:$('game-screen'),end:$('end-screen')};
+function showScreen(n){Object.values(screens).forEach(s=>s.classList.remove('active'));screens[n].classList.add('active');$('bottom-bar').classList.toggle('visible',n==='game');}
+
+// === Grid Rendering ===
+// Rotation mapping: actual (r,c) → visual (vr,vc) for display
+function actualToVisual(r,c){
+  const rot=rotationCount%4;
+  if(rot===0)return[r,c];
+  if(rot===1)return[c,N-1-r];
+  if(rot===2)return[N-1-r,N-1-c];
+  return[N-1-c,r];
+}
+function visualToActual(vr,vc){
+  const rot=rotationCount%4;
+  if(rot===0)return[vr,vc];
+  if(rot===1)return[N-1-vc,vr];
+  if(rot===2)return[N-1-vr,N-1-vc];
+  return[vc,N-1-vr];
+}
+function cellSize(){
+  const maxW=Math.min(window.innerWidth-32,440);
+  return Math.max(32,Math.floor((maxW-(N-1)*3)/N));
+}
+function buildGrid(){
+  const g=$('grid');g.innerHTML='';
+  const cs=cellSize();
+  g.style.gridTemplateColumns='repeat('+N+','+cs+'px)';
+  g.style.gridTemplateRows='repeat('+N+','+cs+'px)';
+  for(let vr=0;vr<N;vr++){
+    for(let vc=0;vc<N;vc++){
+      const[ar,ac]=visualToActual(vr,vc);
+      const el=document.createElement('div');
+      el.className='gcell';
+      el.dataset.r=ar;el.dataset.c=ac;
+      el.textContent=grid[ar][ac];
+      el.style.fontSize=Math.max(12,cs*0.38)+'px';
+      g.appendChild(el);
+    }
+  }
+}
+function getEl(r,c){
+  const[vr,vc]=actualToVisual(r,c);
+  return $('grid').children[vr*N+vc];
+}
+function updateGridDisplay(){
+  for(let r=0;r<N;r++){
+    for(let c=0;c<N;c++){
+      const el=getEl(r,c);
+      el.className='gcell';
+      if(doublePoints&&doublePoints[r][c])el.classList.add('double');
+      if(used[r][c]){
+        el.classList.add('used');
+        // Mark used cells that have unused neighbors as restartable
+        if(tracePath.length===0){
+          for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){
+            if(dr===0&&dc===0)continue;
+            const nr=r+dr,nc=c+dc;
+            if(nr>=0&&nr<N&&nc>=0&&nc<N&&!used[nr][nc]){el.classList.add('restartable');break;}
+          }
+        }
+      }
+      // No head highlight — player can start from any used cell or edge
+      // Check if unused cell is stranded (all neighbors used)
+      if(!used[r][c]){
+        let hasUnusedNeighbor=false;
+        for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){
+          if(dr===0&&dc===0)continue;
+          const nr=r+dr,nc=c+dc;
+          if(nr>=0&&nr<N&&nc>=0&&nc<N&&!used[nr][nc]){hasUnusedNeighbor=true;break;}
+        }
+        if(!hasUnusedNeighbor&&tracePath.length===0)el.classList.add('stranded');
+        else if(isEdge(r,c)&&tracePath.length===0)el.classList.add('start-option');
+      }
+    }
+  }
+  for(const[r,c] of tracePath){getEl(r,c).classList.add('tracing');}
+  // Highlight available next cells when there's an active trace
+  if(tracePath.length>=1){
+    const[lr,lc]=tracePath[tracePath.length-1];
+    for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){
+      if(dr===0&&dc===0)continue;
+      const nr=lr+dr,nc=lc+dc;
+      if(nr<0||nr>=N||nc<0||nc>=N)continue;
+      if(used[nr][nc])continue;
+      if(tracePath.some(([pr,pc])=>pr===nr&&pc===nc))continue;
+      getEl(nr,nc).classList.add('next-option');
+    }
+  }
+  // Current word display
+  const letters=tracePath.map(([r,c])=>grid[r][c]).join('');
+  const cw=$('current-word');
+  cw.textContent=letters||'\u00a0';
+  cw.classList.remove('invalid','valid-word');
+  let isValidWord=false;
+  if(letters.length>=2&&dictionary){
+    const lc=letters.toLowerCase();
+    const inDict=dictionary.isWord(lc);
+    const alreadyUsed=wordsFound.some(w=>w.word===lc);
+    isValidWord=inDict&&!alreadyUsed;
+    const prefix=dictionary.isPrefix(lc);
+    if(isValidWord)cw.classList.add('valid-word');
+    else if(alreadyUsed){cw.classList.add('invalid');$('word-hint').textContent='Already used';}
+    else if(inDict){cw.classList.add('valid-word');} // valid but somehow blocked?
+    else if(!prefix){cw.classList.add('invalid');$('word-hint').textContent='Not a word';}
+    else{$('word-hint').textContent='';}
+  }else if(letters.length>=1){
+    $('word-hint').textContent='';
+  }
+  // Bottom bar button states
+  $('submit-btn').disabled=!(isValidWord&&tracePath.length>=2);
+  $('back-btn').disabled=tracePath.length<2;
+  $('undo-btn').disabled=undoStack.length===0;
+  $('show-btn').disabled=wordsFound.length===0;
+}
+function updateUI(){
+  // Formula bar
+  $('f-words').textContent=rawWordPoints;
+  $('f-mult').textContent=multiplier.toFixed(2);
+  $('f-fertilizer').textContent=fertilizerMultiplier.toFixed(1);
+  $('f-seed').textContent=seedMultiplier.toFixed(1);
+  $('f-total').textContent=score;
+  $('words-count').textContent=cellsUsed+'/'+(N*N)+' cells \u00b7 '+wordsFound.length+' word'+(wordsFound.length!==1?'s':'');
+  // Stars
+  if(!pickingStart&&tracePath.length===0){
+    $('word-hint').textContent='Tap a cell to start tracing a word';
+  }
+}
+
+// === Adjacency ===
+function isAdj(r1,c1,r2,c2){return Math.abs(r1-r2)<=1&&Math.abs(c1-c2)<=1&&!(r1===r2&&c1===c2);}
+function isEdge(r,c){return r===0||r===N-1||c===0||c===N-1;}
+
+// === Connected Component Analysis ===
+// Returns {lrSpan,tbSpan,lrComplete,tbComplete,bestLRSize,bestTBSize}
+// where lrComplete means a single connected component touches both col 0 and col N-1
+
+// === Tracing Logic ===
+let isTracing=false,cheatTapCount=0,cheatLastTime=0;
+function showSolutions(){
+  let html='<div style="position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:300;overflow-y:auto;padding:20px;color:#e0e0e0;font-family:monospace;font-size:13px;line-height:1.8;" id="cheat-overlay">';
+  html+='<div style="font-size:18px;color:#6dd400;margin-bottom:12px;">Bonus Word Solutions</div>';
+  if(!seedWords||seedWords.length===0){
+    html+='<div style="color:#888;">No seed words generated yet.</div>';
+  }
+  for(const bw of seedWords){
+    const sol=seedSolutions?seedSolutions[bw.word]:null;
+    html+='<div style="margin-bottom:16px;padding:10px;background:rgba(255,255,255,0.05);border-radius:8px;">';
+    html+='<div style="color:#f5a623;font-size:15px;font-weight:700;">'+bw.word.toUpperCase()+'</div>';
+    html+='<div style="color:#888;">Path: '+bw.path.map(([r,c])=>(grid?grid[r][c]:'?')+'('+r+','+c+')').join(' → ')+'</div>';
+    if(!sol){
+      html+='<div style="color:#e74c3c;">No solution data</div>';
+    }else if(sol.bridge==='Edge start'){
+      html+='<div style="color:#6dd400;">Starts on edge — no bridge needed</div>';
+    }else if(sol.bridge&&sol.bridge.hop1){
+      html+='<div style="color:#fbbf24;">Bridge 1: "'+sol.bridge.hop1.word+'" → '+sol.bridge.hop1.path.map(([r,c])=>(grid?grid[r][c]:'?')+'('+r+','+c+')').join(' → ')+'</div>';
+      html+='<div style="color:#fbbf24;">Bridge 2: "'+sol.bridge.hop2.word+'" → '+sol.bridge.hop2.path.map(([r,c])=>(grid?grid[r][c]:'?')+'('+r+','+c+')').join(' → ')+'</div>';
+    }else if(sol.bridge&&sol.bridge.word){
+      html+='<div style="color:#fbbf24;">Bridge: "'+sol.bridge.word+'" → '+sol.bridge.path.map(([r,c])=>(grid?grid[r][c]:'?')+'('+r+','+c+')').join(' → ')+'</div>';
+    }else{
+      html+='<div style="color:#e74c3c;">No bridge found!</div>';
+    }
+    html+='</div>';
+  }
+  html+='<button style="background:#6dd400;color:#0e1a13;border:none;padding:12px 30px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;width:100%;margin-top:8px;" id="close-cheat">Close</button>';
+  html+='</div>';
+  document.body.insertAdjacentHTML('beforeend',html);
+  document.getElementById('close-cheat').addEventListener('click',()=>document.getElementById('cheat-overlay').remove());
+}
+function startTrace(r,c){
+  if(!gameActive||!dictionary||processing)return;
+  // Cheat code: tap top-right cell (0,N-1) 5 times
+  const now=Date.now();
+  if(r===0&&c===N-1){
+    if(now-cheatLastTime<1000)cheatTapCount++;
+    else cheatTapCount=1;
+    cheatLastTime=now;
+    if(cheatTapCount>=5){cheatTapCount=0;showSolutions();return;}
+  }else{cheatTapCount=0;}
+  // Haptic + pop on tap
+  if(navigator.vibrate)navigator.vibrate(8);
+  const tapEl=getEl(r,c);
+  if(tapEl){tapEl.classList.remove('tap-pop');void tapEl.offsetHeight;tapEl.classList.add('tap-pop');}
+
+  // If there's an existing trace...
+  if(tracePath.length>=1){
+    const[lr,lc]=tracePath[tracePath.length-1];
+
+    // Tapping the only selected cell — deselect entirely
+    if(tracePath.length===1&&tracePath[0][0]===r&&tracePath[0][1]===c){
+      tracePath=[];
+      isTracing=false;
+      updateGridDisplay();
+      return;
+    }
+
+    // Tapping an earlier cell in the path — backtrack to before it
+    const idx=tracePath.findIndex(([pr,pc])=>pr===r&&pc===c);
+    if(idx>=0){
+      tracePath=tracePath.slice(0,idx);
+      if(tracePath.length===0)isTracing=false;
+      updateGridDisplay();
+      return;
+    }
+
+    // Extend: tapping an adjacent unused cell
+    if(!used[r][c]&&isAdj(lr,lc,r,c)){
+      tracePath.push([r,c]);
+      isTracing=false;
+      updateGridDisplay();
+      return;
+    }
+
+    // Tapping something else — clear old trace and fall through to start fresh
+    tracePath=[];
+    isTracing=false;
+  }
+
+  // Start from any used cell — word begins with that letter
+  if(used[r][c]){
+    // Must have at least one unused neighbor to trace into
+    let hasUnusedNeighbor=false;
+    for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){
+      if(dr===0&&dc===0)continue;
+      const nr=r+dr,nc=c+dc;
+      if(nr>=0&&nr<N&&nc>=0&&nc<N&&!used[nr][nc])hasUnusedNeighbor=true;
+    }
+    if(!hasUnusedNeighbor)return;
+    // If starting from a non-head used cell, clear direction restriction
+    if(!headCell||r!==headCell[0]||c!==headCell[1])lastStepDir=null;
+    headCell=[r,c];
+    pickingStart=false;
+    tracePath=[[r,c]];
+    isTracing=true;
+    updateGridDisplay();updateUI();
+    $('word-hint').textContent='';
+    return;
+  }
+  // Start from any unused edge cell
+  if(isEdge(r,c)&&!used[r][c]){
+    lastStepDir=null;
+    headCell=[r,c];
+    pickingStart=false;
+    tracePath=[[r,c]];
+    isTracing=true;
+    updateGridDisplay();updateUI();
+    $('word-hint').textContent='';
+    return;
+  }
+  // Nothing valid tapped — make sure display is clean
+  updateGridDisplay();
+}
+function continueTrace(r,c){
+  if(!isTracing)return;
+  // Already in path? Backtrack
+  const idx=tracePath.findIndex(([pr,pc])=>pr===r&&pc===c);
+  if(idx>=0){
+    tracePath=tracePath.slice(0,idx+1);
+    updateGridDisplay();
+    return;
+  }
+  if(used[r][c])return;
+  const[lr,lc]=tracePath[tracePath.length-1];
+  if(!isAdj(lr,lc,r,c))return;
+  // Check not already in trace
+  if(tracePath.some(([pr,pc])=>pr===r&&pc===c))return;
+  tracePath.push([r,c]);
+  updateGridDisplay();
+}
+function endTrace(){
+  if(!isTracing)return;
+  isTracing=false;
+  if(tracePath.length<2){
+    tracePath=[];
+    updateGridDisplay();
+    return;
+  }
+  const word=tracePath.map(([r,c])=>grid[r][c]).join('').toLowerCase();
+  if(dictionary.isWord(word)&&!wordsFound.some(w=>w.word===word)){
+    acceptWord(word);
+  }else{
+    rejectWord();
+  }
+}
+function recalcScore(){
+  // Total score = rawWordPoints × multiplier × seedMultiplier
+  score=Math.round(rawWordPoints*multiplier*fertilizerMultiplier*seedMultiplier);
+}
+function acceptWord(word){
+  processing=true;
+  // Save undo state BEFORE modifying anything
+  undoStack.push({
+    used:used.map(row=>[...row]),
+    headCell:headCell?[...headCell]:null,
+    rawWordPoints,cellsUsed,multiplier,fertilizerMultiplier,seedMultiplier,
+    wordsFound:[...wordsFound],
+    lastStepDir:lastStepDir?[...lastStepDir]:null,
+    seedFound:new Set(seedFound)
+  });
+  $('undo-btn').disabled=false;
+
+  const len=word.length;
+  const basePts=wordScore(len);
+
+  // Add to raw word points
+  rawWordPoints+=basePts;
+
+  // Mark used (only count newly consumed cells)
+  let newCells=0;
+  for(const[r,c] of tracePath){if(!used[r][c]){used[r][c]=true;newCells++;}}
+  cellsUsed+=newCells;
+
+  // Recalculate grid multiplier: +0.01x per cell used
+  multiplier=1.0+cellsUsed*0.01;
+  multiplier=Math.round(multiplier*100)/100;
+  // Fertilizer multiplier: +0.5x per gold cell used
+  let totalGold=0;
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){if(used[r][c]&&doublePoints&&doublePoints[r][c])totalGold++;}
+  fertilizerMultiplier=1.0+totalGold*0.5;
+  fertilizerMultiplier=Math.round(fertilizerMultiplier*10)/10;
+
+  // Seed word check — adds to seed multiplier
+  const isBonusWord=seedWords.some(bw=>bw.word===word)&&!seedFound.has(word);
+  if(isBonusWord){
+    seedFound.add(word);
+    seedMultiplier=1.0+seedFound.size*0.5; // each seed word adds +0.5x
+  }
+
+  // Recalc total score
+  const prevScore=score;
+  recalcScore();
+
+  // Haptic on accept
+  if(navigator.vibrate)navigator.vibrate([15,8,15]);
+
+  // Animate
+  for(const[r,c] of tracePath)getEl(r,c).classList.add('accepted');
+
+  // Pulse formula factors that changed
+  function pulseEl(id){const el=$(id);el.classList.remove('pulse');void el.offsetHeight;el.classList.add('pulse');}
+  pulseEl('f-words');
+  if(multiplier!==(1.0+((cellsUsed-tracePath.length)*0.01)))pulseEl('f-mult');
+  if(isBonusWord)pulseEl('f-seed');
+  pulseEl('f-total');
+
+  // Seed word celebration
+  if(isBonusWord){
+    if(navigator.vibrate)navigator.vibrate([30,15,30,15,30]);
+    renderBonusSlots($('seed-words'),seedWords,seedFound);
+  }
+
+  // Popup showing word and points
+  const popup=document.createElement('div');
+  popup.className='score-popup';
+  if(isBonusWord){
+    popup.innerHTML='<span style="font-size:13px;color:#f5a623;display:block;letter-spacing:2px;">SEED</span><span class="result" style="color:#f5a623;text-shadow:0 0 12px rgba(245,166,35,0.5);">'+word.toUpperCase()+' +'+basePts+'</span>';
+  }else{
+    popup.innerHTML='<span class="result">'+word.toUpperCase()+' +'+basePts+'</span>';
+  }
+  document.body.appendChild(popup);
+  setTimeout(()=>popup.remove(),2000);
+
+  wordsFound.push({word,pts:basePts,len,path:tracePath.map(([r,c])=>[r,c])});
+
+  // New head = last cell of trace; remember direction of final step
+  const lastIdx=tracePath.length-1;
+  if(lastIdx>=1){
+    lastStepDir=[tracePath[lastIdx][0]-tracePath[lastIdx-1][0],tracePath[lastIdx][1]-tracePath[lastIdx-1][1]];
+  }else{
+    lastStepDir=null;
+  }
+  headCell=[tracePath[lastIdx][0],tracePath[lastIdx][1]];
+  tracePath=[];
+
+  setTimeout(()=>{
+    updateGridDisplay();
+    updateUI();
+    processing=false;
+    // Check for dead end
+    if(!hasValidMoves()){endGame(false);}
+  },300);
+}
+function rejectWord(){
+  for(const[r,c] of tracePath)getEl(r,c).classList.add('rejected');
+  setTimeout(()=>{tracePath=[];updateGridDisplay();},350);
+}
+function undoLastWord(){
+  if(!gameActive||processing||undoStack.length===0)return;
+  const state=undoStack.pop();
+  used=state.used;
+  headCell=state.headCell;
+  rawWordPoints=state.rawWordPoints;
+  cellsUsed=state.cellsUsed;
+  multiplier=state.multiplier;
+  fertilizerMultiplier=state.fertilizerMultiplier;
+  seedMultiplier=state.seedMultiplier;
+  wordsFound=state.wordsFound;
+  recalcScore();
+  lastStepDir=state.lastStepDir;
+  seedFound=state.seedFound||new Set();
+  tracePath=[];
+  renderBonusSlots($('seed-words'),seedWords,seedFound);
+  if(!headCell)pickingStart=true;
+  $('undo-btn').disabled=undoStack.length===0;
+  updateGridDisplay();
+  updateUI();
+}
+
+// === Dead End Detection ===
+function checkMovesFrom(sr,sc,isHead){
+  // Check if words can be formed starting from cell (sr,sc)
+  // isHead=true means cell is used (head), so neighbors must be unused
+  // isHead=false means cell itself is unused (left-column fresh start)
+  const startLetter=grid[sr][sc].toLowerCase();
+  let paths=[];
+  for(let dr=-1;dr<=1;dr++){
+    for(let dc=-1;dc<=1;dc++){
+      if(dr===0&&dc===0)continue;
+      const nr=sr+dr,nc=sc+dc;
+      if(nr<0||nr>=N||nc<0||nc>=N||used[nr][nc])continue;
+      if(nr===sr&&nc===sc)continue;
+      const w=startLetter+grid[nr][nc].toLowerCase();
+      if(!dictionary.isPrefix(w))continue;
+      if(dictionary.isWord(w)&&!wordsFound.some(x=>x.word===w))return true;
+      paths.push({cells:[{r:nr,c:nc}],word:w});
+    }
+  }
+  for(let depth=0;depth<3;depth++){
+    const next=[];
+    for(const p of paths){
+      const last=p.cells[p.cells.length-1];
+      for(let dr=-1;dr<=1;dr++){
+        for(let dc=-1;dc<=1;dc++){
+          if(dr===0&&dc===0)continue;
+          const nr=last.r+dr,nc=last.c+dc;
+          if(nr<0||nr>=N||nc<0||nc>=N||used[nr][nc])continue;
+          if(nr===sr&&nc===sc)continue;
+          if(p.cells.some(c=>c.r===nr&&c.c===nc))continue;
+          const w=p.word+grid[nr][nc].toLowerCase();
+          if(!dictionary.isPrefix(w))continue;
+          if(dictionary.isWord(w)&&!wordsFound.some(x=>x.word===w))return true;
+          next.push({cells:[...p.cells,{r:nr,c:nc}],word:w});
+        }
+      }
+    }
+    paths=next;
+    if(paths.length>1500)return true;
+  }
+  return false;
+}
+function hasValidMoves(){
+  if(!dictionary)return false;
+  // Check from current head + adjacent unused
+  if(headCell){
+    if(checkMovesFrom(headCell[0],headCell[1],true))return true;
+    // Also check neighbors of head
+    const[hr,hc]=headCell;
+    for(let dr=-1;dr<=1;dr++){
+      for(let dc=-1;dc<=1;dc++){
+        if(dr===0&&dc===0)continue;
+        const nr=hr+dr,nc=hc+dc;
+        if(nr>=0&&nr<N&&nc>=0&&nc<N&&!used[nr][nc]){
+          if(checkMovesFrom(nr,nc,false))return true;
+        }
+      }
+    }
+  }
+  // Edge cells are always available as fresh starts
+  for(let r=0;r<N;r++){
+    for(let c=0;c<N;c++){
+      if(!(r===0||r===N-1||c===0||c===N-1))continue;
+      if(!used[r][c]&&checkMovesFrom(r,c,false))return true;
+    }
+  }
+  return false;
+}
+
+// === End Game ===
+function endGame(manual){
+  gameActive=false;
+  const best=wordsFound.reduce((b,w)=>w.len>b.len?w:b,{word:'-',len:0});
+  $('end-title').textContent=manual?'Game Over':'No more moves!';
+  $('end-score').textContent=rawWordPoints+' \u00d7 '+multiplier.toFixed(2)+' \u00d7 '+fertilizerMultiplier.toFixed(1)+' \u00d7 '+seedMultiplier.toFixed(1)+' = '+score;
+  $('end-words-count').textContent=wordsFound.length;
+  $('end-cells').textContent=cellsUsed+'/'+(N*N);
+  $('end-best').textContent=best.word.toUpperCase()+' ('+best.len+' letters, +'+best.pts+')';
+  $('end-seed').textContent=seedFound.size+'/'+seedWords.length;
+  // Show all seed words revealed on end screen
+  renderBonusSlots($('end-seed-words'),seedWords,new Set(seedWords.map(b=>b.word)));
+  $('end-words').textContent=wordsFound.map(w=>w.word.toUpperCase()).join(', ');
+  $('copied-msg').textContent='';
+  // Save + streak
+  const data=JSON.parse(localStorage.getItem('sprout2')||'{}');
+  if(!data.history)data.history={};
+  data.history[todayUTC()]={score,words:wordsFound.length,cells:cellsUsed,best:best.word};
+  // Calculate streak
+  const today=new Date();
+  let streak=1;
+  for(let d=1;d<365;d++){
+    const prev=new Date(today);prev.setUTCDate(prev.getUTCDate()-d);
+    const key=prev.getUTCFullYear()+'-'+String(prev.getUTCMonth()+1).padStart(2,'0')+'-'+String(prev.getUTCDate()).padStart(2,'0');
+    if(data.history[key])streak++;else break;
+  }
+  data.streak=streak;
+  localStorage.setItem('sprout2',JSON.stringify(data));
+  $('end-streak').textContent=streak+' day'+(streak!==1?'s':'');
+  showScreen('end');
+  startCountdown();
+}
+
+// === Countdown ===
+let cdInterval;
+function startCountdown(){
+  if(cdInterval)clearInterval(cdInterval);
+  function tick(){$('end-countdown').textContent=fmtCountdown(msToMidnight());}
+  tick();cdInterval=setInterval(tick,1000);
+}
+
+// === Share ===
+function shareResult(){
+  const pNum=puzzleNumber();
+  const text='🌱 Sprout #'+pNum+'\nScore: '+score+' | '+wordsFound.length+' words | '+cellsUsed+'/'+(N*N)+' cells\nSeeds found: '+'🌱'.repeat(seedFound.size)+'⬜'.repeat(Math.max(0,seedWords.length-seedFound.size));
+  if(navigator.share)navigator.share({text}).catch(()=>{});
+  else if(navigator.clipboard)navigator.clipboard.writeText(text).then(()=>{$('copied-msg').textContent='Copied!';});
+}
+
+// === Start Game ===
+function startGame(){
+  if(!dictLoaded)return;
+  // Daily lock: check if already played today
+  const savedData=JSON.parse(localStorage.getItem('sprout2')||'{}');
+  if(savedData.history&&savedData.history[todayUTC()]){
+    // Show previous result
+    const prev=savedData.history[todayUTC()];
+    $('end-title').textContent='Already Played Today!';
+    $('end-score').textContent='Score: '+prev.score;
+    $('end-words-count').textContent=prev.words;
+    $('end-cells').textContent=prev.cells+'/'+(N*N);
+    $('end-best').textContent=prev.best||'-';
+    $('end-seed').textContent='-';
+    $('end-streak').textContent=(savedData.streak||1)+' day'+(savedData.streak!==1?'s':'');
+    $('copied-msg').textContent='';
+    showScreen('end');
+    return;
+  }
+  const today=todayUTC();
+  const seed=today+(refreshCount>0?'-r'+refreshCount:'');
+  grid=generateGrid(seed);
+  doublePoints=generateDoublePoints(seed);
+  used=Array.from({length:N},()=>Array(N).fill(false));
+  headCell=null;tracePath=[];score=0;wordsFound=[];cellsUsed=0;
+  rawWordPoints=0;multiplier=1.0;fertilizerMultiplier=1.0;seedMultiplier=1.0;
+  gameActive=true;pickingStart=true;processing=false;
+  undoStack=[];lastStepDir=null;rotationCount=0;
+  seedWords=generateBonusWords(grid,seed);
+  seedFound=new Set();
+  // Compute solutions for debug
+  seedSolutions={};
+  const allBC=new Set();
+  for(const bw of seedWords)for(const[r,c] of bw.path)allBC.add(r+','+c);
+  for(const bw of seedWords){
+    const[sr,sc]=bw.path[0];
+    if(sr===0||sr===N-1||sc===0||sc===N-1){
+      seedSolutions[bw.word]={bridge:'Edge start',seedPath:bw.path};
+    }else{
+      const except=new Set(allBC);except.delete(sr+','+sc);
+      const bridge=findBridgeWord(grid,sr,sc,except,true);
+      seedSolutions[bw.word]={bridge,seedPath:bw.path};
+    }
+  }
+  $('undo-btn').disabled=true;
+  buildGrid();
+  renderBonusSlots($('seed-words'),seedWords,seedFound);
+  updateGridDisplay();
+  updateUI();
+  $('word-hint').textContent='Tap any edge cell to start';
+  showScreen('game');
+}
+function refreshGrid(){
+  // Daily lock: no refresh in daily mode
+  return;
+}
+function rotateGrid(){
+  if(!gameActive||processing)return;
+  const g=$('grid');
+  g.classList.add('rotating');
+  setTimeout(()=>{
+    rotationCount=(rotationCount+1)%4;
+    buildGrid();
+    updateGridDisplay();
+    // Remove rotating class with no transition so it snaps to 0 instantly
+    g.style.transition='none';
+    g.classList.remove('rotating');
+    // Force reflow then restore transition
+    void g.offsetHeight;
+    g.style.transition='';
+  },400);
+}
+
+// === Events ===
+function cellFromEvent(e){
+  const touch=e.touches?e.touches[0]:e;
+  const el=document.elementFromPoint(touch.clientX,touch.clientY);
+  if(!el||!el.classList.contains('gcell'))return null;
+  return[parseInt(el.dataset.r),parseInt(el.dataset.c)];
+}
+// Snap-to-nearest: find the closest valid adjacent cell to the finger
+function snapToNearest(touchX,touchY){
+  if(tracePath.length===0)return null;
+  const[lr,lc]=tracePath[tracePath.length-1];
+  let best=null,bestDist=Infinity;
+  for(let dr=-1;dr<=1;dr++){
+    for(let dc=-1;dc<=1;dc++){
+      if(dr===0&&dc===0)continue;
+      const nr=lr+dr,nc=lc+dc;
+      if(nr<0||nr>=N||nc<0||nc>=N)continue;
+      if(used[nr][nc])continue;
+      if(tracePath.some(([pr,pc])=>pr===nr&&pc===nc))continue;
+      const el=getEl(nr,nc);
+      if(!el)continue;
+      const rect=el.getBoundingClientRect();
+      const cx=rect.left+rect.width/2,cy=rect.top+rect.height/2;
+      const dist=Math.hypot(touchX-cx,touchY-cy);
+      if(dist<bestDist){bestDist=dist;best=[nr,nc];}
+    }
+  }
+  // Only snap if finger is very close to a valid cell (0.7x cell size)
+  const cs=cellSize();
+  if(best&&bestDist<cs*0.7)return best;
+  return null;
+}
+let pointerStartPos={x:0,y:0},dragDist=0,lastTapTime=0;
+const DRAG_THRESHOLD=12;
+const DOUBLE_TAP_MS=350;
+const gw=$('grid');
+gw.addEventListener('pointerdown',e=>{
+  e.preventDefault();
+  pointerStartPos={x:e.clientX,y:e.clientY};
+  dragDist=0;
+  // Double-tap to submit
+  const now=Date.now();
+  if(now-lastTapTime<DOUBLE_TAP_MS&&tracePath.length>=2){
+    const pos=cellFromEvent(e);
+    if(pos&&tracePath.length>=1){
+      const[lr,lc]=tracePath[tracePath.length-1];
+      if(pos[0]===lr&&pos[1]===lc){submitTracedWord();lastTapTime=0;return;}
+    }
+  }
+  lastTapTime=now;
+  const pos=cellFromEvent(e);
+  if(pos)startTrace(pos[0],pos[1]);
+});
+gw.addEventListener('pointermove',e=>{
+  e.preventDefault();
+  dragDist=Math.hypot(e.clientX-pointerStartPos.x,e.clientY-pointerStartPos.y);
+  if(!isTracing||dragDist<DRAG_THRESHOLD)return;
+  const pos=cellFromEvent(e);
+  if(pos){
+    if(tracePath.length>0){
+      const[lr,lc]=tracePath[tracePath.length-1];
+      if(isAdj(lr,lc,pos[0],pos[1])||tracePath.some(([pr,pc])=>pr===pos[0]&&pc===pos[1])){
+        continueTrace(pos[0],pos[1]);
+        return;
+      }
+    }
+    // Only snap if actually dragging a fair distance
+    const snapped=snapToNearest(e.clientX,e.clientY);
+    if(snapped)continueTrace(snapped[0],snapped[1]);
+  }else{
+    const snapped=snapToNearest(e.clientX,e.clientY);
+    if(snapped)continueTrace(snapped[0],snapped[1]);
+  }
+});
+gw.addEventListener('pointerup',e=>{
+  e.preventDefault();
+  isTracing=false;
+});
+gw.addEventListener('pointercancel',e=>{e.preventDefault();isTracing=false;});
+
+// Bottom bar actions
+function submitTracedWord(){
+  if(tracePath.length<2)return;
+  const word=tracePath.map(([r,c])=>grid[r][c]).join('').toLowerCase();
+  if(dictionary&&dictionary.isWord(word)&&!wordsFound.some(w=>w.word===word)){
+    acceptWord(word);
+  }else{
+    rejectWord();
+  }
+}
+function backOneLetter(){
+  if(tracePath.length<2)return;
+  tracePath.pop();
+  updateGridDisplay();
+}
+
+// === Show Words Replay ===
+let showActive=false;
+function getCellCenter(r,c){
+  const el=getEl(r,c);
+  if(!el)return{x:0,y:0};
+  const wrap=$('grid-wrap').getBoundingClientRect();
+  const rect=el.getBoundingClientRect();
+  return{x:rect.left-wrap.left+rect.width/2,y:rect.top-wrap.top+rect.height/2};
+}
+function showAllWordPaths(){
+  if(wordsFound.length===0)return;
+  showActive=true;
+  const svg=$('path-overlay');
+  svg.innerHTML='';
+  const colors=['#f5a623','#6dd400','#00e5ff','#ff6b9d','#c084fc','#fbbf24','#34d399','#f87171','#60a5fa','#fb923c'];
+  const cs=cellSize();
+  const inset=cs*0.35; // stop line this far from center
+  for(let wi=0;wi<wordsFound.length;wi++){
+    const w=wordsFound[wi];
+    if(!w.path||w.path.length<2)continue;
+    const color=colors[wi%colors.length];
+    // Square border around the starting cell
+    const startEl=getEl(w.path[0][0],w.path[0][1]);
+    const wrapRect=$('grid-wrap').getBoundingClientRect();
+    const sRect=startEl.getBoundingClientRect();
+    const rect=document.createElementNS('http://www.w3.org/2000/svg','rect');
+    rect.setAttribute('x',sRect.left-wrapRect.left+1);
+    rect.setAttribute('y',sRect.top-wrapRect.top+1);
+    rect.setAttribute('width',sRect.width-2);
+    rect.setAttribute('height',sRect.height-2);
+    rect.setAttribute('rx','4');
+    rect.setAttribute('fill','none');
+    rect.setAttribute('stroke',color);
+    rect.setAttribute('stroke-width','2.5');
+    rect.setAttribute('stroke-opacity','0.9');
+    svg.appendChild(rect);
+    for(let i=0;i<w.path.length-1;i++){
+      const a=getCellCenter(w.path[i][0],w.path[i][1]);
+      const b=getCellCenter(w.path[i+1][0],w.path[i+1][1]);
+      // Shorten line: start inset from center A, end inset from center B
+      const dx=b.x-a.x,dy=b.y-a.y;
+      const dist=Math.hypot(dx,dy);
+      if(dist<1)continue;
+      const ux=dx/dist,uy=dy/dist;
+      const x1=a.x+ux*inset,y1=a.y+uy*inset;
+      const x2=b.x-ux*inset,y2=b.y-uy*inset;
+      const line=document.createElementNS('http://www.w3.org/2000/svg','line');
+      line.setAttribute('x1',x1);line.setAttribute('y1',y1);
+      line.setAttribute('x2',x2);line.setAttribute('y2',y2);
+      line.setAttribute('stroke',color);
+      line.setAttribute('stroke-width','3');
+      line.setAttribute('stroke-opacity','0.8');
+      svg.appendChild(line);
+    }
+  }
+}
+function clearShowOverlay(){
+  showActive=false;
+  $('path-overlay').innerHTML='';
+}
+$('submit-btn').addEventListener('click',e=>{e.stopPropagation();submitTracedWord();});
+$('back-btn').addEventListener('click',e=>{e.stopPropagation();backOneLetter();});
+$('undo-btn').addEventListener('click',e=>{e.stopPropagation();undoLastWord();});
+// Show button: hold to cycle through words
+$('show-btn').addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();showAllWordPaths();});
+$('show-btn').addEventListener('pointerup',e=>{e.stopPropagation();clearShowOverlay();});
+$('show-btn').addEventListener('pointerleave',e=>{clearShowOverlay();});
+$('show-btn').addEventListener('touchstart',e=>{e.stopPropagation();e.preventDefault();showAllWordPaths();},{passive:false});
+$('show-btn').addEventListener('touchend',e=>{e.stopPropagation();clearShowOverlay();},{passive:false});
+
+$('play-btn').addEventListener('click',startGame);
+$('end-btn').addEventListener('click',()=>endGame(true));
+
+$('rotate-btn').addEventListener('click',rotateGrid);
+$('share-btn').addEventListener('click',shareResult);
+$('home-btn').addEventListener('click',()=>location.href='index.html');
+$('help-btn').addEventListener('click',()=>$('help-overlay').classList.add('active'));
+$('game-help-btn').addEventListener('click',()=>$('help-overlay').classList.add('active'));
+$('close-help').addEventListener('click',()=>$('help-overlay').classList.remove('active'));
+$('help-overlay').addEventListener('click',e=>{if(e.target.id==='help-overlay')$('help-overlay').classList.remove('active');});
+
+window.addEventListener('resize',()=>{
+  if(screens.game.classList.contains('active')&&grid){buildGrid();updateGridDisplay();}
+});
+window.addEventListener('beforeunload',e=>{
+  if(gameActive&&wordsFound.length>0){e.preventDefault();e.returnValue='';}
+});
+
+// === Init ===
+(function(){
+  const pNum=puzzleNumber();
+  const today=todayUTC();
+  const parts=today.split('-');
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  $('puzzle-date').textContent='Puzzle #'+pNum+' \u2014 '+months[parseInt(parts[1])-1]+' '+parseInt(parts[2])+', '+parts[0];
+  loadDictionary().then(()=>{
+    if(dictLoaded)$('play-btn').style.opacity='1';
+    // First-time: auto-show How to Play
+    if(!localStorage.getItem('sprout2_seen')){
+      localStorage.setItem('sprout2_seen','1');
+      $('help-overlay').classList.add('active');
+    }
+  });
+})();
+</script>
+<div style="position:fixed;bottom:4px;right:8px;font-size:9px;color:rgba(255,255,255,0.15);font-family:monospace;z-index:200;cursor:pointer;" id="version-btn">v2.0</div>
+<script>
+let vTaps=0,vTime=0;
+document.getElementById('version-btn').addEventListener('click',()=>{
+  const n=Date.now();
+  if(n-vTime<1000)vTaps++;else vTaps=1;
+  vTime=n;
+  if(vTaps>=3){vTaps=0;showSolutions();}
+});
+</script>
+</body>
+</html>
