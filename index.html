@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Chainlink — Daily Word Chain Puzzle</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔗</text></svg>">
+</head>
+<body>
+  <div id="app">
+    <header>
+      <button id="help-btn" class="icon-btn" aria-label="How to play" title="How to play">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </button>
+      <h1>CHAINLINK</h1>
+      <button id="stats-btn" class="icon-btn" aria-label="Statistics" title="Statistics">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      </button>
+    </header>
+
+    <div id="puzzle-header">
+      <span id="puzzle-number"></span>
+      <span id="par-display"></span>
+    </div>
+
+    <div id="game-area">
+      <div id="chain-display">
+        <div class="chain-node start-node" id="start-node">
+          <span class="node-word" id="start-word"></span>
+          <span class="node-label">START</span>
+        </div>
+
+        <div id="chain-links"></div>
+
+        <div class="chain-node end-node" id="end-node">
+          <span class="node-word" id="end-word"></span>
+          <span class="node-label">END</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="input-area">
+      <div id="message"></div>
+      <form id="input-form" autocomplete="off">
+        <input type="text" id="word-input" placeholder="Type a word..." autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="20">
+        <button type="submit" id="submit-btn" aria-label="Submit">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Help Modal -->
+  <div id="help-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <button class="modal-close" aria-label="Close">&times;</button>
+      <h2>How to Play</h2>
+      <p>Build a chain of words from <strong>START</strong> to <strong>END</strong>.</p>
+      <h3>Rules</h3>
+      <p>Each word must connect to the previous word by one of these links:</p>
+      <ul>
+        <li><span class="link-badge letter">ABC</span> <strong>Letter Link</strong> — change, add, or remove 1-2 letters<br><em>cat &rarr; bat, cart &rarr; car</em></li>
+        <li><span class="link-badge sound">~</span> <strong>Sound Link</strong> — words share a beginning or ending<br><em>night &rarr; light, fire &rarr; fish</em></li>
+        <li><span class="link-badge meaning">&#x2248;</span> <strong>Meaning Link</strong> — words are semantically related<br><em>ocean &rarr; wave, king &rarr; crown</em></li>
+      </ul>
+      <h3>Distance</h3>
+      <p>Each word shows how semantically close it is to the <strong>END</strong> word:</p>
+      <div class="distance-legend">
+        <span class="dist-sample hot">HOT</span>
+        <span class="dist-sample warm">WARM</span>
+        <span class="dist-sample tepid">TEPID</span>
+        <span class="dist-sample cool">COOL</span>
+        <span class="dist-sample cold">COLD</span>
+      </div>
+      <h3>Goal</h3>
+      <p>Reach the END word in as few moves as possible. <strong>Par</strong> is the target number of moves. A new puzzle appears every day!</p>
+      <h3>Sharing</h3>
+      <p>After solving, share your chain as a color-coded emoji grid — your path tells a story!</p>
+    </div>
+  </div>
+
+  <!-- Stats Modal -->
+  <div id="stats-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <button class="modal-close" aria-label="Close">&times;</button>
+      <h2>Statistics</h2>
+      <div id="stats-grid">
+        <div class="stat-box"><div class="stat-value" id="stat-played">0</div><div class="stat-label">Played</div></div>
+        <div class="stat-box"><div class="stat-value" id="stat-won">0</div><div class="stat-label">Won</div></div>
+        <div class="stat-box"><div class="stat-value" id="stat-streak">0</div><div class="stat-label">Streak</div></div>
+        <div class="stat-box"><div class="stat-value" id="stat-max-streak">0</div><div class="stat-label">Best</div></div>
+      </div>
+      <h3>Score Distribution</h3>
+      <div id="distribution-chart"></div>
+    </div>
+  </div>
+
+  <!-- Win Modal -->
+  <div id="win-modal" class="modal-overlay hidden">
+    <div class="modal win-modal">
+      <button class="modal-close" aria-label="Close">&times;</button>
+      <h2 id="win-title"></h2>
+      <p id="win-message"></p>
+      <div id="win-chain-preview"></div>
+      <div id="win-actions">
+        <button id="share-btn" class="action-btn primary">Share Result</button>
+      </div>
+      <div id="next-puzzle-timer">
+        <span>Next puzzle in </span><span id="countdown"></span>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/worddata.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
