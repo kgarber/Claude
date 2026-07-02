@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Fable</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#151022;--panel:#1e1733;--cell:#f2e9d8;--text-dark:#231a10;
+  --vine:#4ade80;--vine-deep:#1e3a2a;--vine-glow:rgba(74,222,128,0.35);
+  --flower:#ff7eb6;--flower-glow:rgba(255,126,182,0.45);--gold:#fbbf24;
+  --blue:rgba(96,140,255,0.9);--red:#f87171;
+  --text:#e8e2f2;--text-dim:#8a80a5;
+  --font-display:'Playfair Display',serif;--font-sans:'DM Sans',sans-serif;
+}
+html,body{width:100%;height:100%;background:var(--bg);color:var(--text);
+  font-family:var(--font-sans);overflow-x:hidden;touch-action:manipulation;
+  -webkit-user-select:none;user-select:none;}
+body{display:flex;flex-direction:column;align-items:center;min-height:100vh;min-height:100dvh;}
+body::before{content:'';position:fixed;inset:0;opacity:0.05;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg width='70' height='70' viewBox='0 0 70 70' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='12' cy='14' r='1' fill='%23c9b8ff'/%3E%3Ccircle cx='50' cy='30' r='0.7' fill='%23c9b8ff'/%3E%3Ccircle cx='30' cy='55' r='1.2' fill='%23ffb8d9'/%3E%3Ccircle cx='62' cy='60' r='0.8' fill='%23c9b8ff'/%3E%3C/svg%3E");
+  background-size:70px 70px;}
+.screen{display:none;flex-direction:column;align-items:center;
+  width:100%;max-width:480px;padding:16px;position:relative;z-index:1;}
+.screen.active{display:flex;}
+
+/* Title */
+#title-screen{justify-content:center;min-height:100vh;min-height:100dvh;gap:18px;text-align:center;}
+.logo{font-family:var(--font-display);font-size:52px;font-weight:800;color:var(--flower);
+  text-shadow:0 0 40px var(--flower-glow);}
+.tagline{font-size:13px;color:var(--text-dim);font-style:italic;margin-top:-10px;line-height:1.5;}
+.puzzle-date{font-size:12px;color:var(--text-dim);}
+.play-btn{background:var(--flower);color:#2a1020;border:none;padding:16px 40px;
+  border-radius:12px;font-family:var(--font-sans);font-size:17px;font-weight:700;
+  cursor:pointer;transition:all 0.2s;box-shadow:0 0 30px var(--flower-glow);}
+.play-btn:active{transform:scale(0.96);}
+.practice-btn{background:none;border:1px solid rgba(74,222,128,0.4);color:var(--vine);
+  padding:12px 32px;border-radius:12px;font-family:var(--font-sans);font-size:14px;
+  font-weight:700;cursor:pointer;}
+.help-btn{background:none;border:1px solid rgba(255,126,182,0.3);color:var(--flower);
+  padding:10px 20px;border-radius:8px;font-family:var(--font-sans);font-size:13px;
+  font-weight:600;cursor:pointer;}
+.back-link{color:var(--text-dim);font-size:13px;text-decoration:none;}
+.loading-msg{font-size:13px;color:var(--text-dim);min-height:20px;}
+
+/* Game */
+#game-screen{gap:6px;padding-top:6px;padding-bottom:80px;}
+.game-header{display:flex;justify-content:space-between;align-items:center;width:100%;}
+.status-line{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--text);}
+.status-line .par{color:var(--gold);}
+.hdr-btn{background:none;border:1px solid rgba(255,255,255,0.12);color:var(--text-dim);
+  padding:7px 12px;border-radius:8px;font-family:var(--font-sans);font-size:12px;cursor:pointer;}
+.hdr-btn:active{background:rgba(255,255,255,0.05);}
+
+/* Flower tray */
+.flower-tray{display:flex;gap:6px;justify-content:center;width:100%;flex-wrap:wrap;}
+.flower-slot{display:flex;gap:2px;align-items:center;padding:4px 7px;border-radius:9px;
+  background:rgba(255,126,182,0.05);border:1px solid rgba(255,126,182,0.16);transition:all 0.4s;}
+.flower-slot.bloomed{border-color:rgba(255,126,182,0.65);background:rgba(255,126,182,0.13);
+  box-shadow:0 0 14px rgba(255,126,182,0.25);}
+.petal-letter{width:17px;height:21px;display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-display);font-size:14px;font-weight:700;border-radius:4px;
+  color:rgba(255,255,255,0.18);transition:all 0.3s;}
+.petal-letter.revealed{color:var(--text);background:rgba(255,255,255,0.07);}
+.flower-slot.bloomed .petal-letter{color:var(--flower);background:rgba(255,126,182,0.15);}
+.flower-slot .fl-icon{font-size:12px;margin-right:2px;filter:grayscale(1) brightness(0.5);transition:filter 0.4s;}
+.flower-slot.bloomed .fl-icon{filter:none;}
+.flower-slot.bloom-anim{animation:trayBloom 0.8s ease;}
+@keyframes trayBloom{0%{transform:scale(1)}35%{transform:scale(1.15)}100%{transform:scale(1)}}
+
+.current-word{font-family:var(--font-display);font-size:22px;font-weight:700;
+  height:26px;color:var(--vine);text-align:center;letter-spacing:2px;overflow:hidden;transition:color 0.15s;}
+.current-word.invalid{color:var(--red);}
+.current-word.valid-word{color:#86efac;text-shadow:0 0 10px rgba(134,239,172,0.45);}
+.word-hint{font-size:11px;color:var(--text-dim);height:15px;text-align:center;overflow:hidden;}
+.word-hint.warn{color:var(--gold);}
+
+/* Grid */
+.grid-wrap{position:relative;margin:2px auto;touch-action:none;-webkit-touch-callout:none;}
+.grid{display:grid;gap:3px;position:relative;z-index:1;touch-action:none;}
+.gcell{display:flex;align-items:center;justify-content:center;border-radius:6px;
+  background:var(--cell);font-family:var(--font-display);font-weight:700;
+  color:var(--text-dark);cursor:pointer;transition:all 0.25s;position:relative;z-index:3;
+  box-shadow:0 1px 3px rgba(0,0,0,0.35);}
+.gcell.used{background:linear-gradient(135deg,#22402c,#2d4f36);color:rgba(255,255,255,0.28);
+  box-shadow:inset 0 1px 3px rgba(0,0,0,0.45);cursor:default;}
+.gcell.used::after{content:'';position:absolute;bottom:2px;right:2px;width:7px;height:7px;
+  border-radius:50%;background:rgba(74,222,128,0.3);}
+.gcell.start-option{box-shadow:inset 0 0 0 3px var(--blue);}
+.gcell.next-option{box-shadow:inset 0 0 0 3px var(--blue);}
+.gcell.tracing{background:linear-gradient(135deg,rgba(74,222,128,0.35),rgba(74,222,128,0.18));
+  color:var(--text-dark);box-shadow:0 0 0 2px var(--vine),0 0 12px var(--vine-glow) !important;}
+.gcell.rejected{animation:shake 0.35s ease;}
+.gcell.accepted{animation:grow 0.5s ease;}
+.gcell.tap-pop{animation:tapPop 0.1s ease;}
+@keyframes tapPop{0%{transform:scale(1)}50%{transform:scale(1.08)}100%{transform:scale(1)}}
+@keyframes grow{0%{transform:scale(1)}35%{transform:scale(1.12);background:rgba(74,222,128,0.5);}100%{transform:scale(1)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-4px)}
+  40%{transform:translateX(4px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+
+/* Flower cells on grid */
+.gcell.flower{background:linear-gradient(135deg,#3d2438,#4a2c46);cursor:default;
+  color:rgba(255,255,255,0.9);font-size:inherit;
+  box-shadow:inset 0 0 0 1.5px rgba(255,126,182,0.35),0 1px 3px rgba(0,0,0,0.35);}
+.gcell.flower .bud{font-size:0.85em;filter:grayscale(0.6) brightness(0.8);}
+.gcell.flower.revealed{background:linear-gradient(135deg,#5a2c50,#6d3560);color:#ffc4de;}
+.gcell.flower.bloomed{background:linear-gradient(135deg,#a33d78,#d15694);color:#fff;
+  box-shadow:inset 0 0 0 1.5px rgba(255,255,255,0.4),0 0 16px var(--flower-glow);}
+.gcell.flower.petal-anim{animation:petalOpen 0.5s ease;}
+@keyframes petalOpen{0%{transform:scale(1)}40%{transform:scale(1.14);box-shadow:0 0 16px var(--flower-glow);}100%{transform:scale(1)}}
+
+/* Popups */
+.bloom-popup{position:fixed;top:44%;left:50%;transform:translate(-50%,-50%);z-index:60;
+  font-family:var(--font-display);font-size:30px;font-weight:700;color:var(--flower);
+  text-shadow:0 0 30px var(--flower-glow);pointer-events:none;text-align:center;
+  animation:bloomPop 1.6s ease-out forwards;}
+.bloom-popup small{display:block;font-family:var(--font-sans);font-size:12px;color:var(--text-dim);}
+@keyframes bloomPop{0%{opacity:0;transform:translate(-50%,-50%) scale(0.5);}
+  15%{opacity:1;transform:translate(-50%,-50%) scale(1.15);}
+  70%{opacity:1;transform:translate(-50%,-50%) scale(1);}
+  100%{opacity:0;transform:translate(-50%,-62%) scale(1);}}
+.stuck-banner{display:none;width:100%;text-align:center;font-size:12px;color:var(--gold);
+  background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25);
+  border-radius:8px;padding:6px;}
+.stuck-banner.visible{display:block;}
+
+.bottom-bar{position:fixed;bottom:0;left:0;right:0;z-index:50;
+  display:none;padding:12px 16px 32px;gap:10px;justify-content:center;
+  background:linear-gradient(transparent,rgba(21,16,34,0.96) 30%);}
+.bottom-bar.visible{display:flex;}
+.bottom-bar button{padding:12px 0;border-radius:10px;font-family:var(--font-sans);
+  font-size:14px;font-weight:700;cursor:pointer;border:none;flex:1;max-width:140px;}
+.bottom-bar button:disabled{opacity:0.3;pointer-events:none;}
+.btn-back{background:none;border:1px solid rgba(255,255,255,0.15) !important;color:var(--text-dim);}
+.btn-submit{background:var(--vine);color:#0e2416;box-shadow:0 0 15px var(--vine-glow);}
+.btn-undo-word{background:none;border:1px solid rgba(74,222,128,0.35) !important;color:var(--vine);}
+
+.word-list{font-size:11px;color:var(--text-dim);max-height:44px;overflow-y:auto;
+  width:100%;text-align:center;line-height:1.6;}
+
+/* End screen */
+#end-screen{justify-content:center;min-height:100vh;min-height:100dvh;gap:14px;text-align:center;}
+.end-title{font-family:var(--font-display);font-size:30px;font-weight:700;color:var(--flower);
+  text-shadow:0 0 24px var(--flower-glow);}
+.end-grade{font-size:15px;color:var(--text);}
+.end-stats{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);
+  border-radius:14px;padding:18px;width:100%;display:flex;flex-direction:column;gap:9px;}
+.end-row{display:flex;justify-content:space-between;font-size:14px;}
+.end-label{color:var(--text-dim);}
+.end-val{color:var(--text);font-weight:600;}
+.share-btn{background:var(--flower);color:#2a1020;border:none;padding:12px 28px;
+  border-radius:10px;font-family:var(--font-sans);font-size:15px;font-weight:700;cursor:pointer;}
+.share-btn:active{transform:scale(0.96);}
+.copied-msg{font-size:12px;color:var(--vine);min-height:18px;}
+.countdown{font-size:13px;color:var(--text-dim);}
+.countdown-time{font-size:22px;color:var(--text);font-weight:600;}
+.home-link{color:var(--text-dim);font-size:13px;cursor:pointer;background:none;border:none;
+  font-family:var(--font-sans);padding:8px;}
+
+/* Help modal */
+.help-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.87);
+  z-index:200;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;}
+.help-overlay.active{display:flex;}
+.help-content{background:#1c1430;border:1px solid rgba(255,126,182,0.25);
+  border-radius:14px;padding:24px;max-width:480px;width:100%;color:var(--text);
+  font-size:14px;line-height:1.6;}
+.help-content h2{font-family:var(--font-display);color:var(--flower);font-size:24px;margin-bottom:8px;}
+.help-content h3{color:var(--vine);font-size:13px;margin-top:16px;margin-bottom:6px;
+  text-transform:uppercase;letter-spacing:1px;}
+.help-content p{margin-bottom:8px;color:#cdc4e0;}
+.help-content .close-help{margin-top:20px;background:var(--flower);color:#2a1020;
+  border:none;padding:12px 28px;border-radius:10px;font-size:14px;font-weight:700;
+  cursor:pointer;width:100%;font-family:var(--font-sans);}
+.mini{display:grid;grid-template-columns:repeat(5,30px);gap:2px;margin:10px auto;width:fit-content;}
+.mini div{width:30px;height:30px;border-radius:4px;display:flex;align-items:center;
+  justify-content:center;font-weight:700;font-size:12px;font-family:var(--font-display);
+  background:var(--cell);color:var(--text-dark);}
+.mini .m-start{box-shadow:inset 0 0 0 3px var(--blue);}
+.mini .m-trace{background:rgba(74,222,128,0.35);box-shadow:0 0 0 2px var(--vine);}
+.mini .m-used{background:#2d4f36;color:rgba(255,255,255,0.35);}
+.mini .m-flower{background:#4a2c46;color:#ffc4de;font-size:11px;}
+.mini .m-bloom{background:#d15694;color:#fff;}
+.help-caption{text-align:center;font-size:12px;color:var(--text-dim);line-height:1.5;}
+</style>
+</head>
+<body>
+<div id="error-log" style="position:fixed;bottom:40px;left:8px;right:8px;max-height:100px;overflow-y:auto;font-size:10px;color:#f87171;font-family:monospace;z-index:999;background:rgba(0,0,0,0.9);padding:8px;border-radius:4px;display:none;-webkit-user-select:text;user-select:text;cursor:text;"></div>
+<script>window.onerror=function(msg,url,line){var el=document.getElementById('error-log');el.style.display='block';el.textContent+='ERR L'+line+': '+msg+'\n';};
+window.addEventListener('unhandledrejection',function(e){var el=document.getElementById('error-log');el.style.display='block';el.textContent+='REJECT: '+e.reason+'\n';});</script>
+
+<div id="title-screen" class="screen active">
+  <a href="index.html" class="back-link">&larr; All Games</a>
+  <div class="logo">Fable</div>
+  <div class="tagline">Four flowers sleep in the thicket.<br>Grow a garden of words to wake them.</div>
+  <div class="puzzle-date" id="puzzle-date"></div>
+  <button class="play-btn" id="play-btn">Play Today's Fable</button>
+  <button class="practice-btn" id="practice-btn" style="display:none;">Practice Garden</button>
+  <button class="help-btn" id="help-btn">How to Play</button>
+  <div class="loading-msg" id="loading-msg"></div>
+</div>
+
+<div class="help-overlay" id="help-overlay">
+  <div class="help-content">
+    <h2>Fable</h2>
+    <p>Four hidden flowers sleep in the grid. Bloom all four in as few words as you can. Beat the <b style="color:var(--gold);">Par</b>!</p>
+
+    <h3>1. Plant at the edge</h3>
+    <p>Tap a letter with a <b style="color:rgb(96,140,255);">blue border</b> (grid edge) and trace a word of 3+ letters through neighboring tiles &mdash; any direction, diagonals too. Hit <b>Submit</b>.</p>
+    <div class="mini">
+      <div class="m-trace">V</div><div class="m-trace">I</div><div class="m-trace">N</div><div class="m-trace">E</div><div>K</div>
+      <div class="m-start">O</div><div>T</div><div class="m-flower">&#10047;</div><div class="m-flower">&#10047;</div><div>A</div>
+      <div class="m-start">R</div><div>E</div><div class="m-flower">&#10047;</div><div>L</div><div>S</div>
+    </div>
+    <div class="help-caption">Traced <b style="color:var(--vine);">VINE</b> from the top edge. Dark tiles with &#10047; are sleeping flowers &mdash; you can't trace through them.</div>
+
+    <h3>2. Grow inward</h3>
+    <p>Played letters become your <b style="color:var(--vine);">garden</b>. Each next word starts from any fresh tile touching your garden (blue borders show you where).</p>
+    <div class="mini">
+      <div class="m-used">V</div><div class="m-used">I</div><div class="m-used">N</div><div class="m-used">E</div><div>K</div>
+      <div class="m-start">O</div><div class="m-start">T</div><div class="m-flower">&#10047;</div><div class="m-flower">&#10047;</div><div class="m-start">A</div>
+      <div>R</div><div>E</div><div class="m-flower">&#10047;</div><div>L</div><div>S</div>
+    </div>
+    <div class="help-caption">The garden (dark green) opens new starting tiles below it.</div>
+
+    <h3>3. Wake the flowers</h3>
+    <p>When your garden touches a tile next to a flower petal, that petal opens and shows its letter. Open <b>every petal</b> of a flower and it <b style="color:var(--flower);">blooms</b>.</p>
+    <div class="mini">
+      <div class="m-used">V</div><div class="m-used">I</div><div class="m-used">N</div><div class="m-used">E</div><div class="m-used">K</div>
+      <div class="m-used">O</div><div class="m-used">T</div><div class="m-bloom">S</div><div class="m-bloom">U</div><div class="m-used">A</div>
+      <div class="m-used">R</div><div class="m-used">E</div><div class="m-bloom">N</div><div class="m-used">L</div><div class="m-used">S</div>
+    </div>
+    <div class="help-caption">Garden surrounds every petal &rarr; <b style="color:var(--flower);">SUN</b> blooms!</div>
+
+    <h3>4. Beat the par</h3>
+    <p>Every daily garden is checked by a solver: it's always possible to bloom all four flowers at <b style="color:var(--gold);">Par</b> using everyday words. Fewer words = better. Under par is legendary.</p>
+
+    <h3>Tips</h3>
+    <p>&bull; Longer words cover more ground per stroke.<br>
+    &bull; Aim your words &mdash; direction matters more than length sometimes.<br>
+    &bull; Stuck with no playable words? <b>Undo</b> is free &mdash; rewind and take another path.</p>
+
+    <button class="close-help" id="close-help">Got it</button>
+  </div>
+</div>
+
+<div id="game-screen" class="screen">
+  <div class="game-header">
+    <div class="status-line" id="status-line">&#127800; 0/4 &middot; 0 words &middot; <span class="par">Par ?</span></div>
+    <div style="display:flex;gap:6px;">
+      <button class="hdr-btn" id="game-help-btn">?</button>
+      <button class="hdr-btn" id="rotate-btn" title="Rotate view">&#8635;</button>
+      <button class="hdr-btn" id="end-btn">Give Up</button>
+    </div>
+  </div>
+  <div class="flower-tray" id="flower-tray"></div>
+  <div class="current-word" id="current-word">&nbsp;</div>
+  <div class="word-hint" id="word-hint">Tap a blue-bordered tile to start</div>
+  <div class="grid-wrap" id="grid-wrap">
+    <div class="grid" id="grid"></div>
+  </div>
+  <div class="stuck-banner" id="stuck-banner">&#129344; No words can grow from here &mdash; Undo and take another path.</div>
+  <div class="word-list" id="word-list"></div>
+</div>
+
+<div class="bottom-bar" id="bottom-bar">
+  <button class="btn-back" id="back-btn" disabled>&#9003;</button>
+  <button class="btn-submit" id="submit-btn" disabled>Submit</button>
+  <button class="btn-undo-word" id="undo-btn" disabled>Undo</button>
+</div>
+
+<div id="end-screen" class="screen">
+  <div class="end-title" id="end-title">In Full Bloom</div>
+  <div class="end-grade" id="end-grade"></div>
+  <div class="flower-tray" id="end-flowers" style="margin:2px 0;"></div>
+  <div class="end-stats">
+    <div class="end-row"><span class="end-label">Flowers bloomed</span><span class="end-val" id="end-bloomed"></span></div>
+    <div class="end-row"><span class="end-label">Words used</span><span class="end-val" id="end-words-count"></span></div>
+    <div class="end-row"><span class="end-label">Par</span><span class="end-val" id="end-par"></span></div>
+    <div class="end-row"><span class="end-label">Best word</span><span class="end-val" id="end-best"></span></div>
+    <div class="end-row"><span class="end-label">Streak</span><span class="end-val" id="end-streak"></span></div>
+  </div>
+  <div class="word-list" id="end-words" style="max-height:70px;"></div>
+  <button class="share-btn" id="share-btn">Share Result</button>
+  <div class="copied-msg" id="copied-msg"></div>
+  <div class="countdown" id="end-countdown-wrap">Next fable in<br><span class="countdown-time" id="end-countdown"></span></div>
+  <button class="practice-btn" id="end-practice-btn">Practice Garden</button>
+  <button class="home-link" id="home-btn">Back to games</button>
+</div>
+
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+
+// === PRNG & date helpers ===
+function mulberry32(s){return function(){s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function dateSeed(str){let h=0;for(let i=0;i<str.length;i++)h=Math.imul(31,h)+str.charCodeAt(i)|0;return h;}
+function todayUTC(){const d=new Date();return d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0')+'-'+String(d.getUTCDate()).padStart(2,'0');}
+function puzzleNumber(){return Math.floor((new Date()-new Date('2026-01-01T00:00:00Z'))/86400000)+1;}
+function msToMidnight(){const n=new Date();return new Date(Date.UTC(n.getUTCFullYear(),n.getUTCMonth(),n.getUTCDate()+1))-n;}
+function fmtCountdown(ms){const s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');}
+
+// === Dictionary ===
+class TrieNode{constructor(){this.c={};this.end=false;}}
+class Trie{
+  constructor(){this.root=new TrieNode();}
+  insert(w){let n=this.root;for(const ch of w){if(!n.c[ch])n.c[ch]=new TrieNode();n=n.c[ch];}n.end=true;}
+  isWord(w){let n=this.root;for(const ch of w){if(!n.c[ch])return false;n=n.c[ch];}return n.end;}
+  isPrefix(p){let n=this.root;for(const ch of p){if(!n.c[ch])return false;n=n.c[ch];}return true;}
+}
+let dictionary=null;     // full ENABLE trie — what the player may play
+let commonTrie=null;     // common-words trie — what the solver may use for par
+let layByLen=null;       // common words by length — what generation lays on the board
+let dictLoaded=false;
+
+async function fetchCached(key,url){
+  let text=null;
+  try{text=localStorage.getItem(key);}catch(e){}
+  if(!text){
+    const res=await fetch(url);
+    if(!res.ok)throw new Error('fetch '+res.status);
+    text=await res.text();
+    try{localStorage.setItem(key,text);}catch(e){}
+  }
+  return text;
+}
+async function loadDictionary(){
+  const msg=$('loading-msg');
+  try{
+    msg.textContent='Gathering the storybook…';
+    const [enableTxt,commonTxt]=await Promise.all([
+      fetchCached('sprout_dict','https://raw.githubusercontent.com/dolph/dictionary/master/enable1.txt'),
+      fetchCached('fable_common','https://raw.githubusercontent.com/first20hours/google-10000-english/master/google-10000-english-no-swears.txt')
+    ]);
+    dictionary=new Trie();
+    const dictSet=new Set();
+    for(const raw of enableTxt.split('\n')){
+      const w=raw.trim().toLowerCase();
+      if(w.length>=3&&w.length<=15&&/^[a-z]+$/.test(w)){dictionary.insert(w);dictSet.add(w);}
+    }
+    commonTrie=new Trie();
+    layByLen={3:[],4:[],5:[],6:[]};
+    for(const raw of commonTxt.split('\n')){
+      const w=raw.trim().toLowerCase();
+      if(w.length>=3&&w.length<=9&&/^[a-z]+$/.test(w)&&dictSet.has(w)){
+        commonTrie.insert(w);
+        if(w.length<=6)layByLen[w.length].push(w);
+      }
+    }
+    dictLoaded=true;
+    msg.textContent='';
+  }catch(e){
+    msg.textContent='Failed to load word lists. Check connection and refresh.';
+  }
+}
+
+// === Puzzle generation (solution-first, solver-verified) ===
+const N=9;
+const DIRS=[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+const cid=(r,c)=>r*N+c;
+const inb=(r,c)=>r>=0&&r<N&&c>=0&&c<N;
+const FREQ='eeeeeeeeeeeettttttttaaaaaaaaooooooiiiiiiinnnnnnnsssssshhhhhhrrrrrrddddllllcccuuummwwffggyyppbbvk';
+function pickRng(rng,arr){return arr[Math.floor(rng()*arr.length)];}
+function shuffleRng(rng,arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr;}
+
+// self-avoiding walk from start to any cell in targetAdj, avoiding blocked
+function genWalk(rng,start,targetAdj,blocked,minLen,maxLen){
+  const path=[start];const used=new Set([start]);
+  for(let step=0;step<maxLen;step++){
+    const last=path[path.length-1];
+    if(path.length>=minLen&&targetAdj.has(last))return path;
+    const r=Math.floor(last/N),c=last%N;
+    const cands=[];
+    for(const[dr,dc]of DIRS){const nr=r+dr,nc=c+dc;if(!inb(nr,nc))continue;const id=cid(nr,nc);if(used.has(id)||blocked.has(id))continue;cands.push(id);}
+    if(!cands.length)return null;
+    let best=null,bestD=1e9;
+    shuffleRng(rng,cands);
+    for(const id of cands){
+      let d=1e9;for(const t of targetAdj){const tr=Math.floor(t/N),tc=t%N,cr=Math.floor(id/N),cc=id%N;d=Math.min(d,Math.max(Math.abs(tr-cr),Math.abs(tc-cc)));}
+      d+=rng()*1.5;
+      if(d<bestD){bestD=d;best=id;}
+    }
+    path.push(best);used.add(best);
+  }
+  return null;
+}
+// place a flower word as an interior self-avoiding chain
+function placeFlower(rng,word,blocked){
+  for(let tries=0;tries<200;tries++){
+    const r0=1+Math.floor(rng()*(N-2)),c0=1+Math.floor(rng()*(N-2));
+    const start=cid(r0,c0);
+    if(blocked.has(start))continue;
+    const path=[start];const used=new Set([start]);
+    let ok=true;
+    for(let i=1;i<word.length;i++){
+      const last=path[i-1],r=Math.floor(last/N),c=last%N;
+      const cands=[];
+      for(const[dr,dc]of DIRS){const nr=r+dr,nc=c+dc;
+        if(nr<1||nr>N-2||nc<1||nc>N-2)continue;
+        const id=cid(nr,nc);
+        if(used.has(id)||blocked.has(id))continue;
+        cands.push(id);}
+      if(!cands.length){ok=false;break;}
+      const nxt=pickRng(rng,cands);path.push(nxt);used.add(nxt);
+    }
+    if(ok)return path;
+  }
+  return null;
+}
+function generatePuzzle(seed){
+  const rng=mulberry32(seed);
+  const FLOWERS=4,FLEN=[4,5];
+  const grid=new Array(N*N).fill(null);
+  const flowerCells=new Set();
+  const flowers=[];
+  const blockedForFlowers=new Set();
+  const usedWords=new Set();
+  for(let f=0;f<FLOWERS;f++){
+    const len=FLEN[Math.floor(rng()*FLEN.length)];
+    let word=pickRng(rng,layByLen[len]);
+    for(let t=0;t<10&&usedWords.has(word);t++)word=pickRng(rng,layByLen[len]);
+    if(usedWords.has(word))return null;
+    usedWords.add(word);
+    const path=placeFlower(rng,word,blockedForFlowers);
+    if(!path)return null;
+    flowers.push({word,path});
+    for(const id of path){
+      flowerCells.add(id);
+      const r=Math.floor(id/N),c=id%N;
+      blockedForFlowers.add(id);
+      for(const[dr,dc]of DIRS){if(inb(r+dr,c+dc))blockedForFlowers.add(cid(r+dr,c+dc));}
+    }
+  }
+  for(const f of flowers){f.path.forEach((id,i)=>grid[id]=f.word[i]);}
+  // vines: a chain of common words from the edge to each flower (the hidden solution)
+  const vineCells=new Set();
+  for(const f of flowers){
+    const targetAdj=new Set();
+    for(const id of f.path){const r=Math.floor(id/N),c=id%N;
+      for(const[dr,dc]of DIRS){if(!inb(r+dr,c+dc))continue;const a=cid(r+dr,c+dc);if(!flowerCells.has(a)&&!vineCells.has(a))targetAdj.add(a);}}
+    if(!targetAdj.size)return null;
+    let path=null;
+    for(let t=0;t<60&&!path;t++){
+      const edge=[];
+      for(let i=0;i<N;i++){edge.push(cid(0,i),cid(N-1,i),cid(i,0),cid(i,N-1));}
+      const open=edge.filter(id=>!flowerCells.has(id)&&!vineCells.has(id));
+      if(!open.length)return null;
+      const start=pickRng(rng,open);
+      const blocked=new Set([...flowerCells,...vineCells]);
+      path=genWalk(rng,start,targetAdj,blocked,3,24);
+    }
+    if(!path)return null;
+    let i=0;
+    while(i<path.length){
+      const rem=path.length-i;
+      let L;
+      if(rem<=6){L=rem;}
+      else if(rem===7){L=4;}
+      else if(rem===8){L=pickRng(rng,[4,5]);}
+      else{L=pickRng(rng,[4,5,6]);}
+      if(L<3)return null;
+      const seg=path.slice(i,i+L);
+      const w=pickRng(rng,layByLen[L]);
+      seg.forEach((id,j)=>grid[id]=w[j]);
+      seg.forEach(id=>vineCells.add(id));
+      i+=L;
+    }
+  }
+  for(let i=0;i<N*N;i++)if(grid[i]===null)grid[i]=FREQ[Math.floor(rng()*FREQ.length)];
+  return{grid,flowers,flowerCells};
+}
+
+// === Solver: verifies puzzle & computes par using common words only ===
+function solverFindWords(grid,startId,usable,trie,maxLen){
+  const out=[];
+  const rec=(id,node,path)=>{
+    const nn=node.c[grid[id]];if(!nn)return;
+    path.push(id);
+    if(nn.end&&path.length>=3)out.push(path.slice());
+    if(path.length<maxLen){
+      const r=Math.floor(id/N),c=id%N;
+      for(const[dr,dc]of DIRS){const nr=r+dr,nc=c+dc;if(!inb(nr,nc))continue;const a=cid(nr,nc);
+        if(!usable.has(a)||path.includes(a))continue;
+        rec(a,nn,path);}
+    }
+    path.pop();
+  };
+  rec(startId,trie.root,[]);
+  return out;
+}
+function cellTouched(id,territory){
+  const r=Math.floor(id/N),c=id%N;
+  for(const[dr,dc]of DIRS){if(inb(r+dr,c+dc)&&territory.has(cid(r+dr,c+dc)))return true;}
+  return false;
+}
+function solvePuzzle(puz,maxWords){
+  const{grid,flowers,flowerCells}=puz;
+  const territory=new Set();
+  const bloomed=new Set();
+  const words=[];
+  const checkBloom=()=>{
+    flowers.forEach((f,fi)=>{
+      if(bloomed.has(fi))return;
+      if(f.path.every(id=>cellTouched(id,territory)))bloomed.add(fi);
+    });
+  };
+  while(words.length<maxWords&&bloomed.size<flowers.length){
+    const usable=new Set();
+    for(let i=0;i<N*N;i++)if(!territory.has(i)&&!flowerCells.has(i))usable.add(i);
+    let starts=[];
+    if(territory.size===0){
+      for(let i=0;i<N;i++){starts.push(cid(0,i),cid(N-1,i),cid(i,0),cid(i,N-1));}
+      starts=starts.filter(id=>usable.has(id));
+    }else{
+      for(const id of usable){if(cellTouched(id,territory))starts.push(id);}
+    }
+    starts=[...new Set(starts)];
+    let cands=[];
+    for(const s of starts){cands.push(...solverFindWords(grid,s,usable,commonTrie,7));}
+    if(!cands.length)return{ok:false,words};
+    // targets: untouched petals of unbloomed flowers
+    const targets=[];
+    flowers.forEach((f,fi)=>{
+      if(bloomed.has(fi))return;
+      for(const id of f.path)if(!cellTouched(id,territory))targets.push(id);
+    });
+    let best=null,bestScore=1e9;
+    for(const w of cands){
+      let d=1e9;
+      for(const fid of targets){const fr=Math.floor(fid/N),fc=fid%N;
+        for(const id of w){const r=Math.floor(id/N),c=id%N;d=Math.min(d,Math.max(Math.abs(fr-r),Math.abs(fc-c)));}}
+      const score=d*10-w.length;
+      if(score<bestScore){bestScore=score;best=w;}
+    }
+    words.push(best);
+    for(const id of best)territory.add(id);
+    checkBloom();
+  }
+  return{ok:bloomed.size===flowers.length,words};
+}
+// deterministic daily: iterate seeds until a solver-verified garden appears
+function buildVerifiedPuzzle(baseSeedStr){
+  const base=dateSeed(baseSeedStr);
+  for(let k=1;k<=120;k++){
+    const puz=generatePuzzle(base+k*7919);
+    if(!puz)continue;
+    const res=solvePuzzle(puz,26);
+    if(res.ok){puz.par=res.words.length;puz.solution=res.words;return puz;}
+  }
+  return null;
+}
+
+// === Game state ===
+let puzzle=null;          // {grid, flowers, flowerCells, par, solution}
+let territory=new Set();  // played cells
+let revealedPetals=new Set(); // flower cell ids currently revealed
+let bloomedFlowers=new Set(); // flower indexes bloomed
+let wordsPlayed=[];       // {word, path:[id,...]}
+let tracePath=[];         // [[r,c],...]
+let gameActive=false,processing=false,practiceMode=false;
+let rotationCount=0;
+let savedData={history:{},streak:0,lastWin:null};
+try{const s=localStorage.getItem('fable');if(s)savedData=JSON.parse(s);}catch(e){}
+function saveData(){try{localStorage.setItem('fable',JSON.stringify(savedData));}catch(e){}}
+
+// === Rotation mapping ===
+function actualToVisual(r,c){
+  const rot=rotationCount%4;
+  if(rot===0)return[r,c];
+  if(rot===1)return[c,N-1-r];
+  if(rot===2)return[N-1-r,N-1-c];
+  return[N-1-c,r];
+}
+function visualToActual(vr,vc){
+  const rot=rotationCount%4;
+  if(rot===0)return[vr,vc];
+  if(rot===1)return[N-1-vc,vr];
+  if(rot===2)return[N-1-vr,N-1-vc];
+  return[vc,N-1-vr];
+}
+function cellSize(){
+  const maxW=Math.min(window.innerWidth-32,440);
+  return Math.max(32,Math.floor((maxW-(N-1)*3)/N));
+}
+const flowerAt={}; // cell id -> {fi, li}
+function buildGrid(){
+  const g=$('grid');g.innerHTML='';
+  const cs=cellSize();
+  g.style.gridTemplateColumns='repeat('+N+','+cs+'px)';
+  g.style.gridTemplateRows='repeat('+N+','+cs+'px)';
+  for(let vr=0;vr<N;vr++){
+    for(let vc=0;vc<N;vc++){
+      const[ar,ac]=visualToActual(vr,vc);
+      const el=document.createElement('div');
+      el.className='gcell';
+      el.dataset.r=ar;el.dataset.c=ac;
+      el.style.fontSize=Math.max(12,cs*0.38)+'px';
+      g.appendChild(el);
+    }
+  }
+}
+function getEl(r,c){
+  const[vr,vc]=actualToVisual(r,c);
+  return $('grid').children[vr*N+vc];
+}
+const isEdge=(r,c)=>r===0||r===N-1||c===0||c===N-1;
+const isAdj=(r1,c1,r2,c2)=>Math.abs(r1-r2)<=1&&Math.abs(c1-c2)<=1&&!(r1===r2&&c1===c2);
+
+// === Derived state ===
+function recomputePetals(){
+  revealedPetals=new Set();
+  const newBloomed=new Set();
+  puzzle.flowers.forEach((f,fi)=>{
+    let all=true;
+    for(const id of f.path){
+      if(cellTouched(id,territory))revealedPetals.add(id);
+      else all=false;
+    }
+    if(all)newBloomed.add(fi);
+  });
+  return newBloomed;
+}
+function frontierStarts(){
+  const starts=[];
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+    const id=cid(r,c);
+    if(territory.has(id)||puzzle.flowerCells.has(id))continue;
+    if(territory.size===0){if(isEdge(r,c))starts.push(id);}
+    else if(cellTouched(id,territory))starts.push(id);
+  }
+  return starts;
+}
+function anyWordAvailable(){
+  const usable=new Set();
+  for(let i=0;i<N*N;i++)if(!territory.has(i)&&!puzzle.flowerCells.has(i))usable.add(i);
+  for(const s of frontierStarts()){
+    if(findAnyWord(s,usable))return true;
+  }
+  return false;
+}
+function findAnyWord(startId,usable){
+  let found=false;
+  const rec=(id,node,depth)=>{
+    if(found)return;
+    const nn=node.c[puzzle.grid[id]];if(!nn)return;
+    if(nn.end&&depth>=3){found=true;return;}
+    if(depth<8){
+      const r=Math.floor(id/N),c=id%N;
+      for(const[dr,dc]of DIRS){const nr=r+dr,nc=c+dc;if(!inb(nr,nc))continue;const a=cid(nr,nc);
+        if(!usable.has(a))continue;
+        usable.delete(a);
+        rec(a,nn,depth+1);
+        usable.add(a);
+        if(found)return;}
+    }
+  };
+  usable.delete(startId);
+  rec(startId,dictionary.root,1);
+  usable.add(startId);
+  return found;
+}
+
+// === Rendering ===
+function buildFlowerTray(){
+  const tray=$('flower-tray');tray.innerHTML='';
+  puzzle.flowers.forEach((f,fi)=>{
+    const slot=document.createElement('div');
+    slot.className='flower-slot';slot.id='fslot-'+fi;
+    const ic=document.createElement('span');ic.className='fl-icon';ic.textContent='\u{1F338}';
+    slot.appendChild(ic);
+    f.path.forEach((id,li)=>{
+      const t=document.createElement('div');
+      t.className='petal-letter';t.id='petal-'+fi+'-'+li;
+      t.textContent='•';
+      slot.appendChild(t);
+    });
+    tray.appendChild(slot);
+  });
+}
+function updateFlowerTray(){
+  puzzle.flowers.forEach((f,fi)=>{
+    const slot=$('fslot-'+fi);
+    if(bloomedFlowers.has(fi))slot.classList.add('bloomed');else slot.classList.remove('bloomed');
+    f.path.forEach((id,li)=>{
+      const t=$('petal-'+fi+'-'+li);
+      if(revealedPetals.has(id)||bloomedFlowers.has(fi)){t.classList.add('revealed');t.textContent=f.word[li].toUpperCase();}
+      else{t.classList.remove('revealed');t.textContent='•';}
+    });
+  });
+}
+function updateGridDisplay(){
+  const startSet=tracePath.length===0?new Set(frontierStarts()):null;
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+    const id=cid(r,c);
+    const el=getEl(r,c);
+    el.className='gcell';
+    const fa=flowerAt[id];
+    if(fa!==undefined){
+      el.classList.add('flower');
+      const f=puzzle.flowers[fa.fi];
+      if(bloomedFlowers.has(fa.fi)){el.classList.add('bloomed');el.textContent=f.word[fa.li].toUpperCase();}
+      else if(revealedPetals.has(id)){el.classList.add('revealed');el.textContent=f.word[fa.li].toUpperCase();}
+      else{el.innerHTML='<span class="bud">❀</span>';}
+      continue;
+    }
+    el.textContent=puzzle.grid[id].toUpperCase();
+    if(territory.has(id)){el.classList.add('used');continue;}
+    if(startSet&&startSet.has(id))el.classList.add('start-option');
+  }
+  for(const[r,c]of tracePath){getEl(r,c).classList.add('tracing');}
+  if(tracePath.length>=1){
+    const[lr,lc]=tracePath[tracePath.length-1];
+    for(const[dr,dc]of DIRS){
+      const nr=lr+dr,nc=lc+dc;
+      if(!inb(nr,nc))continue;
+      const id=cid(nr,nc);
+      if(territory.has(id)||puzzle.flowerCells.has(id))continue;
+      if(tracePath.some(([pr,pc])=>pr===nr&&pc===nc))continue;
+      getEl(nr,nc).classList.add('next-option');
+    }
+  }
+  // current word
+  const letters=tracePath.map(([r,c])=>puzzle.grid[cid(r,c)]).join('');
+  const cw=$('current-word');
+  cw.textContent=letters.toUpperCase()||' ';
+  cw.classList.remove('invalid','valid-word');
+  let isValidWord=false;
+  const hint=$('word-hint');
+  hint.classList.remove('warn');
+  if(letters.length>=3){
+    const inDict=dictionary.isWord(letters);
+    const already=wordsPlayed.some(w=>w.word===letters);
+    isValidWord=inDict&&!already;
+    if(isValidWord)cw.classList.add('valid-word');
+    else if(already){cw.classList.add('invalid');hint.textContent='Already planted';}
+    else if(!dictionary.isPrefix(letters)){cw.classList.add('invalid');hint.textContent='Not a word';}
+    else hint.textContent='';
+  }else if(letters.length>0){
+    hint.textContent=dictionary.isPrefix(letters)?'':'Not a word';
+    if(hint.textContent)cw.classList.add('invalid');
+  }else{
+    hint.textContent=territory.size===0?'Tap a blue-bordered edge tile to start':'Grow from a blue-bordered tile';
+  }
+  $('submit-btn').disabled=!isValidWord;
+  $('back-btn').disabled=tracePath.length<1;
+  $('undo-btn').disabled=wordsPlayed.length===0||processing;
+  $('status-line').innerHTML='\u{1F338} '+bloomedFlowers.size+'/'+puzzle.flowers.length+
+    ' &middot; '+wordsPlayed.length+' word'+(wordsPlayed.length!==1?'s':'')+
+    ' &middot; <span class="par">Par '+puzzle.par+'</span>';
+  $('word-list').textContent=wordsPlayed.map(w=>w.word.toUpperCase()).join(' · ');
+}
+
+// === Trace logic ===
+let isTracing=false;
+function startTrace(r,c){
+  if(!gameActive||processing)return;
+  const id=cid(r,c);
+  if(navigator.vibrate)navigator.vibrate(8);
+  // tapping the next adjacent cell continues an existing trace
+  if(tracePath.length>0){
+    const[lr,lc]=tracePath[tracePath.length-1];
+    if(isAdj(lr,lc,r,c)&&!territory.has(id)&&!puzzle.flowerCells.has(id)&&
+       !tracePath.some(([pr,pc])=>pr===r&&pc===c)){
+      isTracing=true;continueTrace(r,c);return;
+    }
+    // tapping second-to-last backtracks
+    if(tracePath.length>=2){
+      const[br,bc]=tracePath[tracePath.length-2];
+      if(br===r&&bc===c){tracePath.pop();isTracing=true;updateGridDisplay();return;}
+    }
+    // tapping the same head cell: no-op (double-tap handled separately)
+    if(tracePath.some(([pr,pc])=>pr===r&&pc===c)){isTracing=true;return;}
+  }
+  // start a fresh trace
+  if(territory.has(id)||puzzle.flowerCells.has(id))return;
+  const legal=territory.size===0?isEdge(r,c):cellTouched(id,territory);
+  if(!legal){
+    // flash the legal starts
+    updateGridDisplay();
+    return;
+  }
+  tracePath=[[r,c]];
+  isTracing=true;
+  const el=getEl(r,c);
+  if(el){el.classList.remove('tap-pop');void el.offsetHeight;el.classList.add('tap-pop');}
+  updateGridDisplay();
+}
+function continueTrace(r,c){
+  if(!gameActive||processing||tracePath.length===0)return;
+  const id=cid(r,c);
+  // dragging back to second-to-last = backtrack
+  if(tracePath.length>=2){
+    const[br,bc]=tracePath[tracePath.length-2];
+    if(br===r&&bc===c){tracePath.pop();updateGridDisplay();return;}
+  }
+  if(territory.has(id)||puzzle.flowerCells.has(id))return;
+  if(tracePath.some(([pr,pc])=>pr===r&&pc===c))return;
+  const[lr,lc]=tracePath[tracePath.length-1];
+  if(!isAdj(lr,lc,r,c))return;
+  if(navigator.vibrate)navigator.vibrate(5);
+  tracePath.push([r,c]);
+  updateGridDisplay();
+}
+function clearTrace(){tracePath=[];updateGridDisplay();}
+
+function submitTracedWord(){
+  if(processing||tracePath.length<3)return;
+  const word=tracePath.map(([r,c])=>puzzle.grid[cid(r,c)]).join('');
+  if(dictionary.isWord(word)&&!wordsPlayed.some(w=>w.word===word)){
+    acceptWord(word);
+  }else{
+    rejectWord();
+  }
+}
+function acceptWord(word){
+  processing=true;
+  const path=tracePath.map(([r,c])=>cid(r,c));
+  wordsPlayed.push({word,path});
+  for(const id of path)territory.add(id);
+  tracePath=[];
+  const prevBloomed=new Set(bloomedFlowers);
+  const prevRevealed=new Set(revealedPetals);
+  bloomedFlowers=recomputePetals();
+  // animations
+  for(const id of path){const r=Math.floor(id/N),c=id%N;const el=getEl(r,c);
+    if(el){el.classList.remove('accepted');void el.offsetHeight;el.classList.add('accepted');}}
+  for(const id of revealedPetals){
+    if(!prevRevealed.has(id)){const r=Math.floor(id/N),c=id%N;const el=getEl(r,c);
+      if(el){el.classList.add('petal-anim');setTimeout(()=>el.classList.remove('petal-anim'),550);}}
+  }
+  let newBloomIdx=[];
+  bloomedFlowers.forEach(fi=>{if(!prevBloomed.has(fi))newBloomIdx.push(fi);});
+  updateGridDisplay();updateFlowerTray();
+  for(const fi of newBloomIdx){
+    const slot=$('fslot-'+fi);
+    if(slot){slot.classList.add('bloom-anim');setTimeout(()=>slot.classList.remove('bloom-anim'),850);}
+    const pop=document.createElement('div');
+    pop.className='bloom-popup';
+    pop.innerHTML='\u{1F338} '+puzzle.flowers[fi].word.toUpperCase()+'<small>a flower blooms</small>';
+    document.body.appendChild(pop);
+    setTimeout(()=>pop.remove(),1650);
+    if(navigator.vibrate)navigator.vibrate([30,40,60]);
+  }
+  processing=false;
+  if(bloomedFlowers.size===puzzle.flowers.length){
+    gameActive=false;
+    setTimeout(()=>endGame(true),newBloomIdx.length?1800:400);
+    return;
+  }
+  // stuck detection
+  $('stuck-banner').classList.toggle('visible',!anyWordAvailable());
+  updateGridDisplay();
+}
+function rejectWord(){
+  for(const[r,c]of tracePath){const el=getEl(r,c);
+    if(el){el.classList.remove('rejected');void el.offsetHeight;el.classList.add('rejected');}}
+  if(navigator.vibrate)navigator.vibrate([20,30,20]);
+}
+function undoWord(){
+  if(processing||wordsPlayed.length===0)return;
+  const last=wordsPlayed.pop();
+  for(const id of last.path)territory.delete(id);
+  tracePath=[];
+  bloomedFlowers=recomputePetals();
+  $('stuck-banner').classList.toggle('visible',!anyWordAvailable());
+  updateGridDisplay();updateFlowerTray();
+}
+
+// === Game flow ===
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  $(id).classList.add('active');
+  $('bottom-bar').classList.toggle('visible',id==='game-screen');
+}
+function startGame(practice){
+  practiceMode=!!practice;
+  const seedStr=practice?('fable-practice-'+Date.now()+'-'+Math.floor(Math.random()*1e6)):('fable-'+todayUTC());
+  $('loading-msg').textContent='Growing the garden…';
+  setTimeout(()=>{
+    puzzle=buildVerifiedPuzzle(seedStr);
+    $('loading-msg').textContent='';
+    if(!puzzle){$('loading-msg').textContent='The garden failed to grow — try again.';return;}
+    for(const k in flowerAt)delete flowerAt[k];
+    puzzle.flowers.forEach((f,fi)=>f.path.forEach((id,li)=>{flowerAt[id]={fi,li};}));
+    territory=new Set();revealedPetals=new Set();bloomedFlowers=new Set();
+    wordsPlayed=[];tracePath=[];gameActive=true;processing=false;rotationCount=0;
+    buildGrid();buildFlowerTray();updateFlowerTray();updateGridDisplay();
+    $('stuck-banner').classList.remove('visible');
+    showScreen('game-screen');
+  },30);
+}
+function gradeFor(diff,won){
+  if(!won)return['Wilted','\u{1F940} The flowers still sleep…'];
+  if(diff<=-2)return['Legendary','\u{1F98B} '+(-diff)+' under par — the stuff of legends'];
+  if(diff===-1)return['Enchanted','✨ One under par'];
+  if(diff===0)return['In Full Bloom','\u{1F338} Right on par'];
+  if(diff<=2)return['Blossoming','\u{1F33F} '+diff+' over par'];
+  return['Still Sprouting','\u{1F331} '+diff+' over par'];
+}
+function endGame(won){
+  gameActive=false;
+  const words=wordsPlayed.length;
+  const diff=words-puzzle.par;
+  const[title,gradeLine]=gradeFor(diff,won);
+  $('end-title').textContent=title;
+  $('end-grade').textContent=gradeLine;
+  $('end-bloomed').textContent=bloomedFlowers.size+'/'+puzzle.flowers.length;
+  $('end-words-count').textContent=words;
+  $('end-par').textContent=puzzle.par;
+  const best=wordsPlayed.reduce((a,w)=>w.word.length>(a?a.length:0)?w.word:a,null);
+  $('end-best').textContent=best?best.toUpperCase()+' ('+best.length+')':'—';
+  // end-screen flower tray
+  const ef=$('end-flowers');ef.innerHTML='';
+  puzzle.flowers.forEach((f,fi)=>{
+    const slot=document.createElement('div');
+    slot.className='flower-slot'+(bloomedFlowers.has(fi)?' bloomed':'');
+    const ic=document.createElement('span');ic.className='fl-icon';ic.textContent='\u{1F338}';
+    slot.appendChild(ic);
+    f.path.forEach((id,li)=>{
+      const t=document.createElement('div');
+      t.className='petal-letter'+(bloomedFlowers.has(fi)||revealedPetals.has(id)?' revealed':'');
+      t.textContent=(bloomedFlowers.has(fi)||revealedPetals.has(id))?f.word[li].toUpperCase():'•';
+      slot.appendChild(t);
+    });
+    ef.appendChild(slot);
+  });
+  $('end-words').textContent=wordsPlayed.map(w=>w.word.toUpperCase()).join(' · ');
+  // record daily result
+  if(!practiceMode){
+    const today=todayUTC();
+    if(!savedData.history[today]){
+      savedData.history[today]={words,par:puzzle.par,bloomed:bloomedFlowers.size,won:!!won};
+      if(won){
+        const yest=new Date();yest.setUTCDate(yest.getUTCDate()-1);
+        const yestStr=yest.getUTCFullYear()+'-'+String(yest.getUTCMonth()+1).padStart(2,'0')+'-'+String(yest.getUTCDate()).padStart(2,'0');
+        savedData.streak=(savedData.lastWin===yestStr)?(savedData.streak||0)+1:1;
+        savedData.lastWin=today;
+      }else{
+        savedData.streak=0;
+      }
+      saveData();
+    }
+    $('end-streak').textContent=(savedData.streak||0)+' day'+(savedData.streak!==1?'s':'');
+    $('end-countdown-wrap').style.display='';
+  }else{
+    $('end-streak').textContent='— (practice)';
+    $('end-countdown-wrap').style.display='none';
+  }
+  showScreen('end-screen');
+}
+function shareText(){
+  const h=savedData.history[todayUTC()];
+  const src=practiceMode?null:h;
+  const words=src?src.words:wordsPlayed.length;
+  const par=puzzle?puzzle.par:(src?src.par:0);
+  const bloomed=src?src.bloomed:bloomedFlowers.size;
+  const total=4;
+  const fl='\u{1F338}'.repeat(bloomed)+'\u{1F4A4}'.repeat(total-bloomed);
+  const diff=words-par;
+  const diffTxt=bloomed<total?'wilted':diff<0?(-diff)+' under par!':diff===0?'on par':diff+' over par';
+  let t='Fable #'+puzzleNumber()+'\n'+fl+' '+words+' words • Par '+par+' — '+diffTxt;
+  if(!practiceMode&&(savedData.streak||0)>1)t+='\n\u{1F525} '+savedData.streak+'-day streak';
+  t+='\nhttps://kgarber.github.io/Claude/fable.html';
+  return t;
+}
+
+// === Pointer events (pointer only — no touch listeners) ===
+function cellFromEvent(e){
+  const el=document.elementFromPoint(e.clientX,e.clientY);
+  if(!el||!el.classList.contains('gcell')){
+    const p=el?el.closest('.gcell'):null;
+    if(!p)return null;
+    return[parseInt(p.dataset.r),parseInt(p.dataset.c)];
+  }
+  return[parseInt(el.dataset.r),parseInt(el.dataset.c)];
+}
+function snapToNearest(x,y){
+  if(tracePath.length===0)return null;
+  const[lr,lc]=tracePath[tracePath.length-1];
+  let best=null,bestDist=Infinity;
+  for(const[dr,dc]of DIRS){
+    const nr=lr+dr,nc=lc+dc;
+    if(!inb(nr,nc))continue;
+    const id=cid(nr,nc);
+    if(territory.has(id)||puzzle.flowerCells.has(id))continue;
+    if(tracePath.some(([pr,pc])=>pr===nr&&pc===nc))continue;
+    const el=getEl(nr,nc);
+    if(!el)continue;
+    const rect=el.getBoundingClientRect();
+    const cx=rect.left+rect.width/2,cy=rect.top+rect.height/2;
+    const dist=Math.hypot(x-cx,y-cy);
+    if(dist<bestDist){bestDist=dist;best=[nr,nc];}
+  }
+  if(best&&bestDist<cellSize()*0.7)return best;
+  return null;
+}
+let pointerStartPos={x:0,y:0},dragDist=0,lastTapTime=0;
+const DRAG_THRESHOLD=12,DOUBLE_TAP_MS=350;
+const gw=$('grid');
+gw.addEventListener('pointerdown',e=>{
+  e.preventDefault();
+  pointerStartPos={x:e.clientX,y:e.clientY};
+  dragDist=0;
+  const now=Date.now();
+  if(now-lastTapTime<DOUBLE_TAP_MS&&tracePath.length>=3){
+    const pos=cellFromEvent(e);
+    if(pos){
+      const[lr,lc]=tracePath[tracePath.length-1];
+      if(pos[0]===lr&&pos[1]===lc){submitTracedWord();lastTapTime=0;return;}
+    }
+  }
+  lastTapTime=now;
+  const pos=cellFromEvent(e);
+  if(pos)startTrace(pos[0],pos[1]);
+});
+gw.addEventListener('pointermove',e=>{
+  e.preventDefault();
+  dragDist=Math.hypot(e.clientX-pointerStartPos.x,e.clientY-pointerStartPos.y);
+  if(!isTracing||dragDist<DRAG_THRESHOLD)return;
+  const pos=cellFromEvent(e);
+  if(pos){
+    const[lr,lc]=tracePath.length?tracePath[tracePath.length-1]:[null,null];
+    if(lr!==null&&(isAdj(lr,lc,pos[0],pos[1])||tracePath.some(([pr,pc])=>pr===pos[0]&&pc===pos[1]))){
+      continueTrace(pos[0],pos[1]);return;
+    }
+  }
+  const snapped=snapToNearest(e.clientX,e.clientY);
+  if(snapped)continueTrace(snapped[0],snapped[1]);
+});
+gw.addEventListener('pointerup',e=>{e.preventDefault();isTracing=false;});
+gw.addEventListener('pointercancel',e=>{e.preventDefault();isTracing=false;});
+
+// === Buttons ===
+$('submit-btn').addEventListener('click',submitTracedWord);
+$('back-btn').addEventListener('click',()=>{
+  if(tracePath.length>1){tracePath.pop();updateGridDisplay();}
+  else if(tracePath.length===1)clearTrace();
+});
+$('undo-btn').addEventListener('click',undoWord);
+$('rotate-btn').addEventListener('click',()=>{
+  if(processing)return;
+  const g=$('grid');
+  g.classList.add('rotating');
+  rotationCount=(rotationCount+1)%4;
+  buildGrid();updateGridDisplay();
+  g.classList.remove('rotating');
+});
+$('end-btn').addEventListener('click',()=>{
+  if(!gameActive)return;
+  if(confirm('Give up on this garden? The sleeping flowers will stay asleep.'))endGame(false);
+});
+$('play-btn').addEventListener('click',async()=>{
+  if(!dictLoaded){$('loading-msg').textContent='Still gathering words — one moment…';return;}
+  const h=savedData.history[todayUTC()];
+  if(h){startGame(true);return;} // already played today → practice
+  startGame(false);
+});
+$('practice-btn').addEventListener('click',()=>{if(dictLoaded)startGame(true);});
+$('end-practice-btn').addEventListener('click',()=>{if(dictLoaded)startGame(true);});
+$('share-btn').addEventListener('click',async()=>{
+  const t=shareText();
+  try{
+    if(navigator.share){await navigator.share({text:t});}
+    else{await navigator.clipboard.writeText(t);$('copied-msg').textContent='Copied to clipboard!';setTimeout(()=>$('copied-msg').textContent='',2000);}
+  }catch(e){
+    try{await navigator.clipboard.writeText(t);$('copied-msg').textContent='Copied to clipboard!';setTimeout(()=>$('copied-msg').textContent='',2000);}catch(e2){}
+  }
+});
+$('home-btn').addEventListener('click',()=>{location.href='index.html';});
+$('help-btn').addEventListener('click',()=>$('help-overlay').classList.add('active'));
+$('game-help-btn').addEventListener('click',()=>$('help-overlay').classList.add('active'));
+$('close-help').addEventListener('click',()=>{
+  $('help-overlay').classList.remove('active');
+  try{localStorage.setItem('fable_seen','1');}catch(e){}
+});
+
+// leave-page guard during an active game
+window.addEventListener('beforeunload',e=>{
+  if(gameActive&&wordsPlayed.length>0){e.preventDefault();e.returnValue='';}
+});
+
+// countdown on end screen
+setInterval(()=>{
+  const el=$('end-countdown');
+  if(el)el.textContent=fmtCountdown(msToMidnight());
+},1000);
+
+// === Init ===
+function init(){
+  $('puzzle-date').textContent='Fable #'+puzzleNumber()+' · '+todayUTC();
+  const h=savedData.history[todayUTC()];
+  if(h){
+    $('play-btn').textContent=h.won?'\u{1F338} Bloomed in '+h.words+' (Par '+h.par+')':'Today: '+h.bloomed+'/4 bloomed';
+    $('play-btn').style.opacity='0.75';
+    $('practice-btn').style.display='';
+  }
+  loadDictionary();
+  let seen=null;
+  try{seen=localStorage.getItem('fable_seen');}catch(e){}
+  if(!seen)$('help-overlay').classList.add('active');
+}
+init();
+
+// debug hook for automated testing
+window.__fable={
+  get puzzle(){return puzzle;},
+  get territory(){return territory;},
+  get bloomed(){return bloomedFlowers;},
+  get words(){return wordsPlayed;},
+  startGame,startTrace,continueTrace,submitTracedWord,undoWord,
+  buildVerifiedPuzzle,solvePuzzle,generatePuzzle,
+  ready:()=>dictLoaded
+};
+</script>
+</body>
+</html>
