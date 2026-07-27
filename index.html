@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Elfer Raus! Online — the classic "Eleven Out!" card game</title>
+  <meta name="description" content="Play Elfer Raus! (Eleven Out!) online with friends. Free, no signup — host a table, share the room code, and let the colors fly." />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🃏</text></svg>" />
+</head>
+<body>
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- ============ HOME SCREEN ============ -->
+  <section id="screen-home" class="screen active">
+    <div class="home-card">
+      <h1 class="title">
+        <span class="title-word t-red">Elfer</span>
+        <span class="title-word t-yellow">Raus!</span>
+      </h1>
+      <p class="tagline">The classic "Eleven Out!" card game — now online, now with 100% more dad jokes.</p>
+
+      <div class="field">
+        <label for="name-input">Your name</label>
+        <input id="name-input" type="text" maxlength="14" placeholder="e.g. Card Shark Carl" autocomplete="off" />
+      </div>
+
+      <div class="home-actions">
+        <button id="btn-host" class="btn btn-big btn-red">🎪 Host a table</button>
+        <div class="join-row">
+          <input id="room-input" type="text" maxlength="5" placeholder="CODE" autocomplete="off" />
+          <button id="btn-join" class="btn btn-big btn-blue">🚪 Join</button>
+        </div>
+      </div>
+
+      <p id="home-status" class="home-status"></p>
+
+      <details class="rules">
+        <summary>How to play (30-second version)</summary>
+        <ul>
+          <li>80 cards: numbers <b>1–20</b> in four colors.</li>
+          <li>The <b>red 11</b> opens the game. Every other 11 opens its color's row.</li>
+          <li>On your turn, play as many cards as you like — each must extend a row by exactly one (12, 13… up / 10, 9… down) or be an 11.</li>
+          <li>Can't play (or don't want to)? <b>Draw 3</b> cards instead.</li>
+          <li>First player with an empty hand wins. Everyone else gets to say "good game" through gritted teeth.</li>
+        </ul>
+      </details>
+
+      <p class="footnote">2–6 players · peer-to-peer, no accounts, no servers, no vegetables</p>
+    </div>
+  </section>
+
+  <!-- ============ LOBBY SCREEN ============ -->
+  <section id="screen-lobby" class="screen">
+    <div class="lobby-card">
+      <h2>Table open! 🪑</h2>
+      <p class="lobby-hint">Send this code to your friends (or your enemies — great way to make friends):</p>
+      <div class="room-code-row">
+        <div id="room-code" class="room-code">·····</div>
+        <button id="btn-copy" class="btn btn-small btn-blue">Copy invite link</button>
+      </div>
+      <h3>At the table</h3>
+      <ul id="lobby-players" class="lobby-players"></ul>
+      <div class="lobby-actions">
+        <button id="btn-start" class="btn btn-big btn-green" disabled>🎲 Deal 'em!</button>
+        <p id="lobby-status" class="lobby-status">Waiting for players… (2–6 needed)</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ GAME SCREEN ============ -->
+  <section id="screen-game" class="screen">
+    <header class="topbar">
+      <div class="topbar-left">
+        <span class="mini-title">Elfer Raus!</span>
+        <span id="game-room" class="mini-room"></span>
+      </div>
+      <div id="players-strip" class="players-strip"></div>
+      <div class="topbar-right">
+        <button id="btn-sound" class="btn btn-icon" title="Toggle sound">🔊</button>
+      </div>
+    </header>
+
+    <main class="table-felt">
+      <div id="board" class="board"></div>
+
+      <div class="mid-row">
+        <div id="stock" class="stock">
+          <div class="stock-card"><span>11</span></div>
+          <div id="stock-count" class="stock-count">–</div>
+        </div>
+        <div id="turn-banner" class="turn-banner"></div>
+      </div>
+
+      <div class="hand-area">
+        <div id="hand" class="hand"></div>
+        <div class="action-row">
+          <button id="btn-draw" class="btn btn-yellow">🃏 Draw 3 &amp; end turn</button>
+          <button id="btn-end" class="btn btn-green">✅ End turn</button>
+        </div>
+      </div>
+    </main>
+
+    <footer class="joke-ticker">
+      <span class="joke-label">DAD SAYS:</span>
+      <span id="joke-text" class="joke-text">Loading premium humor…</span>
+    </footer>
+  </section>
+
+  <!-- ============ GAME OVER OVERLAY ============ -->
+  <div id="overlay" class="overlay hidden">
+    <div class="overlay-card">
+      <h2 id="overlay-title">Game over!</h2>
+      <ol id="overlay-rankings" class="rankings"></ol>
+      <p id="overlay-joke" class="overlay-joke"></p>
+      <div class="overlay-actions">
+        <button id="btn-again" class="btn btn-big btn-green">🔁 Play again</button>
+        <p id="overlay-wait" class="lobby-status hidden">Waiting for the host to deal again…</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="toasts" class="toasts"></div>
+
+  <script src="js/vendor/peerjs.min.js"></script>
+  <script src="js/jokes.js"></script>
+  <script src="js/confetti.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
