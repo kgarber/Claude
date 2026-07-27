@@ -4,7 +4,7 @@ The classic German card game **Elfer raus!** ("Eleven out!") — playable online
 friends, right in the browser. No accounts, no server, no downloads. Just cards,
 confetti, and an irresponsible quantity of dad jokes.
 
-**▶️ Play it here: https://kgarber.github.io/Claude/** *(once GitHub Pages is enabled — see below)*
+**▶️ Play it here: https://kgarber.github.io/Claude/elfer-raus/**
 
 ## ✨ Features
 
@@ -36,10 +36,8 @@ Elfer raus! uses 80 cards: numbers **1–20** in four colors (red, yellow, green
 
 It's a fully static site — any static host works:
 
-1. **GitHub Pages (recommended):** in the repo, go to **Settings → Pages** and set
-   **Source** to **GitHub Actions**. The included workflow
-   (`.github/workflows/deploy-pages.yml`) deploys automatically on every push.
-   > Note: the repository must be **public** for GitHub Pages on a free plan.
+1. **GitHub Pages:** this repo publishes from the `gh-pages` branch, where the game
+   lives in the `elfer-raus/` folder alongside the other games on the hub.
 2. **Anything else:** serve the folder with any static file server
    (`python3 -m http.server`) — done.
 
